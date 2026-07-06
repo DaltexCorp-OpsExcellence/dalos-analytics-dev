@@ -542,8 +542,9 @@ input,select,button{font-family:var(--font)}
     <div class="kgrid" id="kpis"></div>
     <div class="grid2" style="margin-bottom:12px">
       <div class="cc">
-        <div class="cc-header"><div><div class="cc-title">Funnel — Volume by Stage</div><div class="cc-sub">tons through each stage</div></div></div>
-        <div style="position:relative;height:280px"><canvas id="ch-funnel"></canvas></div>
+        <div class="cc-header"><div><div class="cc-title">Funnel — Volume by Stage</div><div class="cc-sub">Budget vs Actual · tons through each stage</div></div>
+          <div class="cc-actions"><span class="seg" style="display:inline-flex;gap:0"><button class="cc-btn on" id="fo-vert" onclick="setFunnelOrient('x',this)">Vertical</button><button class="cc-btn" id="fo-horiz" onclick="setFunnelOrient('y',this)">Horizontal</button></span></div></div>
+        <div style="position:relative;height:300px"><canvas id="ch-funnel"></canvas></div>
       </div>
       <div class="cc">
         <div class="cc-header"><div><div class="cc-title">Conversion %</div><div class="cc-sub">stage-to-stage &amp; end-to-end</div></div></div>
@@ -972,24 +973,44 @@ function setOvSrc(v,btn){
   btn.classList.add('on');
   apply();
 }
+let FUNNEL_ORIENT='x';
+function setFunnelOrient(v,btn){
+  FUNNEL_ORIENT=v;
+  document.querySelectorAll('#fo-vert,#fo-horiz').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  apply();
+}
 function drawFunnelBlock(rows,chartId,cardsId){
   const a=agg(rows);
   const stages=['Harvest','Packhouse','Export'];
   const svals=[a.h,a.pin,a.s].map(r1);
   const bvals=[a.braw,a.bpk,a.bexp].map(r1);
   const bpct=[pct(a.h,a.braw),pct(a.pin,a.bpk),pct(a.s,a.bexp)];
-  mkChart(chartId,{type:'bar',data:{labels:stages,datasets:[{data:svals,backgroundColor:['#142850','#2563eb','#16a34a'],borderRadius:5,barThickness:30}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:90}},
-      plugins:{legend:{display:false},
-        datalabels:{anchor:'end',align:'end',offset:4,font:{family:"'IBM Plex Mono'",size:11,weight:'700'},color:'#142850',
-          formatter:(v,c)=>{const i=c.dataIndex;const prev=i>0?svals[i-1]:null;const p=prev>0?' ('+fmtP(v/prev*100)+')':'';return fmtT(v)+' t'+p;}},
+  const conv=[null,pct(a.pin,a.h),pct(a.s,a.pin)]; /* stage-to-stage conversion, computed on ACTUAL */
+  const orient = chartId==='ch-funnel' ? FUNNEL_ORIENT : 'y';
+  mkChart(chartId,{type:'bar',data:{labels:stages,datasets:[
+      {label:'Budget',data:bvals,backgroundColor:'#cdd3e3',borderRadius:4,maxBarThickness:44},
+      {label:'Actual',data:svals,backgroundColor:'#142850',borderRadius:4,maxBarThickness:44}
+    ]},
+    options:{indexAxis:orient,responsive:true,maintainAspectRatio:false,
+      layout:{padding: orient==='y' ? {right:20} : {top:24}},
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}},
+        datalabels:{anchor:'end',align:'end',offset:2,font:{family:"'IBM Plex Mono'",size:9.5,weight:'700'},color:'#334155',formatter:v=>fmtT(v)},
         tooltip:{callbacks:{
-          label:c=>' Actual: '+fmtT(c.raw)+' t',
-          afterLabel:c=>{const i=c.dataIndex;const lines=['Budget: '+fmtT(bvals[i])+' t','Budget %: '+fmtP(bpct[i])];
-            if(i>0){const prev=svals[i-1];if(prev>0)lines.push('vs '+stages[i-1]+': '+fmtP(c.raw/prev*100));}
-            return lines;}
+          title:items=>stages[items[0].dataIndex],
+          label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' t',
+          afterBody:items=>{
+            const i=items[0].dataIndex;
+            const lines=['Budget vs Actual: '+fmtP(bpct[i])];
+            if(conv[i]!=null)lines.push('Conversion (actual) vs '+stages[i-1]+': '+fmtP(conv[i]));
+            return lines;
+          }
         }}},
-      scales:{x:{grace:'15%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{font:{size:11,weight:'600'}},grid:{display:false}}}}});
+      scales: orient==='y'
+        ? {x:{grace:'15%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{font:{size:11,weight:'600'}},grid:{display:false}}}
+        : {y:{grace:'15%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{font:{size:11,weight:'600'}},grid:{display:false}}}
+    }});
 
   const convs=[
     {l:'PK-Farm %',v:pct(a.pin,a.h),s:'Packhouse ÷ Harvest'},
