@@ -254,6 +254,8 @@ input,select,button{font-family:var(--font)}
 
 /* INSIGHTS */
 .insights{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:16px;box-shadow:var(--shadow)}
+.section-divider{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--navy);margin:6px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--border2)}
+.section-divider i{color:var(--orange);font-size:16px}
 .insight-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .insight-item{display:flex;gap:10px;padding:9px 10px;border-radius:var(--r);background:var(--bg);border:1px solid var(--border)}
 .insight-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -513,40 +515,63 @@ input,select,button{font-family:var(--font)}
   <!-- CONVERSION STRIP -->
   <div class="kgrid" style="grid-template-columns:repeat(6,1fr)" id="convs"></div>
 
-  <!-- FUNNEL + BUDGET -->
+  <!-- OVERALL SUMMARY: FUNNEL + WEEKLY -->
   <div class="grid2" style="margin-bottom:12px">
     <div class="cc">
       <div class="cc-header"><div><div class="cc-title">Funnel — Volume by Stage</div><div class="cc-sub" id="funnel-sub">tons through each stage</div></div></div>
       <div style="position:relative;height:280px"><canvas id="ch-funnel"></canvas></div>
     </div>
     <div class="cc">
-      <div class="cc-header"><div><div class="cc-title">Budget vs Actual by Stage</div><div class="cc-sub">achievement per stage</div></div></div>
+      <div class="cc-header"><div><div class="cc-title">Budget vs Actual — Overall</div><div class="cc-sub">Raw / PK / Export achievement</div></div></div>
       <div style="position:relative;height:280px"><canvas id="ch-budget"></canvas></div>
     </div>
   </div>
 
-  <!-- WEEKLY TREND -->
-  <div class="cc" style="margin-bottom:12px">
+  <div class="cc" style="margin-bottom:24px">
     <div class="cc-header"><div><div class="cc-title">Weekly Flow</div><div class="cc-sub">tons per ISO week, each stage on its own operational date</div></div></div>
     <div style="position:relative;height:300px"><canvas id="ch-weekly"></canvas></div>
   </div>
 
-  <!-- SOURCE SPLIT + VARIETY CONVERSION -->
+  <div class="section-divider"><i class="ti ti-grape"></i> By Variety</div>
+  <div class="cc" style="margin-bottom:12px">
+    <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Variety</div><div class="cc-sub">Raw · PK · Export — actual (solid) vs budget (light)</div></div></div>
+    <div style="overflow-y:auto;max-height:560px"><div style="position:relative" id="ch-variety-wrap"><canvas id="ch-variety"></canvas></div></div>
+  </div>
+  <div class="cc" style="margin-bottom:24px">
+    <div class="cc-header"><div><div class="cc-title">Variety Detail</div><div class="cc-sub">click a column header to sort</div></div></div>
+    <div class="tbl-wrap" style="max-height:480px;overflow-y:auto"><table class="mkt-table" id="tbl-variety"></table></div>
+  </div>
+
+  <div class="section-divider"><i class="ti ti-tractor"></i> By Farm</div>
+  <div class="cc" style="margin-bottom:12px">
+    <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Farm</div><div class="cc-sub">Raw · PK · Export — actual (solid) vs budget (light)</div></div></div>
+    <div style="overflow-y:auto;max-height:560px"><div style="position:relative" id="ch-farm-wrap"><canvas id="ch-farm"></canvas></div></div>
+  </div>
+  <div class="cc" style="margin-bottom:24px">
+    <div class="cc-header"><div><div class="cc-title">Farm Detail</div><div class="cc-sub">click a column header to sort</div></div></div>
+    <div class="tbl-wrap" style="max-height:480px;overflow-y:auto"><table class="mkt-table" id="tbl-farm"></table></div>
+  </div>
+
+  <div class="section-divider"><i class="ti ti-table"></i> By Farm × Variety</div>
+  <div class="cc" style="margin-bottom:24px">
+    <div class="cc-header"><div><div class="cc-title">Farm × Variety Detail</div><div class="cc-sub">click a column header to sort · all rows, scrollable</div></div></div>
+    <div class="tbl-wrap" style="max-height:520px;overflow-y:auto"><table class="mkt-table" id="tbl"></table></div>
+  </div>
+
+  <div class="section-divider"><i class="ti ti-arrows-split"></i> By Sourcing (Insource / Outsource)</div>
   <div class="grid2" style="margin-bottom:12px">
     <div class="cc">
-      <div class="cc-header"><div><div class="cc-title">Insource vs Outsource</div><div class="cc-sub">stage volumes by sourcing</div></div></div>
-      <div style="position:relative;height:280px"><canvas id="ch-src"></canvas></div>
+      <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Sourcing</div><div class="cc-sub">Raw · PK · Export</div></div></div>
+      <div style="position:relative;height:300px"><canvas id="ch-src"></canvas></div>
     </div>
     <div class="cc">
       <div class="cc-header"><div><div class="cc-title">End-to-End Conversion by Variety</div><div class="cc-sub">shipped ÷ harvested per variety</div></div></div>
-      <div style="position:relative;height:280px"><canvas id="ch-varconv"></canvas></div>
+      <div style="position:relative;height:300px"><canvas id="ch-varconv"></canvas></div>
     </div>
   </div>
-
-  <!-- FARM × VARIETY TABLE -->
-  <div class="cc" style="margin-bottom:12px">
-    <div class="cc-header"><div><div class="cc-title">Farm × Variety Detail</div><div class="cc-sub">click a column header to sort</div></div></div>
-    <div class="tbl-wrap"><table class="mkt-table" id="tbl"></table></div>
+  <div class="cc" style="margin-bottom:24px">
+    <div class="cc-header"><div><div class="cc-title">Sourcing Detail</div><div class="cc-sub">Insource vs Outsource</div></div></div>
+    <div class="tbl-wrap"><table class="mkt-table" id="tbl-src"></table></div>
   </div>
 
   <!-- INSIGHTS -->
@@ -788,35 +813,129 @@ function apply(){
         tooltip:{callbacks:{label:c=>' shipped ÷ harvested: '+fmtP(c.raw)}}},
       scales:{x:{grace:'12%',ticks:{callback:v=>v+'%',font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{autoSkip:false,font:{size:10.5,weight:'500'}},grid:{display:false}}}}});
 
+  renderCut('variety',rows,'ch-variety','tbl-variety');
+  renderCut('farm',rows,'ch-farm','tbl-farm');
+  renderSourcing(rows);
   renderTable(rows);
   renderInsights(a,rows);
   document.getElementById('loading').style.display='none';
   document.getElementById('content').style.display='';
 }
 
-/* ---------- table ---------- */
+/* ---------- generic cut: Variety or Farm ---------- */
+let CUTSORT={variety:{k:'h',dir:-1},farm:{k:'h',dir:-1}};
+function renderCut(dim,rows,chartId,tblId){
+  const by={};
+  rows.forEach(r=>{const k=r[dim];if(!k)return;(by[k]=by[k]||[]).push(r);});
+  let items=Object.keys(by).map(k=>{const x=agg(by[k]);return{name:k,h:x.h,pin:x.pin,pout:x.pout,s:x.s,braw:x.braw,bpk:x.bpk,bexp:x.bexp,
+    pkf:pct(x.pin,x.h),expk:pct(x.s,x.pin),expf:pct(x.s,x.h),budr:pct(x.h,x.braw),budp:pct(x.pin,x.bpk),bude:pct(x.s,x.bexp)};});
+  items=items.filter(i=>i.h>0||i.pin>0||i.s>0||i.braw>0||i.bpk>0||i.bexp>0);
+  const st=CUTSORT[dim];
+  items.sort((p,q)=>{const A=p[st.k],B=q[st.k];const a=(A==null?-Infinity:(typeof A==='string'?A.toLowerCase():A));const b=(B==null?-Infinity:(typeof B==='string'?B.toLowerCase():B));return (a<b?-1:a>b?1:0)*st.dir;});
+
+  /* grouped chart: sorted by harvest desc for readability regardless of table sort */
+  const chartItems=[...items].sort((a,b)=>b.h-a.h);
+  const rowH=26, chH=Math.max(280, chartItems.length*rowH*3+60);
+  document.getElementById(chartId+'-wrap').style.height=chH+'px';
+  mkChart(chartId,{type:'bar',data:{
+      labels:chartItems.map(x=>x.name),
+      datasets:[
+        {label:'Raw Actual',data:chartItems.map(x=>r1(x.h)),backgroundColor:'#142850',barPercentage:.85,categoryPercentage:.8},
+        {label:'Raw Budget',data:chartItems.map(x=>r1(x.braw)),backgroundColor:'#a9b4cc',barPercentage:.85,categoryPercentage:.8},
+        {label:'PK Actual',data:chartItems.map(x=>r1(x.pin)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8},
+        {label:'PK Budget',data:chartItems.map(x=>r1(x.bpk)),backgroundColor:'#a7c3f5',barPercentage:.85,categoryPercentage:.8},
+        {label:'Export Actual',data:chartItems.map(x=>r1(x.s)),backgroundColor:'#16a34a',barPercentage:.85,categoryPercentage:.8},
+        {label:'Export Budget',data:chartItems.map(x=>r1(x.bexp)),backgroundColor:'#a7e3bd',barPercentage:.85,categoryPercentage:.8},
+      ]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:44}},
+      plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
+        datalabels:{anchor:'end',align:'end',offset:2,font:{family:"'IBM Plex Mono'",size:8,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
+        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' t'}}},
+      scales:{x:{grace:'10%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},
+        y:{ticks:{autoSkip:false,font:{size:10.5,weight:'500'}},grid:{display:false}}}}});
+
+  /* table */
+  const cols=[['name',dim==='variety'?'Variety':'Farm'],['h','Raw Act t'],['braw','Raw Bud t'],['budr','Raw %'],
+    ['pin','PK Act t'],['bpk','PK Bud t'],['budp','PK %'],['s','Exp Act t'],['bexp','Exp Bud t'],['bude','Exp %'],
+    ['pkf','PK-Farm %'],['expk','Exp-PK %'],['expf','Exp-Farm %']];
+  const tot=agg(rows.filter(r=>dim==='variety'?true:true));
+  const totAgg=agg(rows);
+  let html='<thead><tr>'+cols.map(c=>'<th onclick="setCutSort(\''+dim+'\',\''+c[0]+'\')">'+c[1]+(st.k===c[0]?(st.dir<0?' ▾':' ▴'):'')+'</th>').join('')+'</tr></thead><tbody>';
+  const pctColor=v=>v==null?'#8a95b0':v>=100?'var(--green)':v>=70?'var(--amber)':'var(--red)';
+  items.forEach(i=>{
+    html+='<tr><td class="mkt-name">'+esc(i.name)+'</td>'
+      +'<td class="mono">'+fmtT(i.h)+'</td><td class="mono">'+fmtT(i.braw)+'</td><td class="mono" style="color:'+pctColor(i.budr)+';font-weight:600">'+fmtP(i.budr)+'</td>'
+      +'<td class="mono">'+fmtT(i.pin)+'</td><td class="mono">'+fmtT(i.bpk)+'</td><td class="mono" style="color:'+pctColor(i.budp)+';font-weight:600">'+fmtP(i.budp)+'</td>'
+      +'<td class="mono">'+fmtT(i.s)+'</td><td class="mono">'+fmtT(i.bexp)+'</td><td class="mono" style="color:'+pctColor(i.bude)+';font-weight:600">'+fmtP(i.bude)+'</td>'
+      +'<td class="mono">'+fmtP(i.pkf)+'</td><td class="mono">'+fmtP(i.expk)+'</td><td class="mono">'+fmtP(i.expf)+'</td></tr>';
+  });
+  html+='</tbody><tfoot><tr style="border-top:2px solid var(--border2);font-weight:700"><td>Total</td>'
+    +'<td class="mono">'+fmtT(totAgg.h)+'</td><td class="mono">'+fmtT(totAgg.braw)+'</td><td class="mono">'+fmtP(pct(totAgg.h,totAgg.braw))+'</td>'
+    +'<td class="mono">'+fmtT(totAgg.pin)+'</td><td class="mono">'+fmtT(totAgg.bpk)+'</td><td class="mono">'+fmtP(pct(totAgg.pin,totAgg.bpk))+'</td>'
+    +'<td class="mono">'+fmtT(totAgg.s)+'</td><td class="mono">'+fmtT(totAgg.bexp)+'</td><td class="mono">'+fmtP(pct(totAgg.s,totAgg.bexp))+'</td>'
+    +'<td class="mono">'+fmtP(pct(totAgg.pin,totAgg.h))+'</td><td class="mono">'+fmtP(pct(totAgg.s,totAgg.pin))+'</td><td class="mono">'+fmtP(pct(totAgg.s,totAgg.h))+'</td></tr></tfoot>';
+  document.getElementById(tblId).innerHTML=html;
+}
+function setCutSort(dim,k){const st=CUTSORT[dim];if(st.k===k)st.dir*=-1;else{st.k=k;st.dir=-1;}apply();}
+
+/* ---------- sourcing (insource/outsource) ---------- */
+function renderSourcing(rows){
+  const srcs=['Insource','Outsource'];
+  const sa=srcs.map(s0=>agg(rows.filter(r=>r.src===s0)));
+  mkChart('ch-src',{type:'bar',data:{labels:srcs,datasets:[
+      {label:'Raw Actual',data:sa.map(x=>r1(x.h)),backgroundColor:'#142850',maxBarThickness:28},
+      {label:'Raw Budget',data:sa.map(x=>r1(x.braw)),backgroundColor:'#a9b4cc',maxBarThickness:28},
+      {label:'PK Actual',data:sa.map(x=>r1(x.pin)),backgroundColor:'#2563eb',maxBarThickness:28},
+      {label:'PK Budget',data:sa.map(x=>r1(x.bpk)),backgroundColor:'#a7c3f5',maxBarThickness:28},
+      {label:'Export Actual',data:sa.map(x=>r1(x.s)),backgroundColor:'#16a34a',maxBarThickness:28},
+      {label:'Export Budget',data:sa.map(x=>r1(x.bexp)),backgroundColor:'#a7e3bd',maxBarThickness:28},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:22}},
+      plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
+        datalabels:{anchor:'end',align:'end',font:{family:"'IBM Plex Mono'",size:8,weight:'700'},formatter:v=>v>0?fmtT(v):''},
+        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' t'}}},
+      scales:{x:{ticks:{font:{size:11,weight:'600'}},grid:{display:false}},y:{grace:'12%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});
+
+  const pctColor=v=>v==null?'#8a95b0':v>=100?'var(--green)':v>=70?'var(--amber)':'var(--red)';
+  let html='<thead><tr><th>Source</th><th>Raw Act t</th><th>Raw Bud t</th><th>Raw %</th><th>PK Act t</th><th>PK Bud t</th><th>PK %</th><th>Exp Act t</th><th>Exp Bud t</th><th>Exp %</th><th>PK-Farm %</th><th>Exp-PK %</th><th>Exp-Farm %</th></tr></thead><tbody>';
+  srcs.forEach((s0,i)=>{const x=sa[i];
+    html+='<tr><td class="mkt-name">'+s0+'</td>'
+      +'<td class="mono">'+fmtT(x.h)+'</td><td class="mono">'+fmtT(x.braw)+'</td><td class="mono" style="color:'+pctColor(pct(x.h,x.braw))+';font-weight:600">'+fmtP(pct(x.h,x.braw))+'</td>'
+      +'<td class="mono">'+fmtT(x.pin)+'</td><td class="mono">'+fmtT(x.bpk)+'</td><td class="mono" style="color:'+pctColor(pct(x.pin,x.bpk))+';font-weight:600">'+fmtP(pct(x.pin,x.bpk))+'</td>'
+      +'<td class="mono">'+fmtT(x.s)+'</td><td class="mono">'+fmtT(x.bexp)+'</td><td class="mono" style="color:'+pctColor(pct(x.s,x.bexp))+';font-weight:600">'+fmtP(pct(x.s,x.bexp))+'</td>'
+      +'<td class="mono">'+fmtP(pct(x.pin,x.h))+'</td><td class="mono">'+fmtP(pct(x.s,x.pin))+'</td><td class="mono">'+fmtP(pct(x.s,x.h))+'</td></tr>';
+  });
+  html+='</tbody>';
+  document.getElementById('tbl-src').innerHTML=html;
+}
+
+
 function setSort(k){if(SORT.k===k)SORT.dir*=-1;else{SORT.k=k;SORT.dir=-1;}apply();}
 function renderTable(rows){
   const by={};
   rows.forEach(r=>{const k=r.farm+'|†|'+r.variety;(by[k]=by[k]||{farm:r.farm,variety:r.variety,src:r.src,rows:[]}).rows.push(r);if(r.src!=='—')by[k].src=r.src;});
-  let items=Object.values(by).map(g=>{const x=agg(g.rows);return{farm:g.farm,variety:g.variety,src:g.src,h:x.h,pin:x.pin,pout:x.pout,s:x.s,braw:x.braw,bexp:x.bexp,
-    pkf:pct(x.pin,x.h),expk:pct(x.s,x.pin),expf:pct(x.s,x.h),budr:pct(x.h,x.braw),bude:pct(x.s,x.bexp)};});
-  items=items.filter(i=>i.h>0||i.pin>0||i.s>0||i.braw>0);
+  let items=Object.values(by).map(g=>{const x=agg(g.rows);return{farm:g.farm,variety:g.variety,src:g.src,h:x.h,pin:x.pin,pout:x.pout,s:x.s,braw:x.braw,bpk:x.bpk,bexp:x.bexp,
+    pkf:pct(x.pin,x.h),expk:pct(x.s,x.pin),expf:pct(x.s,x.h),budr:pct(x.h,x.braw),budp:pct(x.pin,x.bpk),bude:pct(x.s,x.bexp)};});
+  items=items.filter(i=>i.h>0||i.pin>0||i.s>0||i.braw>0||i.bpk>0||i.bexp>0);
   items.sort((p,q)=>{const A=p[SORT.k],B=q[SORT.k];const a=(A==null?-Infinity:(typeof A==='string'?A.toLowerCase():A));const b=(B==null?-Infinity:(typeof B==='string'?B.toLowerCase():B));return (a<b?-1:a>b?1:0)*SORT.dir;});
-  const cols=[['farm','Farm'],['variety','Variety'],['src','Src'],['h','Harvest t'],['pin','PK In t'],['pout','Export-able t'],['s','Shipped t'],['pkf','PK-Farm %'],['expk','Exp-PK %'],['expf','Exp-Farm %'],['budr','Raw Bud %'],['bude','Exp Bud %']];
+  const cols=[['farm','Farm'],['variety','Variety'],['src','Src'],['h','Raw Act t'],['braw','Raw Bud t'],['budr','Raw %'],
+    ['pin','PK Act t'],['bpk','PK Bud t'],['budp','PK %'],['s','Exp Act t'],['bexp','Exp Bud t'],['bude','Exp %'],
+    ['pkf','PK-Farm %'],['expk','Exp-PK %'],['expf','Exp-Farm %']];
   const tot=agg(rows);
+  const pctColor=v=>v==null?'#8a95b0':v>=100?'var(--green)':v>=70?'var(--amber)':'var(--red)';
   let html='<thead><tr>'+cols.map(c=>'<th onclick="setSort(\''+c[0]+'\')">'+c[1]+(SORT.k===c[0]?(SORT.dir<0?' ▾':' ▴'):'')+'</th>').join('')+'</tr></thead><tbody>';
   items.forEach(i=>{
     html+='<tr><td class="mkt-name">'+esc(i.farm)+'</td><td>'+esc(i.variety)+'</td><td><span class="port-badge">'+esc(i.src)+'</span></td>'
-      +'<td class="mono">'+fmtT(i.h)+'</td><td class="mono">'+fmtT(i.pin)+'</td><td class="mono">'+fmtT(i.pout)+'</td><td class="mono">'+fmtT(i.s)+'</td>'
-      +[i.pkf,i.expk,i.expf].map(v=>'<td class="mono">'+fmtP(v)+'</td>').join('')
-      +[i.budr,i.bude].map(v=>'<td class="mono" style="color:'+(v==null?'#8a95b0':v>=100?'var(--green)':v>=70?'var(--amber)':'var(--red)')+';font-weight:600">'+fmtP(v)+'</td>').join('')
-      +'</tr>';
+      +'<td class="mono">'+fmtT(i.h)+'</td><td class="mono">'+fmtT(i.braw)+'</td><td class="mono" style="color:'+pctColor(i.budr)+';font-weight:600">'+fmtP(i.budr)+'</td>'
+      +'<td class="mono">'+fmtT(i.pin)+'</td><td class="mono">'+fmtT(i.bpk)+'</td><td class="mono" style="color:'+pctColor(i.budp)+';font-weight:600">'+fmtP(i.budp)+'</td>'
+      +'<td class="mono">'+fmtT(i.s)+'</td><td class="mono">'+fmtT(i.bexp)+'</td><td class="mono" style="color:'+pctColor(i.bude)+';font-weight:600">'+fmtP(i.bude)+'</td>'
+      +'<td class="mono">'+fmtP(i.pkf)+'</td><td class="mono">'+fmtP(i.expk)+'</td><td class="mono">'+fmtP(i.expf)+'</td></tr>';
   });
   html+='</tbody><tfoot><tr style="border-top:2px solid var(--border2);font-weight:700"><td>Total</td><td></td><td></td>'
-    +'<td class="mono">'+fmtT(tot.h)+'</td><td class="mono">'+fmtT(tot.pin)+'</td><td class="mono">'+fmtT(tot.pout)+'</td><td class="mono">'+fmtT(tot.s)+'</td>'
-    +'<td class="mono">'+fmtP(pct(tot.pin,tot.h))+'</td><td class="mono">'+fmtP(pct(tot.s,tot.pin))+'</td><td class="mono">'+fmtP(pct(tot.s,tot.h))+'</td>'
-    +'<td class="mono">'+fmtP(pct(tot.h,tot.braw))+'</td><td class="mono">'+fmtP(pct(tot.s,tot.bexp))+'</td></tr></tfoot>';
+    +'<td class="mono">'+fmtT(tot.h)+'</td><td class="mono">'+fmtT(tot.braw)+'</td><td class="mono">'+fmtP(pct(tot.h,tot.braw))+'</td>'
+    +'<td class="mono">'+fmtT(tot.pin)+'</td><td class="mono">'+fmtT(tot.bpk)+'</td><td class="mono">'+fmtP(pct(tot.pin,tot.bpk))+'</td>'
+    +'<td class="mono">'+fmtT(tot.s)+'</td><td class="mono">'+fmtT(tot.bexp)+'</td><td class="mono">'+fmtP(pct(tot.s,tot.bexp))+'</td>'
+    +'<td class="mono">'+fmtP(pct(tot.pin,tot.h))+'</td><td class="mono">'+fmtP(pct(tot.s,tot.pin))+'</td><td class="mono">'+fmtP(pct(tot.s,tot.h))+'</td></tr></tfoot>';
   document.getElementById('tbl').innerHTML=html;
 }
 
