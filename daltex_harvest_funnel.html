@@ -530,6 +530,7 @@ input,select,button{font-family:var(--font)}
 
   <!-- ============ TAB: OVERVIEW ============ -->
   <div class="tabpage" id="tp-ov">
+    <div id="lastdates" style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
     <div class="kgrid" id="kpis"></div>
     <div class="grid2" style="margin-bottom:12px">
       <div class="cc">
@@ -901,8 +902,35 @@ function apply(){
 }
 
 /* ========== TAB: OVERVIEW (funnel/conversion only, no budget) ========== */
+/* ---------- last-date strip (dynamic per current filters) ---------- */
+function fmtDateNice(ds){
+  if(!ds)return '—';
+  const d=new Date(ds+'T00:00:00');
+  if(isNaN(d))return ds;
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+function lastDateCard(label,icon,ds,color){
+  return '<div style="flex:1;min-width:170px;display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:10px 14px;box-shadow:var(--shadow)">'
+    +'<div style="width:32px;height:32px;border-radius:8px;background:'+color+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti '+icon+'" style="color:'+color+';font-size:16px"></i></div>'
+    +'<div><div style="font-size:10px;color:#8a95b0;font-weight:600;text-transform:uppercase;letter-spacing:.04em">'+label+'</div>'
+    +'<div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--navy)">'+fmtDateNice(ds)+'</div></div></div>';
+}
+function renderLastDates(rows){
+  let lh=null,lp=null,ls=null;
+  rows.forEach(r=>{
+    if(r.st==='h'&&r.d&&(!lh||r.d>lh))lh=r.d;
+    else if(r.st==='p'&&r.d&&(!lp||r.d>lp))lp=r.d;
+    else if(r.st==='s'&&r.d&&(!ls||r.d>ls))ls=r.d;
+  });
+  document.getElementById('lastdates').innerHTML=
+    lastDateCard('Last Harvest Date','ti-plant-2',lh,'#142850')
+    +lastDateCard('Last Packhouse Date','ti-building-warehouse',lp,'#2563eb')
+    +lastDateCard('Last Shipments Date','ti-ship',ls,'#16a34a');
+}
+
 function renderOverview(rows){
   const a=agg(rows);
+  renderLastDates(rows);
   document.getElementById('kpis').innerHTML=
     kcard('Harvest','ti-plant-2',fmtT(a.h)+'<span style="font-size:11px;color:#8a95b0"> t</span>','خام المحطة · farm raw',100)
     +kcard('Packhouse','ti-building-warehouse',fmtT(a.pin)+'<span style="font-size:11px;color:#8a95b0"> t</span>','incoming raw at packhouse',pct(a.pin,a.h)||0)
