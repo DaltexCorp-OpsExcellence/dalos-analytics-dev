@@ -788,14 +788,13 @@ function renderOverview(rows){
   const a=agg(rows);
   document.getElementById('kpis').innerHTML=
     kcard('Harvest','ti-plant-2',fmtT(a.h)+'<span style="font-size:11px;color:#8a95b0"> t</span>','خام المحطة · farm raw',100)
-    +kcard('Packhouse In','ti-building-warehouse',fmtT(a.pin)+'<span style="font-size:11px;color:#8a95b0"> t</span>','incoming raw at packhouse',pct(a.pin,a.h)||0)
-    +kcard('Exportable','ti-package',fmtT(a.pout)+'<span style="font-size:11px;color:#8a95b0"> t</span>','packhouse exportable output',pct(a.pout,a.h)||0)
-    +kcard('Shipped','ti-ship',fmtT(a.s)+'<span style="font-size:11px;color:#8a95b0"> t</span>','net weight loaded',pct(a.s,a.h)||0)
+    +kcard('Packhouse','ti-building-warehouse',fmtT(a.pin)+'<span style="font-size:11px;color:#8a95b0"> t</span>','incoming raw at packhouse',pct(a.pin,a.h)||0)
+    +kcard('Export','ti-ship',fmtT(a.s)+'<span style="font-size:11px;color:#8a95b0"> t</span>','net weight loaded',pct(a.s,a.h)||0)
     +kcard('End-to-End','ti-arrow-narrow-right',fmtP(pct(a.s,a.h)),'shipped ÷ harvested',pct(a.s,a.h)||0);
 
-  const stages=['Harvest','Packhouse In','Exportable','Shipped'];
-  const svals=[a.h,a.pin,a.pout,a.s].map(r1);
-  mkChart('ch-funnel',{type:'bar',data:{labels:stages,datasets:[{data:svals,backgroundColor:['#142850','#2563eb','#0e7490','#16a34a'],borderRadius:5,barThickness:34}]},
+  const stages=['Harvest','Packhouse','Export'];
+  const svals=[a.h,a.pin,a.s].map(r1);
+  mkChart('ch-funnel',{type:'bar',data:{labels:stages,datasets:[{data:svals,backgroundColor:['#142850','#2563eb','#16a34a'],borderRadius:5,barThickness:34}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:90}},
       plugins:{legend:{display:false},
         datalabels:{anchor:'end',align:'end',offset:4,font:{family:"'IBM Plex Mono'",size:11,weight:'700'},color:'#142850',
@@ -804,9 +803,9 @@ function renderOverview(rows){
       scales:{x:{grace:'15%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{font:{size:11,weight:'600'}},grid:{display:false}}}}});
 
   const convs=[
-    {l:'PK-Farm %',v:pct(a.pin,a.h),s:'Packhouse In ÷ Harvest'},
-    {l:'Export-PK %',v:pct(a.s,a.pin),s:'Shipped ÷ Packhouse In'},
-    {l:'Export-Farm %',v:pct(a.s,a.h),s:'Shipped ÷ Harvest (end-to-end)'}
+    {l:'PK-Farm %',v:pct(a.pin,a.h),s:'Packhouse ÷ Harvest'},
+    {l:'Export-PK %',v:pct(a.s,a.pin),s:'Export ÷ Packhouse'},
+    {l:'Export-Farm %',v:pct(a.s,a.h),s:'Export ÷ Harvest (end-to-end)'}
   ];
   document.getElementById('conv-cards').innerHTML=convs.map(c=>
     '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg2);border-radius:10px">'
@@ -814,10 +813,10 @@ function renderOverview(rows){
     +'<div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--navy)">'+fmtP(c.v)+'</div></div>').join('');
 
   const wk={};
-  rows.forEach(r=>{if(!r.d)return;const w=isoWk(r.d);if(!w)return;(wk[w]=wk[w]||{h:0,pin:0,pout:0,s:0});
-    if(r.st==='h')wk[w].h+=r.v;else if(r.st==='p'){wk[w].pin+=r.vin;wk[w].pout+=r.vout;}else if(r.st==='s')wk[w].s+=r.v;});
+  rows.forEach(r=>{if(!r.d)return;const w=isoWk(r.d);if(!w)return;(wk[w]=wk[w]||{h:0,pin:0,s:0});
+    if(r.st==='h')wk[w].h+=r.v;else if(r.st==='p')wk[w].pin+=r.vin;else if(r.st==='s')wk[w].s+=r.v;});
   const wks=Object.keys(wk).map(Number).sort((a,b)=>a-b);
-  const STG={h:{n:'Harvest',c:'#142850'},pin:{n:'Packhouse In',c:'#2563eb'},pout:{n:'Exportable',c:'#0e7490'},s:{n:'Shipped',c:'#16a34a'}};
+  const STG={h:{n:'Harvest',c:'#142850'},pin:{n:'Packhouse',c:'#2563eb'},s:{n:'Export',c:'#16a34a'}};
   mkChart('ch-weekly',{type:'line',data:{labels:wks.map(w=>'W'+String(w).padStart(2,'0')),datasets:Object.keys(STG).map(k=>({label:STG[k].n,data:wks.map(w=>r1(wk[w][k])),borderColor:STG[k].c,backgroundColor:STG[k].c,borderWidth:2,pointRadius:2.5,tension:.3,fill:false}))},
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18,right:14}},
       plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}},
@@ -920,9 +919,8 @@ function renderSrc(rows){
 
   mkChart('ch-src-vol',{type:'bar',data:{labels:srcs,datasets:[
       {label:'Harvest',data:sa.map(x=>r1(x.h)),backgroundColor:'#142850',maxBarThickness:34},
-      {label:'PK In',data:sa.map(x=>r1(x.pin)),backgroundColor:'#2563eb',maxBarThickness:34},
-      {label:'Exportable',data:sa.map(x=>r1(x.pout)),backgroundColor:'#0e7490',maxBarThickness:34},
-      {label:'Shipped',data:sa.map(x=>r1(x.s)),backgroundColor:'#16a34a',maxBarThickness:34}]},
+      {label:'Packhouse',data:sa.map(x=>r1(x.pin)),backgroundColor:'#2563eb',maxBarThickness:34},
+      {label:'Export',data:sa.map(x=>r1(x.s)),backgroundColor:'#16a34a',maxBarThickness:34}]},
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:22}},
       plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:9.5}}},
         datalabels:{anchor:'end',align:'end',font:{family:"'IBM Plex Mono'",size:9,weight:'700'},formatter:v=>v>0?fmtT(v):''},
