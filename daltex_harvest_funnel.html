@@ -976,12 +976,19 @@ function drawFunnelBlock(rows,chartId,cardsId){
   const a=agg(rows);
   const stages=['Harvest','Packhouse','Export'];
   const svals=[a.h,a.pin,a.s].map(r1);
+  const bvals=[a.braw,a.bpk,a.bexp].map(r1);
+  const bpct=[pct(a.h,a.braw),pct(a.pin,a.bpk),pct(a.s,a.bexp)];
   mkChart(chartId,{type:'bar',data:{labels:stages,datasets:[{data:svals,backgroundColor:['#142850','#2563eb','#16a34a'],borderRadius:5,barThickness:30}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:90}},
       plugins:{legend:{display:false},
         datalabels:{anchor:'end',align:'end',offset:4,font:{family:"'IBM Plex Mono'",size:11,weight:'700'},color:'#142850',
           formatter:(v,c)=>{const i=c.dataIndex;const prev=i>0?svals[i-1]:null;const p=prev>0?' ('+fmtP(v/prev*100)+')':'';return fmtT(v)+' t'+p;}},
-        tooltip:{callbacks:{label:c=>' '+fmtT(c.raw)+' t'}}},
+        tooltip:{callbacks:{
+          label:c=>' Actual: '+fmtT(c.raw)+' t',
+          afterLabel:c=>{const i=c.dataIndex;const lines=['Budget: '+fmtT(bvals[i])+' t','Budget %: '+fmtP(bpct[i])];
+            if(i>0){const prev=svals[i-1];if(prev>0)lines.push('vs '+stages[i-1]+': '+fmtP(c.raw/prev*100));}
+            return lines;}
+        }}},
       scales:{x:{grace:'15%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{font:{size:11,weight:'600'}},grid:{display:false}}}}});
 
   const convs=[
