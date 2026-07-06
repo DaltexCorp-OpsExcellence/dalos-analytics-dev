@@ -1002,7 +1002,7 @@ function drawFunnelBlock(rows,chartId,cardsId){
           label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' t',
           afterBody:items=>{
             const i=items[0].dataIndex;
-            const lines=['Budget vs Actual: '+fmtP(bpct[i])];
+            const lines=['% Achieved from Budget: '+fmtP(bpct[i])];
             if(conv[i]!=null)lines.push('Conversion (actual) vs '+stages[i-1]+': '+fmtP(conv[i]));
             return lines;
           }
