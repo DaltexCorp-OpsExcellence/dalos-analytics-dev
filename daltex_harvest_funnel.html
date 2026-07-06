@@ -745,7 +745,6 @@ function renderUnmappedPanel(){
 }
 function unmappedCard(dim,raw,cnt,matches){
   const rid='um_'+dim+'_'+raw.replace(/[^a-z0-9]/gi,'_');
-  const top=matches[0];
   let sugHtml='';
   if(matches.length){
     sugHtml=matches.slice(0,3).map(m=>
@@ -757,15 +756,17 @@ function unmappedCard(dim,raw,cnt,matches){
       +'</div></div>'
     ).join('');
   }
+  const newBtns = dim==='farm'
+    ? '<button class="cc-btn" style="padding:5px 10px;font-size:11px" onclick="resolveAsNew(\'farm\',\''+esc(raw).replace(/'/g,"\\'")+'\',\'Insource\')">No, it\'s new — Insource farm</button>'
+      +'<button class="cc-btn" style="padding:5px 10px;font-size:11px" onclick="resolveAsNew(\'farm\',\''+esc(raw).replace(/'/g,"\\'")+'\',\'Outsource\')">No, it\'s new — Outsource farm</button>'
+    : '<button class="cc-btn" style="padding:5px 10px;font-size:11px" onclick="resolveAsNew(\'variety\',\''+esc(raw).replace(/'/g,"\\'")+'\',null)">No, it\'s new — add as its own variety</button>';
   return '<div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px" id="'+rid+'">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
     +'<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:15px;font-weight:600;color:var(--navy)">"'+esc(raw)+'"</span><span style="font-size:11px;color:#8a95b0">'+(dim==='farm'?'new farm name':'new variety name')+'</span></div>'
     +'</div>'
     +'<div style="font-size:12px;color:#8a95b0;margin-bottom:6px">Appears in '+cnt+' row'+(cnt>1?'s':'')+'</div>'
     +sugHtml
-    +'<div style="display:flex;gap:8px;margin-top:10px">'
-    +'<button class="cc-btn" style="padding:5px 10px;font-size:11px" onclick="resolveAsNew(\''+dim+'\',\''+esc(raw).replace(/'/g,"\\'")+'\')">No, it\'s new — add as its own '+dim+'</button>'
-    +'</div></div>';
+    +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'+newBtns+'</div></div>';
 }
 
 async function resolveUnmapped(dim,raw,canonName){
@@ -784,10 +785,18 @@ async function resolveUnmapped(dim,raw,canonName){
     await reloadCrosswalkAndRefresh();
   }catch(e){alert('Failed to save: '+e.message);}
 }
-async function resolveAsNew(dim,raw){
+async function resolveAsNew(dim,raw,sourceType){
   const table=dim==='farm'?'farms':'varieties';
+  const cache=dim==='farm'?FARMS_CACHE:VARIETIES_CACHE;
+  /* duplicate guard: case-insensitive check against existing names before inserting */
+  const dupe=cache.find(r=>norm(r.name).toLowerCase()===raw.toLowerCase()||(norm(r.canonical_name)||'').toLowerCase()===raw.toLowerCase());
+  if(dupe){
+    const proceed=confirm('"'+raw+'" looks like it already exists as "'+dupe.name+'". Map the new spelling to it instead of creating a duplicate?');
+    if(proceed){await resolveUnmapped(dim,raw,norm(dupe.canonical_name)||norm(dupe.name));return;}
+    else return; /* user cancelled — do nothing rather than risk a duplicate */
+  }
   const body=dim==='farm'
-    ? {name:raw,active:true,canonical_name:raw,raw_names:[raw],source_type:'Insource'}
+    ? {name:raw,active:true,canonical_name:raw,raw_names:[raw],source_type:sourceType||'Insource'}
     : {name:raw,active:true,canonical_name:raw,raw_names:[raw],product_id:'grapes'};
   try{
     const res=await fetch(SB+'/rest/v1/'+table,{
