@@ -513,6 +513,16 @@ input,select,button{font-family:var(--font)}
 </div>
 <div class="fchips" id="fchips"></div>
 
+<div id="unmapped-modal" style="display:none;position:fixed;inset:0;background:rgba(20,40,80,.45);z-index:999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <div style="font-size:15px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px"><i class="ti ti-alert-triangle" style="color:var(--amber)"></i>Unmapped Names</div>
+      <button onclick="closeUnmapped()" style="background:none;border:none;cursor:pointer;color:#8a95b0;font-size:18px;line-height:1"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="unmapped-body" style="padding:18px 20px;overflow-y:auto"></div>
+  </div>
+</div>
+
 <div id="loading" style="text-align:center;padding:60px;color:#8a95b0"><i class="ti ti-loader-2" style="font-size:24px;animation:spin 1s linear infinite;display:inline-block"></i><div style="margin-top:8px;font-size:12px">Loading funnel data…</div></div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
@@ -606,7 +616,8 @@ input,select,button{font-family:var(--font)}
 const SB='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
 const AK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmeWp2Z2p3dnR3a3JucXJ2cXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzIxNjYsImV4cCI6MjA5MDQ0ODE2Nn0.FjA75XZsp0Kx5Xam_rrnYoAHX4JHKey6vEFCH_zlMuQ';
 const SID='19482d39-6074-4c60-b772-ced5df1ffdcb';
-let ROWS=[],charts={},UNMAPPED={farm:new Set(),variety:new Set()};
+let ROWS=[],charts={},UNMAPPED={farm:{},variety:{}};
+let FARMS_CACHE=[],VARIETIES_CACHE=[];
 let S={farm:[],variety:[],src:[],from:'',to:'',tab:'ov'};
 let LDF='',LDT='';
 const MSF=['farm','variety','src'];
@@ -658,8 +669,8 @@ async function loadAll(){
     (v.raw_names||[]).forEach(rn=>{VMAP[norm(rn).toLowerCase()]=canon;});
     VMAP[norm(v.name).toLowerCase()]=VMAP[norm(v.name).toLowerCase()]||canon;
   });
-  function cf(raw){const k=norm(raw).toLowerCase();if(!k)return{canon:'(blank)',src:'—'};const m=FMAP[k];if(!m){UNMAPPED.farm.add(norm(raw));return{canon:norm(raw),src:'—'};}return m;}
-  function cv(raw){const k=norm(raw).toLowerCase();if(!k)return'(blank)';const m=VMAP[k];if(!m){UNMAPPED.variety.add(norm(raw));return norm(raw);}return m;}
+  function cf(raw){const k=norm(raw).toLowerCase();if(!k)return{canon:'(blank)',src:'—'};const m=FMAP[k];if(!m){const rn=norm(raw);UNMAPPED.farm[rn]=(UNMAPPED.farm[rn]||0)+1;return{canon:rn,src:'—'};}return m;}
+  function cv(raw){const k=norm(raw).toLowerCase();if(!k)return'(blank)';const m=VMAP[k];if(!m){const rn=norm(raw);UNMAPPED.variety[rn]=(UNMAPPED.variety[rn]||0)+1;return rn;}return m;}
 
   const gH=toTons(H,r=>num(r.raw_station));
   const gPin=toTons(P,r=>num(r.incoming_raw));
@@ -678,14 +689,120 @@ async function loadAll(){
   const ff=document.getElementById('f-from'),ft=document.getElementById('f-to');
   ff.min=LDF;ff.max=LDT;ff.value=LDF;ft.min=LDF;ft.max=LDT;ft.value=LDT;
 
-  const un=UNMAPPED.farm.size+UNMAPPED.variety.size;
+  FARMS_CACHE=farms; VARIETIES_CACHE=vars;
+  const un=Object.keys(UNMAPPED.farm).length+Object.keys(UNMAPPED.variety).length;
   if(un>0){document.getElementById('unmapped-badge').style.display='';document.getElementById('unmapped-txt').textContent=un+' unmapped name'+(un>1?'s':'');}
 }
+/* ---------- fuzzy matching ---------- */
+function levenshtein(a,b){
+  a=a.toLowerCase();b=b.toLowerCase();
+  const m=a.length,n=b.length;
+  if(m===0)return n; if(n===0)return m;
+  const dp=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+  for(let i=0;i<=m;i++)dp[i][0]=i;
+  for(let j=0;j<=n;j++)dp[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  }
+  return dp[m][n];
+}
+function similarity(a,b){
+  const maxLen=Math.max(a.length,b.length);
+  if(maxLen===0)return 100;
+  return Math.round((1-levenshtein(a,b)/maxLen)*1000)/10;
+}
+const SIM_THRESHOLD=55;
+
+function suggestMatches(raw,candidates){
+  return candidates.map(c=>({name:c,sim:similarity(raw,c)}))
+    .filter(x=>x.sim>=SIM_THRESHOLD)
+    .sort((a,b)=>b.sim-a.sim);
+}
+
+/* ---------- review panel ---------- */
 function showUnmapped(){
-  let msg='Unmapped names (add to farms/varieties raw_names):\n';
-  if(UNMAPPED.farm.size)msg+='\nFARMS:\n  '+[...UNMAPPED.farm].join('\n  ');
-  if(UNMAPPED.variety.size)msg+='\nVARIETIES:\n  '+[...UNMAPPED.variety].join('\n  ');
-  alert(msg);
+  const panel=document.getElementById('unmapped-modal');
+  panel.style.display='flex';
+  renderUnmappedPanel();
+}
+function closeUnmapped(){document.getElementById('unmapped-modal').style.display='none';}
+
+function renderUnmappedPanel(){
+  const farmCanon=[...new Set(FARMS_CACHE.map(f=>norm(f.canonical_name)||norm(f.name)))];
+  const varCanon=[...new Set(VARIETIES_CACHE.map(v=>norm(v.canonical_name)||norm(v.name)))];
+  let html='';
+  const fEntries=Object.entries(UNMAPPED.farm);
+  const vEntries=Object.entries(UNMAPPED.variety);
+  if(fEntries.length===0 && vEntries.length===0){
+    html='<div style="padding:30px;text-align:center;color:#8a95b0"><i class="ti ti-circle-check" style="font-size:28px;color:var(--green)"></i><div style="margin-top:8px;font-size:13px">All names are mapped. Nothing to review.</div></div>';
+  } else {
+    html='<div style="font-size:12.5px;color:#65708a;margin-bottom:14px">These names appeared in your sources but aren\'t in the crosswalk yet. Confirm what each one is — nothing changes until you decide.</div>';
+    fEntries.forEach(([raw,cnt])=>html+=unmappedCard('farm',raw,cnt,suggestMatches(raw,farmCanon)));
+    vEntries.forEach(([raw,cnt])=>html+=unmappedCard('variety',raw,cnt,suggestMatches(raw,varCanon)));
+  }
+  document.getElementById('unmapped-body').innerHTML=html;
+}
+function unmappedCard(dim,raw,cnt,matches){
+  const rid='um_'+dim+'_'+raw.replace(/[^a-z0-9]/gi,'_');
+  const top=matches[0];
+  let sugHtml='';
+  if(matches.length){
+    sugHtml=matches.slice(0,3).map(m=>
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg2);border-radius:8px;margin-top:6px">'
+      +'<div style="font-size:13px">Looks like <strong style="color:var(--navy)">'+esc(m.name)+'</strong></div>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:'+(m.sim>=80?'rgba(22,163,74,.12)':'rgba(217,119,6,.12)')+';color:'+(m.sim>=80?'var(--green)':'var(--amber)')+';font-weight:600">'+m.sim+'% match</span>'
+      +'<button class="cc-btn on" style="padding:5px 10px;font-size:11px" onclick="resolveUnmapped(\''+dim+'\',\''+esc(raw).replace(/'/g,"\\'")+'\',\''+esc(m.name).replace(/'/g,"\\'")+'\')">Yes, map here</button>'
+      +'</div></div>'
+    ).join('');
+  }
+  return '<div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px" id="'+rid+'">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+    +'<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:15px;font-weight:600;color:var(--navy)">"'+esc(raw)+'"</span><span style="font-size:11px;color:#8a95b0">'+(dim==='farm'?'new farm name':'new variety name')+'</span></div>'
+    +'</div>'
+    +'<div style="font-size:12px;color:#8a95b0;margin-bottom:6px">Appears in '+cnt+' row'+(cnt>1?'s':'')+'</div>'
+    +sugHtml
+    +'<div style="display:flex;gap:8px;margin-top:10px">'
+    +'<button class="cc-btn" style="padding:5px 10px;font-size:11px" onclick="resolveAsNew(\''+dim+'\',\''+esc(raw).replace(/'/g,"\\'")+'\')">No, it\'s new — add as its own '+dim+'</button>'
+    +'</div></div>';
+}
+
+async function resolveUnmapped(dim,raw,canonName){
+  const table=dim==='farm'?'farms':'varieties';
+  const cache=dim==='farm'?FARMS_CACHE:VARIETIES_CACHE;
+  const target=cache.find(r=>(norm(r.canonical_name)||norm(r.name))===canonName);
+  if(!target){alert('Could not find target row for '+canonName);return;}
+  const newRawNames=Array.from(new Set([...(target.raw_names||[]),raw]));
+  try{
+    const res=await fetch(SB+'/rest/v1/'+table+'?name=eq.'+encodeURIComponent(target.name),{
+      method:'PATCH',headers:{apikey:AK,Authorization:'Bearer '+AK,'Content-Type':'application/json',Prefer:'return=minimal'},
+      body:JSON.stringify({raw_names:newRawNames})
+    });
+    if(!res.ok){const t=await res.text();throw new Error(t);}
+    delete UNMAPPED[dim][raw];
+    await reloadCrosswalkAndRefresh();
+  }catch(e){alert('Failed to save: '+e.message);}
+}
+async function resolveAsNew(dim,raw){
+  const table=dim==='farm'?'farms':'varieties';
+  const body=dim==='farm'
+    ? {name:raw,active:true,canonical_name:raw,raw_names:[raw],source_type:'Insource'}
+    : {name:raw,active:true,canonical_name:raw,raw_names:[raw],product_id:'grapes'};
+  try{
+    const res=await fetch(SB+'/rest/v1/'+table,{
+      method:'POST',headers:{apikey:AK,Authorization:'Bearer '+AK,'Content-Type':'application/json',Prefer:'return=minimal'},
+      body:JSON.stringify(body)
+    });
+    if(!res.ok){const t=await res.text();throw new Error(t);}
+    delete UNMAPPED[dim][raw];
+    await reloadCrosswalkAndRefresh();
+  }catch(e){alert('Failed to save: '+e.message);}
+}
+async function reloadCrosswalkAndRefresh(){
+  await loadAll();
+  buildMS();
+  renderUnmappedPanel();
+  apply();
 }
 
 /* ---------- tabs ---------- */
@@ -835,7 +952,8 @@ function renderInsights(a,rows){
   if(fc.length){fc.sort((a,b)=>b.c-a.c);
     ins.push({t:'ok',i:'ti-trophy',txt:'<strong>'+esc(fc[0].f)+'</strong> leads end-to-end conversion at <strong>'+fmtP(fc[0].c)+'</strong>.'});
     const w=fc[fc.length-1];if(w.f!==fc[0].f)ins.push({t:'warn',i:'ti-trending-down',txt:'<strong>'+esc(w.f)+'</strong> has the lowest conversion at <strong>'+fmtP(w.c)+'</strong> — review losses between stages.'});}
-  if(UNMAPPED.farm.size+UNMAPPED.variety.size>0)ins.push({t:'flag',i:'ti-alert-triangle',txt:'<strong>'+(UNMAPPED.farm.size+UNMAPPED.variety.size)+' unmapped names</strong> found in sources — click the badge in the top bar to review.'});
+  const unCount=Object.keys(UNMAPPED.farm).length+Object.keys(UNMAPPED.variety).length;
+  if(unCount>0)ins.push({t:'flag',i:'ti-alert-triangle',txt:'<strong>'+unCount+' unmapped names</strong> found in sources — click the badge in the top bar to review.'});
   document.getElementById('insights').innerHTML='<div style="display:flex;align-items:center;gap:8px"><i class="ti ti-bulb" style="color:var(--orange);font-size:16px"></i><span style="font-size:13px;font-weight:600;color:var(--navy)">Auto Insights</span></div><div class="insight-list">'
     +ins.map(x=>'<div class="insight-item"><div class="insight-icon '+x.t+'"><i class="ti '+x.i+'"></i></div><div class="insight-text">'+x.txt+'</div></div>').join('')+'</div>';
 }
