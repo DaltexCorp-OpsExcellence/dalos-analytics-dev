@@ -1055,8 +1055,8 @@ function renderBudget(rows){
   document.getElementById('budget-cards').innerHTML=cards.map(c=>kcard(c.l+' Achievement',c.ic,fmtP(pct(c.act,c.bud)),fmtT(c.act)+' / '+fmtT(c.bud)+' t',pct(c.act,c.bud)||0)).join('');
 
   mkChart('ch-budget-overall',{type:'bar',data:{labels:['Raw','PK','Export'],datasets:[
-      {label:'Actual',data:[a.h,a.pin,a.s].map(r1),backgroundColor:'#142850',borderRadius:4,maxBarThickness:50},
-      {label:'Budget',data:[a.braw,a.bpk,a.bexp].map(r1),backgroundColor:'#DC6428',borderRadius:4,maxBarThickness:50}]},
+      {label:'Budget',data:[a.braw,a.bpk,a.bexp].map(r1),backgroundColor:'#DC6428',borderRadius:4,maxBarThickness:50},
+      {label:'Actual',data:[a.h,a.pin,a.s].map(r1),backgroundColor:'#142850',borderRadius:4,maxBarThickness:50}]},
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:24}},
       plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}},
         datalabels:{anchor:'end',align:'end',font:{family:"'IBM Plex Mono'",size:10,weight:'700'},formatter:v=>fmtT(v)},
@@ -1091,22 +1091,22 @@ function renderFV(rows){
     pkf:pct(x.pin,x.h),expk:pct(x.s,x.pin),expf:pct(x.s,x.h),budr:pct(x.h,x.braw),budp:pct(x.pin,x.bpk),bude:pct(x.s,x.bexp)};});
   items=items.filter(i=>i.h>0||i.pin>0||i.s>0||i.braw>0||i.bpk>0||i.bexp>0);
   items.sort((p,q)=>{const A=p[FVSORT.k],B=q[FVSORT.k];const a=(A==null?-Infinity:(typeof A==='string'?A.toLowerCase():A));const b=(B==null?-Infinity:(typeof B==='string'?B.toLowerCase():B));return (a<b?-1:a>b?1:0)*FVSORT.dir;});
-  const cols=[['farm','Farm'],['variety','Variety'],['src','Src'],['h','Raw Act t'],['braw','Raw Bud t'],['budr','Raw %'],
-    ['pin','PK Act t'],['bpk','PK Bud t'],['budp','PK %'],['s','Exp Act t'],['bexp','Exp Bud t'],['bude','Exp %'],
+  const cols=[['farm','Farm'],['variety','Variety'],['src','Src'],['braw','Raw Bud t'],['h','Raw Act t'],['budr','Raw %'],
+    ['bpk','PK Bud t'],['pin','PK Act t'],['budp','PK %'],['bexp','Exp Bud t'],['s','Exp Act t'],['bude','Exp %'],
     ['pkf','PK-Farm %'],['expk','Exp-PK %'],['expf','Exp-Farm %']];
   const tot=agg(rows);
   let html='<thead><tr>'+cols.map(c=>'<th onclick="setFVSort(\''+c[0]+'\')" title="Sort">'+c[1]+(FVSORT.k===c[0]?(FVSORT.dir<0?' ▾':' ▴'):'')+'</th>').join('')+'</tr></thead><tbody>';
   items.forEach(i=>{
     html+='<tr style="cursor:pointer" title="Click to drill into this farm" onclick="drillTo(\'farm\',\''+esc(i.farm).replace(/'/g,"\\'")+'\',\'fv\')"><td class="mkt-name">'+esc(i.farm)+'</td><td>'+esc(i.variety)+'</td><td><span class="port-badge">'+esc(i.src)+'</span></td>'
-      +'<td class="mono">'+fmtT(i.h)+'</td><td class="mono">'+fmtT(i.braw)+'</td><td class="mono" style="color:'+pctColor(i.budr)+';font-weight:600">'+fmtP(i.budr)+'</td>'
-      +'<td class="mono">'+fmtT(i.pin)+'</td><td class="mono">'+fmtT(i.bpk)+'</td><td class="mono" style="color:'+pctColor(i.budp)+';font-weight:600">'+fmtP(i.budp)+'</td>'
-      +'<td class="mono">'+fmtT(i.s)+'</td><td class="mono">'+fmtT(i.bexp)+'</td><td class="mono" style="color:'+pctColor(i.bude)+';font-weight:600">'+fmtP(i.bude)+'</td>'
+      +'<td class="mono">'+fmtT(i.braw)+'</td><td class="mono">'+fmtT(i.h)+'</td><td class="mono" style="color:'+pctColor(i.budr)+';font-weight:600">'+fmtP(i.budr)+'</td>'
+      +'<td class="mono">'+fmtT(i.bpk)+'</td><td class="mono">'+fmtT(i.pin)+'</td><td class="mono" style="color:'+pctColor(i.budp)+';font-weight:600">'+fmtP(i.budp)+'</td>'
+      +'<td class="mono">'+fmtT(i.bexp)+'</td><td class="mono">'+fmtT(i.s)+'</td><td class="mono" style="color:'+pctColor(i.bude)+';font-weight:600">'+fmtP(i.bude)+'</td>'
       +'<td class="mono">'+fmtP(i.pkf)+'</td><td class="mono">'+fmtP(i.expk)+'</td><td class="mono">'+fmtP(i.expf)+'</td></tr>';
   });
   html+='</tbody><tfoot><tr style="border-top:2px solid var(--border2);font-weight:700"><td>Total</td><td></td><td></td>'
-    +'<td class="mono">'+fmtT(tot.h)+'</td><td class="mono">'+fmtT(tot.braw)+'</td><td class="mono">'+fmtP(pct(tot.h,tot.braw))+'</td>'
-    +'<td class="mono">'+fmtT(tot.pin)+'</td><td class="mono">'+fmtT(tot.bpk)+'</td><td class="mono">'+fmtP(pct(tot.pin,tot.bpk))+'</td>'
-    +'<td class="mono">'+fmtT(tot.s)+'</td><td class="mono">'+fmtT(tot.bexp)+'</td><td class="mono">'+fmtP(pct(tot.s,tot.bexp))+'</td>'
+    +'<td class="mono">'+fmtT(tot.braw)+'</td><td class="mono">'+fmtT(tot.h)+'</td><td class="mono">'+fmtP(pct(tot.h,tot.braw))+'</td>'
+    +'<td class="mono">'+fmtT(tot.bpk)+'</td><td class="mono">'+fmtT(tot.pin)+'</td><td class="mono">'+fmtP(pct(tot.pin,tot.bpk))+'</td>'
+    +'<td class="mono">'+fmtT(tot.bexp)+'</td><td class="mono">'+fmtT(tot.s)+'</td><td class="mono">'+fmtP(pct(tot.s,tot.bexp))+'</td>'
     +'<td class="mono">'+fmtP(pct(tot.pin,tot.h))+'</td><td class="mono">'+fmtP(pct(tot.s,tot.pin))+'</td><td class="mono">'+fmtP(pct(tot.s,tot.h))+'</td></tr></tfoot>';
   document.getElementById('tbl-fv').innerHTML=html;
 }
@@ -1141,12 +1141,12 @@ function renderSrc(rows){
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtP(c.raw)}}},
       scales:{x:{ticks:{font:{size:12,weight:'600'}},grid:{display:false}},y:{grace:'12%',ticks:{callback:v=>v+'%',font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});
 
-  let html='<thead><tr><th>Source</th><th>Raw Act t</th><th>Raw Bud t</th><th>Raw %</th><th>PK Act t</th><th>PK Bud t</th><th>PK %</th><th>Exp Act t</th><th>Exp Bud t</th><th>Exp %</th><th>PK-Farm %</th><th>Exp-PK %</th><th>Exp-Farm %</th></tr></thead><tbody>';
+  let html='<thead><tr><th>Source</th><th>Raw Bud t</th><th>Raw Act t</th><th>Raw %</th><th>PK Bud t</th><th>PK Act t</th><th>PK %</th><th>Exp Bud t</th><th>Exp Act t</th><th>Exp %</th><th>PK-Farm %</th><th>Exp-PK %</th><th>Exp-Farm %</th></tr></thead><tbody>';
   srcs.forEach((s0,i)=>{const x=sa[i];
     html+='<tr style="cursor:pointer" onclick="drillTo(\'src\',\''+s0+'\',\''+(s0==='Insource'?'in':'out')+'\')"><td class="mkt-name">'+s0+'</td>'
-      +'<td class="mono">'+fmtT(x.h)+'</td><td class="mono">'+fmtT(x.braw)+'</td><td class="mono" style="color:'+pctColor(pct(x.h,x.braw))+';font-weight:600">'+fmtP(pct(x.h,x.braw))+'</td>'
-      +'<td class="mono">'+fmtT(x.pin)+'</td><td class="mono">'+fmtT(x.bpk)+'</td><td class="mono" style="color:'+pctColor(pct(x.pin,x.bpk))+';font-weight:600">'+fmtP(pct(x.pin,x.bpk))+'</td>'
-      +'<td class="mono">'+fmtT(x.s)+'</td><td class="mono">'+fmtT(x.bexp)+'</td><td class="mono" style="color:'+pctColor(pct(x.s,x.bexp))+';font-weight:600">'+fmtP(pct(x.s,x.bexp))+'</td>'
+      +'<td class="mono">'+fmtT(x.braw)+'</td><td class="mono">'+fmtT(x.h)+'</td><td class="mono" style="color:'+pctColor(pct(x.h,x.braw))+';font-weight:600">'+fmtP(pct(x.h,x.braw))+'</td>'
+      +'<td class="mono">'+fmtT(x.bpk)+'</td><td class="mono">'+fmtT(x.pin)+'</td><td class="mono" style="color:'+pctColor(pct(x.pin,x.bpk))+';font-weight:600">'+fmtP(pct(x.pin,x.bpk))+'</td>'
+      +'<td class="mono">'+fmtT(x.bexp)+'</td><td class="mono">'+fmtT(x.s)+'</td><td class="mono" style="color:'+pctColor(pct(x.s,x.bexp))+';font-weight:600">'+fmtP(pct(x.s,x.bexp))+'</td>'
       +'<td class="mono">'+fmtP(pct(x.pin,x.h))+'</td><td class="mono">'+fmtP(pct(x.s,x.pin))+'</td><td class="mono">'+fmtP(pct(x.s,x.h))+'</td></tr>';
   });
   document.getElementById('tbl-src').innerHTML=html+'</tbody>';
@@ -1164,12 +1164,12 @@ function renderSourceDetail(rows,srcName,suffix){
   const rowH=26,ch=Math.max(260,items.length*rowH*3+50);
   document.getElementById('ch-'+suffix+'-wrap').style.height=ch+'px';
   mkChart('ch-'+suffix,{type:'bar',data:{labels:items.map(i=>i.name),datasets:[
-      {label:'Raw Actual',data:items.map(i=>r1(i.h)),backgroundColor:'#142850',barPercentage:.85,categoryPercentage:.8},
       {label:'Raw Budget',data:items.map(i=>r1(i.braw)),backgroundColor:'#a9b4cc',barPercentage:.85,categoryPercentage:.8},
-      {label:'PK Actual',data:items.map(i=>r1(i.pin)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8},
+      {label:'Raw Actual',data:items.map(i=>r1(i.h)),backgroundColor:'#142850',barPercentage:.85,categoryPercentage:.8},
       {label:'PK Budget',data:items.map(i=>r1(i.bpk)),backgroundColor:'#a7c3f5',barPercentage:.85,categoryPercentage:.8},
-      {label:'Export Actual',data:items.map(i=>r1(i.s)),backgroundColor:'#16a34a',barPercentage:.85,categoryPercentage:.8},
-      {label:'Export Budget',data:items.map(i=>r1(i.bexp)),backgroundColor:'#a7e3bd',barPercentage:.85,categoryPercentage:.8}]},
+      {label:'PK Actual',data:items.map(i=>r1(i.pin)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8},
+      {label:'Export Budget',data:items.map(i=>r1(i.bexp)),backgroundColor:'#a7e3bd',barPercentage:.85,categoryPercentage:.8},
+      {label:'Export Actual',data:items.map(i=>r1(i.s)),backgroundColor:'#16a34a',barPercentage:.85,categoryPercentage:.8}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:44}},
       onClick:(e,els)=>{if(els.length)drillTo('farm',items[els[0].index].name,'fv');},
       plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
@@ -1178,12 +1178,12 @@ function renderSourceDetail(rows,srcName,suffix){
       scales:{x:{grace:'10%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{autoSkip:false,font:{size:10.5,weight:'500'}},grid:{display:false}}}}});
   document.getElementById('ch-'+suffix).style.cursor='pointer';
 
-  let html='<thead><tr><th>Farm</th><th>Raw Act t</th><th>Raw Bud t</th><th>Raw %</th><th>PK Act t</th><th>PK Bud t</th><th>PK %</th><th>Exp Act t</th><th>Exp Bud t</th><th>Exp %</th><th>PK-Farm %</th><th>Exp-PK %</th><th>Exp-Farm %</th></tr></thead><tbody>';
+  let html='<thead><tr><th>Farm</th><th>Raw Bud t</th><th>Raw Act t</th><th>Raw %</th><th>PK Bud t</th><th>PK Act t</th><th>PK %</th><th>Exp Bud t</th><th>Exp Act t</th><th>Exp %</th><th>PK-Farm %</th><th>Exp-PK %</th><th>Exp-Farm %</th></tr></thead><tbody>';
   items.forEach(i=>{
     html+='<tr style="cursor:pointer" onclick="drillTo(\'farm\',\''+esc(i.name).replace(/'/g,"\\'")+'\',\'fv\')"><td class="mkt-name">'+esc(i.name)+'</td>'
-      +'<td class="mono">'+fmtT(i.h)+'</td><td class="mono">'+fmtT(i.braw)+'</td><td class="mono" style="color:'+pctColor(i.budr)+';font-weight:600">'+fmtP(i.budr)+'</td>'
-      +'<td class="mono">'+fmtT(i.pin)+'</td><td class="mono">'+fmtT(i.bpk)+'</td><td class="mono" style="color:'+pctColor(i.budp)+';font-weight:600">'+fmtP(i.budp)+'</td>'
-      +'<td class="mono">'+fmtT(i.s)+'</td><td class="mono">'+fmtT(i.bexp)+'</td><td class="mono" style="color:'+pctColor(i.bude)+';font-weight:600">'+fmtP(i.bude)+'</td>'
+      +'<td class="mono">'+fmtT(i.braw)+'</td><td class="mono">'+fmtT(i.h)+'</td><td class="mono" style="color:'+pctColor(i.budr)+';font-weight:600">'+fmtP(i.budr)+'</td>'
+      +'<td class="mono">'+fmtT(i.bpk)+'</td><td class="mono">'+fmtT(i.pin)+'</td><td class="mono" style="color:'+pctColor(i.budp)+';font-weight:600">'+fmtP(i.budp)+'</td>'
+      +'<td class="mono">'+fmtT(i.bexp)+'</td><td class="mono">'+fmtT(i.s)+'</td><td class="mono" style="color:'+pctColor(i.bude)+';font-weight:600">'+fmtP(i.bude)+'</td>'
       +'<td class="mono">'+fmtP(i.pkf)+'</td><td class="mono">'+fmtP(i.expk)+'</td><td class="mono">'+fmtP(i.expf)+'</td></tr>';
   });
   document.getElementById('tbl-'+suffix).innerHTML=html+'</tbody>';
