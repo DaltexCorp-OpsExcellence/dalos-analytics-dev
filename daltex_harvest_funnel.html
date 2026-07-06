@@ -531,6 +531,14 @@ input,select,button{font-family:var(--font)}
   <!-- ============ TAB: OVERVIEW ============ -->
   <div class="tabpage" id="tp-ov">
     <div id="lastdates" style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <span style="font-size:11px;font-weight:600;color:#8a95b0;text-transform:uppercase;letter-spacing:.04em">View</span>
+      <div class="seg" style="display:inline-flex;gap:0">
+        <button class="cc-btn on" id="ovsrc-all" onclick="setOvSrc('all',this)">Overall</button>
+        <button class="cc-btn" id="ovsrc-in" onclick="setOvSrc('Insource',this)">Insource</button>
+        <button class="cc-btn" id="ovsrc-out" onclick="setOvSrc('Outsource',this)">Outsource</button>
+      </div>
+    </div>
     <div class="kgrid" id="kpis"></div>
     <div class="grid2" style="margin-bottom:12px">
       <div class="cc">
@@ -594,6 +602,16 @@ input,select,button{font-family:var(--font)}
 
   <!-- ============ TAB: INSOURCE FARMS ============ -->
   <div class="tabpage" id="tp-in" style="display:none">
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="cc">
+        <div class="cc-header"><div><div class="cc-title">Insource — Funnel</div><div class="cc-sub">tons through each stage</div></div></div>
+        <div style="position:relative;height:260px"><canvas id="ch-funnel-in"></canvas></div>
+      </div>
+      <div class="cc">
+        <div class="cc-header"><div><div class="cc-title">Insource — Conversion %</div><div class="cc-sub">stage-to-stage &amp; end-to-end</div></div></div>
+        <div class="kgrid" style="grid-template-columns:1fr;gap:10px" id="conv-cards-in"></div>
+      </div>
+    </div>
     <div class="cc" style="margin-bottom:12px">
       <div class="cc-header"><div><div class="cc-title">Insource Farms — Actual vs Budget</div><div class="cc-sub">click a bar to drill in</div></div></div>
       <div style="overflow-y:auto;max-height:520px"><div style="position:relative" id="ch-in-wrap"><canvas id="ch-in"></canvas></div></div>
@@ -603,6 +621,16 @@ input,select,button{font-family:var(--font)}
 
   <!-- ============ TAB: OUTSOURCE FARMS ============ -->
   <div class="tabpage" id="tp-out" style="display:none">
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="cc">
+        <div class="cc-header"><div><div class="cc-title">Outsource — Funnel</div><div class="cc-sub">tons through each stage</div></div></div>
+        <div style="position:relative;height:260px"><canvas id="ch-funnel-out"></canvas></div>
+      </div>
+      <div class="cc">
+        <div class="cc-header"><div><div class="cc-title">Outsource — Conversion %</div><div class="cc-sub">stage-to-stage &amp; end-to-end</div></div></div>
+        <div class="kgrid" style="grid-template-columns:1fr;gap:10px" id="conv-cards-out"></div>
+      </div>
+    </div>
     <div class="cc" style="margin-bottom:12px">
       <div class="cc-header"><div><div class="cc-title">Outsource Farms — Actual vs Budget</div><div class="cc-sub">click a bar to drill in</div></div></div>
       <div style="overflow-y:auto;max-height:520px"><div style="position:relative" id="ch-out-wrap"><canvas id="ch-out"></canvas></div></div>
@@ -937,18 +965,18 @@ function renderLastDates(rows){
     +lastDateCard('Last Shipments Date','ti-ship',ls,'#16a34a');
 }
 
-function renderOverview(rows){
+let OVSRC='all';
+function setOvSrc(v,btn){
+  OVSRC=v;
+  document.querySelectorAll('#ovsrc-all,#ovsrc-in,#ovsrc-out').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  apply();
+}
+function drawFunnelBlock(rows,chartId,cardsId){
   const a=agg(rows);
-  renderLastDates(rows);
-  document.getElementById('kpis').innerHTML=
-    kcard('Harvest','ti-plant-2',fmtT(a.h)+'<span style="font-size:11px;color:#8a95b0"> t</span>','خام المحطة · farm raw',100)
-    +kcard('Packhouse','ti-building-warehouse',fmtT(a.pin)+'<span style="font-size:11px;color:#8a95b0"> t</span>','incoming raw at packhouse',pct(a.pin,a.h)||0)
-    +kcard('Export','ti-ship',fmtT(a.s)+'<span style="font-size:11px;color:#8a95b0"> t</span>','net weight loaded',pct(a.s,a.h)||0)
-    +kcard('End-to-End','ti-arrow-narrow-right',fmtP(pct(a.s,a.h)),'shipped ÷ harvested',pct(a.s,a.h)||0);
-
   const stages=['Harvest','Packhouse','Export'];
   const svals=[a.h,a.pin,a.s].map(r1);
-  mkChart('ch-funnel',{type:'bar',data:{labels:stages,datasets:[{data:svals,backgroundColor:['#142850','#2563eb','#16a34a'],borderRadius:5,barThickness:34}]},
+  mkChart(chartId,{type:'bar',data:{labels:stages,datasets:[{data:svals,backgroundColor:['#142850','#2563eb','#16a34a'],borderRadius:5,barThickness:30}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:90}},
       plugins:{legend:{display:false},
         datalabels:{anchor:'end',align:'end',offset:4,font:{family:"'IBM Plex Mono'",size:11,weight:'700'},color:'#142850',
@@ -961,13 +989,27 @@ function renderOverview(rows){
     {l:'Export-PK %',v:pct(a.s,a.pin),s:'Export ÷ Packhouse'},
     {l:'Export-Farm %',v:pct(a.s,a.h),s:'Export ÷ Harvest (end-to-end)'}
   ];
-  document.getElementById('conv-cards').innerHTML=convs.map(c=>
+  const el=document.getElementById(cardsId);
+  if(el)el.innerHTML=convs.map(c=>
     '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg2);border-radius:10px">'
     +'<div><div style="font-size:11px;color:#8a95b0;font-weight:600">'+c.l+'</div><div style="font-size:10px;color:#aab2c5;margin-top:2px">'+c.s+'</div></div>'
     +'<div style="font-family:var(--mono);font-size:22px;font-weight:700;color:var(--navy)">'+fmtP(c.v)+'</div></div>').join('');
+  return a;
+}
+function renderOverview(rows){
+  const rowsForFunnel = OVSRC==='all' ? rows : rows.filter(r=>r.src===OVSRC);
+  const a=agg(rowsForFunnel);
+  renderLastDates(rowsForFunnel);
+  document.getElementById('kpis').innerHTML=
+    kcard('Harvest','ti-plant-2',fmtT(a.h)+'<span style="font-size:11px;color:#8a95b0"> t</span>','خام المحطة · farm raw',100)
+    +kcard('Packhouse','ti-building-warehouse',fmtT(a.pin)+'<span style="font-size:11px;color:#8a95b0"> t</span>','incoming raw at packhouse',pct(a.pin,a.h)||0)
+    +kcard('Export','ti-ship',fmtT(a.s)+'<span style="font-size:11px;color:#8a95b0"> t</span>','net weight loaded',pct(a.s,a.h)||0)
+    +kcard('End-to-End','ti-arrow-narrow-right',fmtP(pct(a.s,a.h)),'shipped ÷ harvested',pct(a.s,a.h)||0);
+
+  drawFunnelBlock(rowsForFunnel,'ch-funnel','conv-cards');
 
   const wk={};
-  rows.forEach(r=>{if(!r.d)return;const w=isoWk(r.d);if(!w)return;(wk[w]=wk[w]||{h:0,pin:0,s:0});
+  rowsForFunnel.forEach(r=>{if(!r.d)return;const w=isoWk(r.d);if(!w)return;(wk[w]=wk[w]||{h:0,pin:0,s:0});
     if(r.st==='h')wk[w].h+=r.v;else if(r.st==='p')wk[w].pin+=r.vin;else if(r.st==='s')wk[w].s+=r.v;});
   const wks=Object.keys(wk).map(Number).sort((a,b)=>a-b);
   const STG={h:{n:'Harvest',c:'#142850'},pin:{n:'Packhouse',c:'#2563eb'},s:{n:'Export',c:'#16a34a'}};
@@ -978,7 +1020,7 @@ function renderOverview(rows){
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' t'}}},
       scales:{x:{ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{display:false}},y:{grace:'10%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});
 
-  renderInsights(a,rows);
+  renderInsights(a,rowsForFunnel);
 }
 function renderInsights(a,rows){
   const ins=[];
@@ -1106,6 +1148,7 @@ function renderSrc(rows){
 /* ========== TABS: INSOURCE FARMS / OUTSOURCE FARMS DETAIL ========== */
 function renderSourceDetail(rows,srcName,suffix){
   const filtered=rows.filter(r=>r.src===srcName);
+  drawFunnelBlock(filtered,'ch-funnel-'+suffix,'conv-cards-'+suffix);
   const by={};filtered.forEach(r=>{if(!r.farm)return;(by[r.farm]=by[r.farm]||[]).push(r);});
   let items=Object.keys(by).map(k=>{const x=agg(by[k]);return{name:k,h:x.h,braw:x.braw,pin:x.pin,bpk:x.bpk,s:x.s,bexp:x.bexp,
     pkf:pct(x.pin,x.h),expk:pct(x.s,x.pin),expf:pct(x.s,x.h),budr:pct(x.h,x.braw),budp:pct(x.pin,x.bpk),bude:pct(x.s,x.bexp)};});
