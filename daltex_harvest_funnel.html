@@ -1002,8 +1002,9 @@ function drawFunnelBlock(rows,chartId,cardsId){
           label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T',
           afterBody:items=>{
             const i=items[0].dataIndex;
-            const lines=['% Achievement: '+fmtP(bpct[i])];
-            if(conv[i]!=null)lines.push('Conversion (actual) vs '+stages[i-1]+': '+fmtP(conv[i]));
+            const lines=['',' % Actual over Budget:'];
+            stages.forEach((st,j)=>lines.push('  '+st+': '+fmtP(bpct[j])+(j===i?' ◀':'')));
+            if(conv[i]!=null)lines.push('',' Conversion (actual) vs '+stages[i-1]+': '+fmtP(conv[i]));
             return lines;
           }
         }}},
