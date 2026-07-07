@@ -488,7 +488,7 @@ input,select,button{font-family:var(--font)}
     <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,.9)">Grapes Harvest Funnel</span>
   </div>
   <div class="topbar-right">
-    <span id="unmapped-badge" class="tbadge tbadge-warn" style="display:none;cursor:pointer" onclick="showUnmapped()"><i class="ti ti-alert-triangle"></i><span id="unmapped-txt"></span></span>
+    <span id="unmapped-badge" class="tbadge tbadge-warn" style="display:none;cursor:pointer" onclick="showUnmapped()"><i class="ti ti-alert-triangle"></i> …</span>
     <div class="tbadge tbadge-warn"><i class="ti ti-clock" style="font-size:11px"></i> Season 2025/26</div>
     <div class="tbadge tbadge-live"><span class="live-dot"></span> Loading…</div>
   </div>
@@ -815,12 +815,21 @@ async function loadAll(){
 
   FARMS_CACHE=farms; VARIETIES_CACHE=vars;
   const un=Object.keys(UNMAPPED.farm).length+Object.keys(UNMAPPED.variety).length;
-  if(un>0 && dalIsAdmin()){
-    document.getElementById('unmapped-badge').style.display='';
-    document.getElementById('unmapped-txt').textContent=un+' unmapped name'+(un>1?'s':'');
-    dalNotifyUnmapped(un);
+  const badge=document.getElementById('unmapped-badge');
+  if(dalIsAdmin()){
+    badge.style.display='';
+    if(un>0){
+      badge.className='tbadge tbadge-warn';
+      badge.style.cursor='pointer';
+      badge.innerHTML='<i class="ti ti-alert-triangle"></i> '+un+' unmapped name'+(un>1?'s':'');
+      dalNotifyUnmapped(un);
+    }else{
+      badge.className='tbadge tbadge-live';
+      badge.style.cursor='pointer';
+      badge.innerHTML='<i class="ti ti-circle-check"></i> All names mapped';
+    }
   }else{
-    document.getElementById('unmapped-badge').style.display='none';
+    badge.style.display='none';
   }
 }
 /* ---------- fuzzy matching ---------- */
