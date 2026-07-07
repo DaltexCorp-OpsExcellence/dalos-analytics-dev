@@ -1038,7 +1038,7 @@ function renderOverview(rows){
     kcard('Harvest','ti-plant-2',fmtT(a.h)+'<span style="font-size:11px;color:#8a95b0"> T</span>','خام المحطة · farm raw',100)
     +kcard('Packhouse','ti-building-warehouse',fmtT(a.pin)+'<span style="font-size:11px;color:#8a95b0"> T</span>','incoming raw at packhouse',pct(a.pin,a.h)||0)
     +kcard('Export','ti-ship',fmtT(a.s)+'<span style="font-size:11px;color:#8a95b0"> T</span>','net weight loaded',pct(a.s,a.h)||0)
-    +kcard('End-to-End','ti-arrow-narrow-right',fmtP(pct(a.s,a.h)),'shipped ÷ harvested',pct(a.s,a.h)||0);
+    +kcard('End-to-End','ti-arrow-narrow-right',fmtP(pct(a.s,a.h)),'Export ÷ Harvest',pct(a.s,a.h)||0);
 
   drawFunnelBlock(rowsForFunnel,'ch-funnel','conv-cards');
 
@@ -1059,7 +1059,7 @@ function renderOverview(rows){
 function renderInsights(a,rows){
   const ins=[];
   const e2e=pct(a.s,a.h);
-  if(e2e!=null)ins.push({t:'info',i:'ti-route',txt:'<strong>'+fmtP(e2e)+'</strong> of harvested volume has shipped end-to-end ('+fmtT(a.s)+' of '+fmtT(a.h)+' t).'});
+  if(e2e!=null)ins.push({t:'info',i:'ti-route',txt:'<strong>'+fmtP(e2e)+'</strong> of harvested volume has shipped end-to-end ('+fmtT(a.s)+' of '+fmtT(a.h)+' T).'});
   const byFarm={};rows.forEach(r=>{(byFarm[r.farm]=byFarm[r.farm]||[]).push(r);});
   const fc=Object.keys(byFarm).map(f=>{const x=agg(byFarm[f]);return{f,c:pct(x.s,x.h),h:x.h};}).filter(x=>x.c!=null&&x.h>5);
   if(fc.length){fc.sort((a,b)=>b.c-a.c);
