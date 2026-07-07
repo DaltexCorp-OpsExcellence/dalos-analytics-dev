@@ -1305,11 +1305,11 @@ function renderDimTab(rows,dim,chartId,wrapId,tblId,drillLabel,allowDrill){
   document.getElementById(wrapId).style.width=cw+'px';
   mkChart(chartId,{type:'bar',data:{labels:chartItems.map(i=>i.name),datasets:[
       {label:'Raw Budget',data:chartItems.map(i=>r1(i.braw)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
-      {label:'Raw Actual',data:chartItems.map(i=>r1(i.h)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.85},
+      {label:'Raw Actual',data:chartItems.map(i=>r1(i.h)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85},
       {label:'PK Budget',data:chartItems.map(i=>r1(i.bpk)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
-      {label:'PK Actual',data:chartItems.map(i=>r1(i.pin)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.85},
+      {label:'PK Actual',data:chartItems.map(i=>r1(i.pin)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85},
       {label:'Export Budget',data:chartItems.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
-      {label:'Export Actual',data:chartItems.map(i=>r1(i.s)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.85}]},
+      {label:'Export Actual',data:chartItems.map(i=>r1(i.s)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85}]},
     options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:26}},
       onClick: allowDrill ? ((e,els)=>{if(els.length)showDrillFunnel(dim,chartItems[els[0].index].name,dim==='variety'?'fv':dim);}) : undefined,
       plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
@@ -1398,11 +1398,11 @@ function renderSourceDetail(rows,srcName,suffix){
   document.getElementById('ch-'+suffix+'-wrap').style.width=cw+'px';
   mkChart('ch-'+suffix,{type:'bar',data:{labels:items.map(i=>i.name),datasets:[
       {label:'Raw Budget',data:items.map(i=>r1(i.braw)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.65},
-      {label:'Raw Actual',data:items.map(i=>r1(i.h)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.65},
+      {label:'Raw Actual',data:items.map(i=>r1(i.h)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.65},
       {label:'PK Budget',data:items.map(i=>r1(i.bpk)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.65},
-      {label:'PK Actual',data:items.map(i=>r1(i.pin)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.65},
+      {label:'PK Actual',data:items.map(i=>r1(i.pin)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.65},
       {label:'Export Budget',data:items.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.65},
-      {label:'Export Actual',data:items.map(i=>r1(i.s)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.65}]},
+      {label:'Export Actual',data:items.map(i=>r1(i.s)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.65}]},
     options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:22}},
       onClick:(e,els)=>{if(els.length)drillTo('farm',items[els[0].index].name,'fv');},
       plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
