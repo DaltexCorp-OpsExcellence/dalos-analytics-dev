@@ -524,19 +524,6 @@ input,select,button{font-family:var(--font)}
 <div class="fchips" id="fchips"></div>
 
 <div id="drill-modal" style="display:none;position:fixed;inset:0;background:rgba(20,40,80,.45);z-index:998;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeDrill()">
-  <div style="background:#fff;border-radius:14px;max-width:720px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
-      <div style="font-size:15px;font-weight:700;color:var(--navy)" id="drill-title">Funnel</div>
-      <button onclick="closeDrill()" style="background:none;border:none;cursor:pointer;color:#8a95b0;font-size:18px;line-height:1"><i class="ti ti-x"></i></button>
-    </div>
-    <div style="padding:18px 20px">
-      <div style="position:relative;height:260px;margin-bottom:16px"><canvas id="drill-funnel-chart"></canvas></div>
-      <div class="kgrid" style="grid-template-columns:repeat(3,1fr);gap:10px" id="drill-conv-cards"></div>
-    </div>
-  </div>
-</div>
-
-<div id="drill-modal" style="display:none;position:fixed;inset:0;background:rgba(20,40,80,.45);z-index:998;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeDrill()">
   <div style="background:#fff;border-radius:14px;max-width:720px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
       <div><div style="font-size:11px;color:#8a95b0;font-weight:600;text-transform:uppercase;letter-spacing:.04em" id="drill-eyebrow">Farm</div>
