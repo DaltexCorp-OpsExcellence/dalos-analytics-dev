@@ -497,6 +497,8 @@ input,select,button{font-family:var(--font)}
   <div class="tab on" data-tab="ov"><i class="ti ti-layout-dashboard"></i>Overview</div>
   <div class="tab" data-tab="budget"><i class="ti ti-target"></i>Budget vs Actual</div>
   <div class="tab" data-tab="fv"><i class="ti ti-table"></i>Farm &amp; Variety</div>
+  <div class="tab" data-tab="variety"><i class="ti ti-plant-2"></i>Variety</div>
+  <div class="tab" data-tab="category"><i class="ti ti-palette"></i>Category</div>
   <div class="tab" data-tab="src"><i class="ti ti-arrows-split"></i>Insource vs Outsource</div>
   <div class="tab" data-tab="in"><i class="ti ti-home"></i>Insource Farms</div>
   <div class="tab" data-tab="out"><i class="ti ti-truck-delivery"></i>Outsource Farms</div>
@@ -628,6 +630,24 @@ input,select,button{font-family:var(--font)}
     </div>
   </div>
 
+  <!-- ============ TAB: VARIETY ============ -->
+  <div class="tabpage" id="tp-variety" style="display:none">
+    <div class="cc" style="margin-bottom:12px">
+      <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Variety</div><div class="cc-sub">click a bar to drill in</div></div></div>
+      <div style="overflow-x:auto"><div style="position:relative;height:420px" id="ch-variety-wrap"><canvas id="ch-variety"></canvas></div></div>
+    </div>
+    <div class="cc"><div class="tbl-wrap" style="max-height:520px;overflow-y:auto"><table class="mkt-table" id="tbl-variety"></table></div></div>
+  </div>
+
+  <!-- ============ TAB: CATEGORY (Red/White/Black) ============ -->
+  <div class="tabpage" id="tp-category" style="display:none">
+    <div class="cc" style="margin-bottom:12px">
+      <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Category</div><div class="cc-sub">click a bar to drill in</div></div></div>
+      <div style="overflow-x:auto"><div style="position:relative;height:360px" id="ch-category-wrap"><canvas id="ch-category"></canvas></div></div>
+    </div>
+    <div class="cc"><div class="tbl-wrap"><table class="mkt-table" id="tbl-category"></table></div></div>
+  </div>
+
   <!-- ============ TAB: INSOURCE VS OUTSOURCE ============ -->
   <div class="tabpage" id="tp-src" style="display:none">
     <div class="kgrid" style="grid-template-columns:repeat(2,1fr)" id="src-cards"></div>
@@ -726,10 +746,10 @@ async function loadAll(){
   const [farms,vars,H,P,SH,B]=await Promise.all([
     pget('farms?select=name,canonical_name,raw_names,source_type,active&active=eq.true'),
     pget('varieties?select=name,canonical_name,raw_names,product_id,active&product_id=eq.grapes&active=eq.true'),
-    pget('harvest_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,raw_station,harvest_date'),
-    pget('packhouse_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,incoming_raw,exportable_weight,operation_date'),
-    pget('grapes_shipments_view?season_id=eq.'+SID+'&select=farm_source,variety,net_weight,loading_date'),
-    pget('budget_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,budget_raw_qty,budget_raw_pk_qty,budget_export_qty')
+    pget('harvest_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,raw_station,harvest_date,color'),
+    pget('packhouse_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,incoming_raw,exportable_weight,operation_date,category'),
+    pget('grapes_shipments_view?season_id=eq.'+SID+'&select=farm_source,variety,net_weight,loading_date,color'),
+    pget('budget_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,budget_raw_qty,budget_raw_pk_qty,budget_export_qty,category')
   ]);
   const FMAP={},VMAP={};
   farms.forEach(f=>{
@@ -751,10 +771,18 @@ async function loadAll(){
   const gS=toTons(SH,r=>num(r.net_weight));
 
   ROWS=[];
-  H.forEach(r=>{const f=cf(r.farm);ROWS.push({st:'h',farm:f.canon,src:f.src,variety:cv(r.variety),d:norm(r.harvest_date),v:gH(r)});});
-  P.forEach(r=>{const f=cf(r.farm);ROWS.push({st:'p',farm:f.canon,src:f.src,variety:cv(r.variety),d:norm(r.operation_date),vin:gPin(r),vout:gPout(r)});});
-  SH.forEach(r=>{const f=cf(r.farm_source);ROWS.push({st:'s',farm:f.canon,src:f.src,variety:cv(r.variety),d:norm(r.loading_date),v:gS(r)});});
-  B.forEach(r=>{const f=cf(r.farm);ROWS.push({st:'b',farm:f.canon,src:f.src,variety:cv(r.variety),d:'',braw:num(r.budget_raw_qty),bpk:num(r.budget_raw_pk_qty),bexp:num(r.budget_export_qty)});});
+  function catOf(str){
+    if(!str)return'Other';
+    const s=String(str).toLowerCase();
+    if(s.includes('red'))return'Red';
+    if(s.includes('white'))return'White';
+    if(s.includes('black'))return'Black';
+    return'Other';
+  }
+  H.forEach(r=>{const f=cf(r.farm);ROWS.push({st:'h',farm:f.canon,src:f.src,variety:cv(r.variety),cat:catOf(r.color),d:norm(r.harvest_date),v:gH(r)});});
+  P.forEach(r=>{const f=cf(r.farm);ROWS.push({st:'p',farm:f.canon,src:f.src,variety:cv(r.variety),cat:catOf(r.category),d:norm(r.operation_date),vin:gPin(r),vout:gPout(r)});});
+  SH.forEach(r=>{const f=cf(r.farm_source);ROWS.push({st:'s',farm:f.canon,src:f.src,variety:cv(r.variety),cat:catOf(r.color),d:norm(r.loading_date),v:gS(r)});});
+  B.forEach(r=>{const f=cf(r.farm);ROWS.push({st:'b',farm:f.canon,src:f.src,variety:cv(r.variety),cat:catOf(r.category),d:'',braw:num(r.budget_raw_qty),bpk:num(r.budget_raw_pk_qty),bexp:num(r.budget_export_qty)});});
 
   const ds=ROWS.map(r=>r.d).filter(Boolean).sort();
   LDF=ds[0]||'';LDT=ds[ds.length-1]||'';
@@ -1039,6 +1067,8 @@ function apply(){
   if(S.tab==='ov')renderOverview(rows);
   else if(S.tab==='budget')renderBudget(rows);
   else if(S.tab==='fv')renderFV(rows);
+  else if(S.tab==='variety')renderDimTab(rows,'variety','ch-variety','ch-variety-wrap','tbl-variety','Variety');
+  else if(S.tab==='category')renderDimTab(rows,'cat','ch-category','ch-category-wrap','tbl-category','Category');
   else if(S.tab==='src')renderSrc(rows);
   else if(S.tab==='in')renderSourceDetail(rows,'Insource','in');
   else if(S.tab==='out')renderSourceDetail(rows,'Outsource','out');
@@ -1266,6 +1296,58 @@ function renderFV(rows){
   document.getElementById('tbl-fv').innerHTML=html;
 }
 function setFVSort(k){if(FVSORT.k===k)FVSORT.dir*=-1;else{FVSORT.k=k;FVSORT.dir=-1;}apply();}
+
+/* ========== GENERIC: single-dimension tab (Variety, Category) ========== */
+let DIMSORT={};
+function renderDimTab(rows,dim,chartId,wrapId,tblId,drillLabel){
+  if(!DIMSORT[dim])DIMSORT[dim]={k:'h',dir:-1};
+  const by={};rows.forEach(r=>{if(!r[dim])return;(by[r[dim]]=by[r[dim]]||[]).push(r);});
+  let items=Object.keys(by).map(k=>{const x=agg(by[k]);return{name:k,h:x.h,braw:x.braw,pin:x.pin,bpk:x.bpk,s:x.s,bexp:x.bexp,
+    pkf:pct(x.pin,x.h),expk:pct(x.s,x.pin),expf:pct(x.s,x.h),budr:pct(x.h,x.braw),budp:pct(x.pin,x.bpk),bude:pct(x.s,x.bexp)};});
+  items=items.filter(i=>i.h>0||i.pin>0||i.s>0||i.braw>0||i.bpk>0||i.bexp>0);
+
+  /* chart always sorted by Harvest desc for readability */
+  const chartItems=[...items].sort((a,b)=>b.h-a.h);
+  const colW=190,cw=Math.max(500,chartItems.length*colW+80);
+  document.getElementById(wrapId).style.width=cw+'px';
+  mkChart(chartId,{type:'bar',data:{labels:chartItems.map(i=>i.name),datasets:[
+      {label:'Raw Budget',data:chartItems.map(i=>r1(i.braw)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
+      {label:'Raw Actual',data:chartItems.map(i=>r1(i.h)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8},
+      {label:'PK Budget',data:chartItems.map(i=>r1(i.bpk)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
+      {label:'PK Actual',data:chartItems.map(i=>r1(i.pin)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8},
+      {label:'Export Budget',data:chartItems.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
+      {label:'Export Actual',data:chartItems.map(i=>r1(i.s)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8}]},
+    options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:22}},
+      onClick:(e,els)=>{if(els.length)showDrillFunnel(dim,chartItems[els[0].index].name,dim==='variety'?'fv':dim);},
+      plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
+        datalabels:{anchor:'end',align:'end',offset:2,font:{family:"'IBM Plex Mono'",size:8,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
+        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
+      scales:{y:{grace:'10%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,font:{size:10.5,weight:'500'}},grid:{display:false}}}}});
+  document.getElementById(chartId).style.cursor='pointer';
+
+  /* table, sortable */
+  const st=DIMSORT[dim];
+  items.sort((p,q)=>{const A=p[st.k],B=q[st.k];const a=(A==null?-Infinity:(typeof A==='string'?A.toLowerCase():A));const b=(B==null?-Infinity:(typeof B==='string'?B.toLowerCase():B));return (a<b?-1:a>b?1:0)*st.dir;});
+  const cols=[['name',drillLabel],['braw','Raw Bud T'],['h','Raw Act T'],['budr','Raw %'],
+    ['bpk','PK Bud T'],['pin','PK Act T'],['budp','PK %'],['bexp','Exp Bud T'],['s','Exp Act T'],['bude','Exp %'],
+    ['pkf','PK-Farm %'],['expk','Exp-PK %'],['expf','Exp-Farm %']];
+  const tot=agg(rows);
+  let html='<thead><tr>'+cols.map(c=>'<th onclick="setDimSort(\''+dim+'\',\''+c[0]+'\')">'+c[1]+(st.k===c[0]?(st.dir<0?' ▾':' ▴'):'')+'</th>').join('')+'</tr></thead><tbody>';
+  items.forEach(i=>{
+    html+='<tr><td class="mkt-name drillcell" onclick="showDrillFunnel(\''+dim+'\',\''+esc(i.name).replace(/'/g,"\\'")+'\',\''+(dim==='variety'?'fv':dim)+'\')">'+esc(i.name)+' <i class="ti ti-chevron-right drill-arrow"></i></td>'
+      +'<td class="mono">'+fmtT(i.braw)+'</td><td class="mono">'+fmtT(i.h)+'</td><td class="mono" style="color:'+pctColor(i.budr)+';font-weight:600">'+fmtP(i.budr)+'</td>'
+      +'<td class="mono">'+fmtT(i.bpk)+'</td><td class="mono">'+fmtT(i.pin)+'</td><td class="mono" style="color:'+pctColor(i.budp)+';font-weight:600">'+fmtP(i.budp)+'</td>'
+      +'<td class="mono">'+fmtT(i.bexp)+'</td><td class="mono">'+fmtT(i.s)+'</td><td class="mono" style="color:'+pctColor(i.bude)+';font-weight:600">'+fmtP(i.bude)+'</td>'
+      +'<td class="mono">'+fmtP(i.pkf)+'</td><td class="mono">'+fmtP(i.expk)+'</td><td class="mono">'+fmtP(i.expf)+'</td></tr>';
+  });
+  html+='</tbody><tfoot><tr style="border-top:2px solid var(--border2);font-weight:700"><td>Total</td>'
+    +'<td class="mono">'+fmtT(tot.braw)+'</td><td class="mono">'+fmtT(tot.h)+'</td><td class="mono">'+fmtP(pct(tot.h,tot.braw))+'</td>'
+    +'<td class="mono">'+fmtT(tot.bpk)+'</td><td class="mono">'+fmtT(tot.pin)+'</td><td class="mono">'+fmtP(pct(tot.pin,tot.bpk))+'</td>'
+    +'<td class="mono">'+fmtT(tot.bexp)+'</td><td class="mono">'+fmtT(tot.s)+'</td><td class="mono">'+fmtP(pct(tot.s,tot.bexp))+'</td>'
+    +'<td class="mono">'+fmtP(pct(tot.pin,tot.h))+'</td><td class="mono">'+fmtP(pct(tot.s,tot.pin))+'</td><td class="mono">'+fmtP(pct(tot.s,tot.h))+'</td></tr></tfoot>';
+  document.getElementById(tblId).innerHTML=html;
+}
+function setDimSort(dim,k){const st=DIMSORT[dim];if(st.k===k)st.dir*=-1;else{st.k=k;st.dir=-1;}apply();}
 
 /* ========== TAB: INSOURCE VS OUTSOURCE ========== */
 function renderSrc(rows){
