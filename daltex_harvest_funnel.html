@@ -989,7 +989,7 @@ function drawFunnelBlock(rows,chartId,cardsId){
   const conv=[null,pct(a.pin,a.h),pct(a.s,a.pin)]; /* stage-to-stage conversion, computed on ACTUAL */
   const orient = chartId==='ch-funnel' ? FUNNEL_ORIENT : 'y';
   mkChart(chartId,{type:'bar',data:{labels:stages,datasets:[
-      {label:'Budget',data:bvals,backgroundColor:'#cdd3e3',borderRadius:4,maxBarThickness:44},
+      {label:'Budget',data:bvals,backgroundColor:'#DC6428',borderRadius:4,maxBarThickness:44},
       {label:'Actual',data:svals,backgroundColor:'#142850',borderRadius:4,maxBarThickness:44}
     ]},
     options:{indexAxis:orient,responsive:true,maintainAspectRatio:false,
@@ -1002,7 +1002,7 @@ function drawFunnelBlock(rows,chartId,cardsId){
           label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' t',
           afterBody:items=>{
             const i=items[0].dataIndex;
-            const lines=['% Achieved from Budget: '+fmtP(bpct[i])];
+            const lines=['% Achievement: '+fmtP(bpct[i])];
             if(conv[i]!=null)lines.push('Conversion (actual) vs '+stages[i-1]+': '+fmtP(conv[i]));
             return lines;
           }
