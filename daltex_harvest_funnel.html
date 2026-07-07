@@ -498,7 +498,6 @@ input,select,button{font-family:var(--font)}
   <div class="tab" data-tab="budget"><i class="ti ti-target"></i>Budget vs Actual</div>
   <div class="tab" data-tab="fv"><i class="ti ti-table"></i>Farm &amp; Variety</div>
   <div class="tab" data-tab="variety"><i class="ti ti-plant-2"></i>Variety</div>
-  <div class="tab" data-tab="category"><i class="ti ti-palette"></i>Colors</div>
   <div class="tab" data-tab="src"><i class="ti ti-arrows-split"></i>Insource vs Outsource</div>
   <div class="tab" data-tab="in"><i class="ti ti-home"></i>Insource Farms</div>
   <div class="tab" data-tab="out"><i class="ti ti-truck-delivery"></i>Outsource Farms</div>
@@ -640,14 +639,7 @@ input,select,button{font-family:var(--font)}
     <div class="cc"><div class="tbl-wrap" style="max-height:520px;overflow-y:auto"><table class="mkt-table" id="tbl-variety"></table></div></div>
   </div>
 
-  <!-- ============ TAB: CATEGORY (Red/White/Black) ============ -->
-  <div class="tabpage" id="tp-category" style="display:none">
-    <div class="cc" style="margin-bottom:12px">
-      <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Color</div><div class="cc-sub">Raw / PK / Export tons</div></div></div>
-      <div style="overflow-x:auto"><div style="position:relative;height:360px" id="ch-category-wrap"><canvas id="ch-category"></canvas></div></div>
-    </div>
-    <div class="cc"><div class="tbl-wrap"><table class="mkt-table" id="tbl-category"></table></div></div>
-  </div>
+
 
   <!-- ============ TAB: INSOURCE VS OUTSOURCE ============ -->
   <div class="tabpage" id="tp-src" style="display:none">
@@ -1069,7 +1061,7 @@ function apply(){
   else if(S.tab==='budget')renderBudget(rows);
   else if(S.tab==='fv')renderFV(rows);
   else if(S.tab==='variety')renderDimTab(rows,'variety','ch-variety','ch-variety-wrap','tbl-variety','Variety',true);
-  else if(S.tab==='category')renderDimTab(rows,'cat','ch-category','ch-category-wrap','tbl-category','Color',false);
+  
   else if(S.tab==='src')renderSrc(rows);
   else if(S.tab==='in')renderSourceDetail(rows,'Insource','in');
   else if(S.tab==='out')renderSourceDetail(rows,'Outsource','out');
