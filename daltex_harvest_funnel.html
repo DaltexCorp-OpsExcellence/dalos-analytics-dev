@@ -1234,12 +1234,12 @@ function renderSourceDetail(rows,srcName,suffix){
   const rowH=26,ch=Math.max(260,items.length*rowH*3+50);
   document.getElementById('ch-'+suffix+'-wrap').style.height=ch+'px';
   mkChart('ch-'+suffix,{type:'bar',data:{labels:items.map(i=>i.name),datasets:[
-      {label:'Raw Budget',data:items.map(i=>r1(i.braw)),backgroundColor:'#a9b4cc',barPercentage:.85,categoryPercentage:.8},
-      {label:'Raw Actual',data:items.map(i=>r1(i.h)),backgroundColor:'#142850',barPercentage:.85,categoryPercentage:.8},
-      {label:'PK Budget',data:items.map(i=>r1(i.bpk)),backgroundColor:'#a7c3f5',barPercentage:.85,categoryPercentage:.8},
+      {label:'Raw Budget',data:items.map(i=>r1(i.braw)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
+      {label:'Raw Actual',data:items.map(i=>r1(i.h)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8},
+      {label:'PK Budget',data:items.map(i=>r1(i.bpk)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
       {label:'PK Actual',data:items.map(i=>r1(i.pin)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8},
-      {label:'Export Budget',data:items.map(i=>r1(i.bexp)),backgroundColor:'#a7e3bd',barPercentage:.85,categoryPercentage:.8},
-      {label:'Export Actual',data:items.map(i=>r1(i.s)),backgroundColor:'#16a34a',barPercentage:.85,categoryPercentage:.8}]},
+      {label:'Export Budget',data:items.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
+      {label:'Export Actual',data:items.map(i=>r1(i.s)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:44}},
       onClick:(e,els)=>{if(els.length)drillTo('farm',items[els[0].index].name,'fv');},
       plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
