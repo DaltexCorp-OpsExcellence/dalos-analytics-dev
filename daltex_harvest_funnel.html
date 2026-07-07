@@ -706,8 +706,8 @@ function toTons(rows,get){
 
 async function loadAll(){
   const [farms,vars,H,P,SH,B]=await Promise.all([
-    pget('farms?select=name,canonical_name,raw_names,source_type,active'),
-    pget('varieties?select=name,canonical_name,raw_names,product_id,active&product_id=eq.grapes'),
+    pget('farms?select=name,canonical_name,raw_names,source_type,active&active=eq.true'),
+    pget('varieties?select=name,canonical_name,raw_names,product_id,active&product_id=eq.grapes&active=eq.true'),
     pget('harvest_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,raw_station,harvest_date'),
     pget('packhouse_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,incoming_raw,exportable_weight,operation_date'),
     pget('grapes_shipments_view?season_id=eq.'+SID+'&select=farm_source,variety,net_weight,loading_date'),
