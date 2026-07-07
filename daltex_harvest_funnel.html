@@ -1258,7 +1258,7 @@ function drawAchByDim(rows,dim,chartId,wrapId,onClick,stage){
 }
 
 /* ========== TAB: FARM & VARIETY (consolidated pivot) ========== */
-let FVSORT={k:'h',dir:-1};
+let FVSORT={k:'expf',dir:-1};
 function renderFV(rows){
   const by={};
   rows.forEach(r=>{const k=r.farm+'|†|'+r.variety;(by[k]=by[k]||{farm:r.farm,variety:r.variety,src:r.src,rows:[]}).rows.push(r);if(r.src!=='—')by[k].src=r.src;});
