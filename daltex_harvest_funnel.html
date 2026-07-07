@@ -577,13 +577,21 @@ input,select,button{font-family:var(--font)}
       <div class="cc-header"><div><div class="cc-title">Actual vs Budget — Raw / PK / Export</div><div class="cc-sub">overall achievement per stage</div></div></div>
       <div style="position:relative;height:300px"><canvas id="ch-budget-overall"></canvas></div>
     </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <span style="font-size:11px;font-weight:600;color:#8a95b0;text-transform:uppercase;letter-spacing:.04em">Achievement stage</span>
+      <div class="seg" style="display:inline-flex;gap:0">
+        <button class="cc-btn on" id="bs-h" onclick="setBudStage('h',this)">Harvest</button>
+        <button class="cc-btn" id="bs-pin" onclick="setBudStage('pin',this)">Packhouse</button>
+        <button class="cc-btn" id="bs-s" onclick="setBudStage('s',this)">Export</button>
+      </div>
+    </div>
     <div class="grid2">
       <div class="cc">
-        <div class="cc-header"><div><div class="cc-title">Raw Achievement by Farm</div><div class="cc-sub" >click a bar to drill in</div></div></div>
+        <div class="cc-header"><div><div class="cc-title" id="budfarm-title">Raw Achievement by Farm</div><div class="cc-sub" >click a bar to drill in</div></div></div>
         <div style="overflow-y:auto;max-height:420px"><div style="position:relative" id="ch-budfarm-wrap"><canvas id="ch-budfarm"></canvas></div></div>
       </div>
       <div class="cc">
-        <div class="cc-header"><div><div class="cc-title">Raw Achievement by Variety</div><div class="cc-sub">click a bar to drill in</div></div></div>
+        <div class="cc-header"><div><div class="cc-title" id="budvar-title">Raw Achievement by Variety</div><div class="cc-sub">click a bar to drill in</div></div></div>
         <div style="overflow-y:auto;max-height:420px"><div style="position:relative" id="ch-budvar-wrap"><canvas id="ch-budvar"></canvas></div></div>
       </div>
     </div>
@@ -980,6 +988,13 @@ function renderLastDates(rows){
 
 let OVSRC='all';
 let WKSTAGE='all';
+let BUDSTAGE='h';
+function setBudStage(v,btn){
+  BUDSTAGE=v;
+  document.querySelectorAll('#bs-h,#bs-pin,#bs-s').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  apply();
+}
 function setWkStage(v,btn){
   WKSTAGE=v;
   document.querySelectorAll('#wk-all,#wk-h,#wk-pin,#wk-s').forEach(b=>b.classList.remove('on'));
@@ -1105,12 +1120,17 @@ function renderBudget(rows){
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
       scales:{x:{ticks:{font:{size:12,weight:'600'}},grid:{display:false}},y:{grace:'12%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});
 
-  drawAchByDim(rows,'farm','ch-budfarm','ch-budfarm-wrap',t=>drillTo('farm',t,'fv'));
-  drawAchByDim(rows,'variety','ch-budvar','ch-budvar-wrap',t=>drillTo('variety',t,'fv'));
+  const f=BUD_STAGE_FIELDS[BUDSTAGE];
+  document.getElementById('budfarm-title').textContent=f.label+' Achievement by Farm';
+  document.getElementById('budvar-title').textContent=f.label+' Achievement by Variety';
+  drawAchByDim(rows,'farm','ch-budfarm','ch-budfarm-wrap',t=>drillTo('farm',t,'fv'),BUDSTAGE);
+  drawAchByDim(rows,'variety','ch-budvar','ch-budvar-wrap',t=>drillTo('variety',t,'fv'),BUDSTAGE);
 }
-function drawAchByDim(rows,dim,chartId,wrapId,onClick){
+const BUD_STAGE_FIELDS={h:{act:'h',bud:'braw',label:'Raw'},pin:{act:'pin',bud:'bpk',label:'PK'},s:{act:'s',bud:'bexp',label:'Export'}};
+function drawAchByDim(rows,dim,chartId,wrapId,onClick,stage){
+  const f=BUD_STAGE_FIELDS[stage||'h'];
   const by={};rows.forEach(r=>{if(!r[dim])return;(by[r[dim]]=by[r[dim]]||[]).push(r);});
-  let items=Object.keys(by).map(k=>{const x=agg(by[k]);return{name:k,ach:pct(x.h,x.braw),h:x.h,braw:x.braw};}).filter(i=>i.ach!=null);
+  let items=Object.keys(by).map(k=>{const x=agg(by[k]);return{name:k,ach:pct(x[f.act],x[f.bud]),act:x[f.act],bud:x[f.bud]};}).filter(i=>i.ach!=null);
   items.sort((a,b)=>b.ach-a.ach);
   const rowH=24,ch=Math.max(260,items.length*rowH+40);
   document.getElementById(wrapId).style.height=ch+'px';
@@ -1119,7 +1139,7 @@ function drawAchByDim(rows,dim,chartId,wrapId,onClick){
       onClick:(e,els)=>{if(els.length)onClick(items[els[0].index].name);},
       plugins:{legend:{display:false},
         datalabels:{anchor:'end',align:'end',offset:4,font:{family:"'IBM Plex Mono'",size:9.5,weight:'700'},color:'#142850',formatter:v=>fmtP(v)},
-        tooltip:{callbacks:{label:c=>{const i=items[c.dataIndex];return[' '+fmtP(c.raw)+' of budget',' '+fmtT(i.h)+' / '+fmtT(i.braw)+' T'];}}}},
+        tooltip:{callbacks:{label:c=>{const i=items[c.dataIndex];return[' '+fmtP(c.raw)+' of budget',' '+fmtT(i.act)+' / '+fmtT(i.bud)+' T'];}}}},
       scales:{x:{grace:'12%',ticks:{callback:v=>v+'%',font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{autoSkip:false,font:{size:10,weight:'500'}},grid:{display:false}}}}});
   document.getElementById(chartId).style.cursor='pointer';
 }
