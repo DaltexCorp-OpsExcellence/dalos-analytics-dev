@@ -240,6 +240,10 @@ input,select,button{font-family:var(--font)}
 .mkt-table tr:hover td{background:var(--bg)}
 .mono{font-family:var(--mono);font-size:11px}
 .mkt-name{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--navy)}
+.drillcell{cursor:pointer;transition:color .12s}
+.drillcell:hover{color:var(--orange)}
+.drill-arrow{font-size:11px;color:#c3cad9;transition:color .12s,transform .12s}
+.drillcell:hover .drill-arrow{color:var(--orange);transform:translateX(2px)}
 .pct-bar{display:flex;align-items:center;gap:6px}
 .pct-track{flex:1;height:4px;background:var(--border);border-radius:2px;min-width:40px}
 .pct-fill{height:100%;background:var(--orange);border-radius:2px}
@@ -528,6 +532,20 @@ input,select,button{font-family:var(--font)}
     <div style="padding:18px 20px">
       <div style="position:relative;height:260px;margin-bottom:16px"><canvas id="drill-funnel-chart"></canvas></div>
       <div class="kgrid" style="grid-template-columns:repeat(3,1fr);gap:10px" id="drill-conv-cards"></div>
+    </div>
+  </div>
+</div>
+
+<div id="drill-modal" style="display:none;position:fixed;inset:0;background:rgba(20,40,80,.45);z-index:998;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeDrill()">
+  <div style="background:#fff;border-radius:14px;max-width:720px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <div><div style="font-size:11px;color:#8a95b0;font-weight:600;text-transform:uppercase;letter-spacing:.04em" id="drill-eyebrow">Farm</div>
+        <div style="font-size:17px;font-weight:700;color:var(--navy)" id="drill-title">—</div></div>
+      <button onclick="closeDrill()" style="background:none;border:none;cursor:pointer;color:#8a95b0;font-size:18px;line-height:1"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="drill-body" style="padding:20px;overflow-y:auto"></div>
+    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+      <button class="cc-btn on" id="drill-openfull" onclick="">Open in Farm &amp; Variety <i class="ti ti-arrow-right"></i></button>
     </div>
   </div>
 </div>
@@ -892,17 +910,73 @@ function goTab(t){
 document.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('#hftabs .tab').forEach(el=>el.addEventListener('click',()=>goTab(el.dataset.tab)));
 });
+let DRILL_PENDING=null;
 function drillTo(field,val,tab){
-  const ms=document.querySelector('.ms[data-f="'+field+'"]');
-  if(ms){S[field]=[val];ms.querySelectorAll('input[data-v]').forEach(i=>{i.checked=(i.dataset.v===val);});const a=ms.querySelector('.ms-all input');if(a)a.checked=false;syncMS(ms,field);}
-  goTab(tab);
-  if(field==='farm'||field==='variety')showDrillFunnel(field,val);
+  if(field==='src'){
+    const ms=document.querySelector('.ms[data-f="src"]');
+    if(ms){S.src=[val];ms.querySelectorAll('input[data-v]').forEach(i=>{i.checked=(i.dataset.v===val);});const aopt=ms.querySelector('.ms-all input');if(aopt)aopt.checked=false;syncMS(ms,'src');}
+    goTab(tab);
+    return;
+  }
+  showDrillFunnel(field,val,tab);
 }
-function showDrillFunnel(field,val){
+function buildTrapezoidFunnel(stages){
+  const W=620,H=230,pad=10;
+  const n=stages.length;
+  const colW=(W-2*pad)/n;
+  const maxV=stages[0].value||1;
+  const hFor=v=>Math.max(18,(H-40)*(v/maxV));
+  let x=pad;
+  const heights=stages.map(s=>hFor(s.value));
+  let poly='',labels='';
+  for(let i=0;i<n;i++){
+    const h0=heights[i], h1=(i<n-1)?heights[i+1]:heights[i]*0.55;
+    const yTop0=(H-h0)/2, yBot0=(H+h0)/2, yTop1=(H-h1)/2, yBot1=(H+h1)/2;
+    const x1=x+colW;
+    poly+='<polygon points="'+x+','+yTop0+' '+x1+','+yTop1+' '+x1+','+yBot1+' '+x+','+yBot0+'" fill="'+stages[i].color+'" />';
+    const pctOfFirst = maxV>0 ? Math.round(stages[i].value/maxV*1000)/10 : 0;
+    const cx=x+colW/2;
+    labels+='<text x="'+cx+'" y="'+(H/2-8)+'" text-anchor="middle" font-size="15" font-weight="700" fill="#fff" font-family="IBM Plex Mono, monospace">'+pctOfFirst+'%</text>';
+    labels+='<text x="'+cx+'" y="'+(H/2+10)+'" text-anchor="middle" font-size="10.5" font-weight="600" fill="#fff" font-family=\'Plus Jakarta Sans\'>'+esc(stages[i].name)+'</text>';
+    labels+='<text x="'+cx+'" y="'+(H/2+24)+'" text-anchor="middle" font-size="9.5" fill="rgba(255,255,255,.85)" font-family="IBM Plex Mono, monospace">'+fmtT(stages[i].value)+' T</text>';
+    x=x1;
+  }
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:640px;display:block;margin:0 auto" role="img" aria-label="Funnel diagram">'+poly+labels+'</svg>';
+}
+function showDrillFunnel(field,val,tab){
   const rows=rowsExcept(field).filter(r=>r[field]===val);
-  document.getElementById('drill-title').textContent=(field==='farm'?'Farm: ':'Variety: ')+val;
+  const a=agg(rows);
+  DRILL_PENDING={field,val,tab:tab||'fv'};
+  document.getElementById('drill-eyebrow').textContent = field==='farm' ? 'Farm' : 'Variety';
+  document.getElementById('drill-title').textContent = val;
+  const stages=[
+    {name:'Harvest',value:a.h,color:'#142850'},
+    {name:'Packhouse',value:a.pin,color:'#2563eb'},
+    {name:'Export',value:a.s,color:'#16a34a'}
+  ];
+  const convs=[
+    {l:'PK-Farm %',v:pct(a.pin,a.h)},
+    {l:'Export-PK %',v:pct(a.s,a.pin)},
+    {l:'Export-Farm %',v:pct(a.s,a.h)}
+  ];
+  const budCards=[
+    {l:'Raw',act:a.h,bud:a.braw},{l:'PK',act:a.pin,bud:a.bpk},{l:'Export',act:a.s,bud:a.bexp}
+  ];
+  document.getElementById('drill-body').innerHTML =
+    buildTrapezoidFunnel(stages)
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px">'
+      +convs.map(c=>'<div style="background:var(--bg2);border-radius:10px;padding:10px 12px;text-align:center"><div style="font-size:10px;color:#8a95b0;font-weight:600">'+c.l+'</div><div style="font-family:var(--mono);font-size:17px;font-weight:700;color:var(--navy);margin-top:2px">'+fmtP(c.v)+'</div></div>').join('')
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">'
+      +budCards.map(c=>'<div style="background:var(--bg2);border-radius:10px;padding:10px 12px;text-align:center"><div style="font-size:10px;color:#8a95b0;font-weight:600">'+c.l+' vs Budget</div><div style="font-family:var(--mono);font-size:15px;font-weight:700;color:'+pctColor(pct(c.act,c.bud))+';margin-top:2px">'+fmtP(pct(c.act,c.bud))+'</div><div style="font-size:9.5px;color:#aab2c5;font-family:var(--mono);margin-top:1px">'+fmtT(c.act)+' / '+fmtT(c.bud)+' T</div></div>').join('')
+    +'</div>';
+  document.getElementById('drill-openfull').onclick=function(){
+    const ms=document.querySelector('.ms[data-f="'+field+'"]');
+    if(ms){S[field]=[val];ms.querySelectorAll('input[data-v]').forEach(i=>{i.checked=(i.dataset.v===val);});const aopt=ms.querySelector('.ms-all input');if(aopt)aopt.checked=false;syncMS(ms,field);}
+    closeDrill();
+    goTab(DRILL_PENDING.tab);
+  };
   document.getElementById('drill-modal').style.display='flex';
-  drawFunnelBlock(rows,'drill-funnel-chart','drill-conv-cards');
 }
 function closeDrill(){document.getElementById('drill-modal').style.display='none';}
 
@@ -1188,7 +1262,10 @@ function renderFV(rows){
   const tot=agg(rows);
   let html='<thead><tr>'+cols.map(c=>'<th onclick="setFVSort(\''+c[0]+'\')" title="Sort">'+c[1]+(FVSORT.k===c[0]?(FVSORT.dir<0?' ▾':' ▴'):'')+'</th>').join('')+'</tr></thead><tbody>';
   items.forEach(i=>{
-    html+='<tr style="cursor:pointer" title="Click to drill into this farm" onclick="drillTo(\'farm\',\''+esc(i.farm).replace(/'/g,"\\'")+'\',\'fv\')"><td class="mkt-name">'+esc(i.farm)+'</td><td>'+esc(i.variety)+'</td><td><span class="port-badge">'+esc(i.src)+'</span></td>'
+    const fn=esc(i.farm).replace(/'/g,"\\'"), vn=esc(i.variety).replace(/'/g,"\\'");
+    html+='<tr><td class="mkt-name drillcell" onclick="drillTo(\'farm\',\''+fn+'\',\'fv\')" title="Click to view '+esc(i.farm)+' funnel">'+esc(i.farm)+' <i class="ti ti-chevron-right drill-arrow"></i></td>'
+      +'<td class="drillcell" onclick="drillTo(\'variety\',\''+vn+'\',\'fv\')" title="Click to view '+esc(i.variety)+' funnel">'+esc(i.variety)+' <i class="ti ti-chevron-right drill-arrow"></i></td>'
+      +'<td><span class="port-badge">'+esc(i.src)+'</span></td>'
       +'<td class="mono">'+fmtT(i.braw)+'</td><td class="mono">'+fmtT(i.h)+'</td><td class="mono" style="color:'+pctColor(i.budr)+';font-weight:600">'+fmtP(i.budr)+'</td>'
       +'<td class="mono">'+fmtT(i.bpk)+'</td><td class="mono">'+fmtT(i.pin)+'</td><td class="mono" style="color:'+pctColor(i.budp)+';font-weight:600">'+fmtP(i.budp)+'</td>'
       +'<td class="mono">'+fmtT(i.bexp)+'</td><td class="mono">'+fmtT(i.s)+'</td><td class="mono" style="color:'+pctColor(i.bude)+';font-weight:600">'+fmtP(i.bude)+'</td>'
@@ -1271,7 +1348,7 @@ function renderSourceDetail(rows,srcName,suffix){
 
   let html='<thead><tr><th>Farm</th><th>Raw Bud T</th><th>Raw Act T</th><th>Raw %</th><th>PK Bud T</th><th>PK Act T</th><th>PK %</th><th>Exp Bud T</th><th>Exp Act T</th><th>Exp %</th><th>PK-Farm %</th><th>Exp-PK %</th><th>Exp-Farm %</th></tr></thead><tbody>';
   items.forEach(i=>{
-    html+='<tr style="cursor:pointer" onclick="drillTo(\'farm\',\''+esc(i.name).replace(/'/g,"\\'")+'\',\'fv\')"><td class="mkt-name">'+esc(i.name)+'</td>'
+    html+='<tr><td class="mkt-name drillcell" onclick="drillTo(\'farm\',\''+esc(i.name).replace(/'/g,"\\'")+'\',\'fv\')" title="Click to view '+esc(i.name)+' funnel">'+esc(i.name)+' <i class="ti ti-chevron-right drill-arrow"></i></td>'
       +'<td class="mono">'+fmtT(i.braw)+'</td><td class="mono">'+fmtT(i.h)+'</td><td class="mono" style="color:'+pctColor(i.budr)+';font-weight:600">'+fmtP(i.budr)+'</td>'
       +'<td class="mono">'+fmtT(i.bpk)+'</td><td class="mono">'+fmtT(i.pin)+'</td><td class="mono" style="color:'+pctColor(i.budp)+';font-weight:600">'+fmtP(i.budp)+'</td>'
       +'<td class="mono">'+fmtT(i.bexp)+'</td><td class="mono">'+fmtT(i.s)+'</td><td class="mono" style="color:'+pctColor(i.bude)+';font-weight:600">'+fmtP(i.bude)+'</td>'
