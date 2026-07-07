@@ -498,7 +498,7 @@ input,select,button{font-family:var(--font)}
   <div class="tab" data-tab="budget"><i class="ti ti-target"></i>Budget vs Actual</div>
   <div class="tab" data-tab="fv"><i class="ti ti-table"></i>Farm &amp; Variety</div>
   <div class="tab" data-tab="variety"><i class="ti ti-plant-2"></i>Variety</div>
-  <div class="tab" data-tab="category"><i class="ti ti-palette"></i>Category</div>
+  <div class="tab" data-tab="category"><i class="ti ti-palette"></i>Colors</div>
   <div class="tab" data-tab="src"><i class="ti ti-arrows-split"></i>Insource vs Outsource</div>
   <div class="tab" data-tab="in"><i class="ti ti-home"></i>Insource Farms</div>
   <div class="tab" data-tab="out"><i class="ti ti-truck-delivery"></i>Outsource Farms</div>
@@ -519,6 +519,7 @@ input,select,button{font-family:var(--font)}
   <div class="fgrp"><div class="flab">Farm</div><div class="ms" data-f="farm"></div></div>
   <div class="fgrp"><div class="flab">Variety</div><div class="ms" data-f="variety"></div></div>
   <div class="fgrp"><div class="flab">Source</div><div class="ms" data-f="src"></div></div>
+  <div class="fgrp"><div class="flab">Color</div><div class="ms" data-f="cat"></div></div>
   <div class="fgrp"><div class="flab">From</div><input type="date" class="fdate" id="f-from" onchange="setDate()"></div>
   <div class="fgrp"><div class="flab">To</div><input type="date" class="fdate" id="f-to" onchange="setDate()"></div>
   <button class="reset-btn" onclick="resetF()"><i class="ti ti-rotate"></i> Reset</button>
@@ -642,7 +643,7 @@ input,select,button{font-family:var(--font)}
   <!-- ============ TAB: CATEGORY (Red/White/Black) ============ -->
   <div class="tabpage" id="tp-category" style="display:none">
     <div class="cc" style="margin-bottom:12px">
-      <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Category</div><div class="cc-sub">click a bar to drill in</div></div></div>
+      <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Color</div><div class="cc-sub">Raw / PK / Export tons</div></div></div>
       <div style="overflow-x:auto"><div style="position:relative;height:360px" id="ch-category-wrap"><canvas id="ch-category"></canvas></div></div>
     </div>
     <div class="cc"><div class="tbl-wrap"><table class="mkt-table" id="tbl-category"></table></div></div>
@@ -711,9 +712,9 @@ const AK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6I
 const SID='19482d39-6074-4c60-b772-ced5df1ffdcb';
 let ROWS=[],charts={},UNMAPPED={farm:{},variety:{}};
 let FARMS_CACHE=[],VARIETIES_CACHE=[];
-let S={farm:[],variety:[],src:[],from:'',to:'',tab:'ov'};
+let S={farm:[],variety:[],src:[],cat:[],from:'',to:'',tab:'ov'};
 let LDF='',LDT='';
-const MSF=['farm','variety','src'];
+const MSF=['farm','variety','src','cat'];
 
 const num=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
 const r1=v=>Math.round(v*10)/10;
@@ -1067,8 +1068,8 @@ function apply(){
   if(S.tab==='ov')renderOverview(rows);
   else if(S.tab==='budget')renderBudget(rows);
   else if(S.tab==='fv')renderFV(rows);
-  else if(S.tab==='variety')renderDimTab(rows,'variety','ch-variety','ch-variety-wrap','tbl-variety','Variety');
-  else if(S.tab==='category')renderDimTab(rows,'cat','ch-category','ch-category-wrap','tbl-category','Category');
+  else if(S.tab==='variety')renderDimTab(rows,'variety','ch-variety','ch-variety-wrap','tbl-variety','Variety',true);
+  else if(S.tab==='category')renderDimTab(rows,'cat','ch-category','ch-category-wrap','tbl-category','Color',false);
   else if(S.tab==='src')renderSrc(rows);
   else if(S.tab==='in')renderSourceDetail(rows,'Insource','in');
   else if(S.tab==='out')renderSourceDetail(rows,'Outsource','out');
@@ -1299,7 +1300,7 @@ function setFVSort(k){if(FVSORT.k===k)FVSORT.dir*=-1;else{FVSORT.k=k;FVSORT.dir=
 
 /* ========== GENERIC: single-dimension tab (Variety, Category) ========== */
 let DIMSORT={};
-function renderDimTab(rows,dim,chartId,wrapId,tblId,drillLabel){
+function renderDimTab(rows,dim,chartId,wrapId,tblId,drillLabel,allowDrill){
   if(!DIMSORT[dim])DIMSORT[dim]={k:'h',dir:-1};
   const by={};rows.forEach(r=>{if(!r[dim])return;(by[r[dim]]=by[r[dim]]||[]).push(r);});
   let items=Object.keys(by).map(k=>{const x=agg(by[k]);return{name:k,h:x.h,braw:x.braw,pin:x.pin,bpk:x.bpk,s:x.s,bexp:x.bexp,
@@ -1308,22 +1309,22 @@ function renderDimTab(rows,dim,chartId,wrapId,tblId,drillLabel){
 
   /* chart always sorted by Harvest desc for readability */
   const chartItems=[...items].sort((a,b)=>b.h-a.h);
-  const colW=190,cw=Math.max(500,chartItems.length*colW+80);
+  const colW=340,cw=Math.max(560,chartItems.length*colW+80);
   document.getElementById(wrapId).style.width=cw+'px';
   mkChart(chartId,{type:'bar',data:{labels:chartItems.map(i=>i.name),datasets:[
-      {label:'Raw Budget',data:chartItems.map(i=>r1(i.braw)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
-      {label:'Raw Actual',data:chartItems.map(i=>r1(i.h)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8},
-      {label:'PK Budget',data:chartItems.map(i=>r1(i.bpk)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
-      {label:'PK Actual',data:chartItems.map(i=>r1(i.pin)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8},
-      {label:'Export Budget',data:chartItems.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
-      {label:'Export Actual',data:chartItems.map(i=>r1(i.s)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8}]},
-    options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:22}},
-      onClick:(e,els)=>{if(els.length)showDrillFunnel(dim,chartItems[els[0].index].name,dim==='variety'?'fv':dim);},
+      {label:'Raw Budget',data:chartItems.map(i=>r1(i.braw)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
+      {label:'Raw Actual',data:chartItems.map(i=>r1(i.h)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.85},
+      {label:'PK Budget',data:chartItems.map(i=>r1(i.bpk)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
+      {label:'PK Actual',data:chartItems.map(i=>r1(i.pin)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.85},
+      {label:'Export Budget',data:chartItems.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
+      {label:'Export Actual',data:chartItems.map(i=>r1(i.s)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.85}]},
+    options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:26}},
+      onClick: allowDrill ? ((e,els)=>{if(els.length)showDrillFunnel(dim,chartItems[els[0].index].name,dim==='variety'?'fv':dim);}) : undefined,
       plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
-        datalabels:{anchor:'end',align:'end',offset:2,font:{family:"'IBM Plex Mono'",size:8,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
+        datalabels:{anchor:'end',align:'end',offset:3,font:{family:"'IBM Plex Mono'",size:9,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
-      scales:{y:{grace:'10%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,font:{size:10.5,weight:'500'}},grid:{display:false}}}}});
-  document.getElementById(chartId).style.cursor='pointer';
+      scales:{y:{grace:'18%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,font:{size:11,weight:'600'}},grid:{display:false}}}}});
+  document.getElementById(chartId).style.cursor = allowDrill ? 'pointer' : 'default';
 
   /* table, sortable */
   const st=DIMSORT[dim];
@@ -1334,7 +1335,10 @@ function renderDimTab(rows,dim,chartId,wrapId,tblId,drillLabel){
   const tot=agg(rows);
   let html='<thead><tr>'+cols.map(c=>'<th onclick="setDimSort(\''+dim+'\',\''+c[0]+'\')">'+c[1]+(st.k===c[0]?(st.dir<0?' ▾':' ▴'):'')+'</th>').join('')+'</tr></thead><tbody>';
   items.forEach(i=>{
-    html+='<tr><td class="mkt-name drillcell" onclick="showDrillFunnel(\''+dim+'\',\''+esc(i.name).replace(/'/g,"\\'")+'\',\''+(dim==='variety'?'fv':dim)+'\')">'+esc(i.name)+' <i class="ti ti-chevron-right drill-arrow"></i></td>'
+    const nameCell = allowDrill
+      ? '<td class="mkt-name drillcell" onclick="showDrillFunnel(\''+dim+'\',\''+esc(i.name).replace(/'/g,"\\'")+'\',\''+(dim==='variety'?'fv':dim)+'\')">'+esc(i.name)+' <i class="ti ti-chevron-right drill-arrow"></i></td>'
+      : '<td class="mkt-name">'+esc(i.name)+'</td>';
+    html+='<tr>'+nameCell
       +'<td class="mono">'+fmtT(i.braw)+'</td><td class="mono">'+fmtT(i.h)+'</td><td class="mono" style="color:'+pctColor(i.budr)+';font-weight:600">'+fmtP(i.budr)+'</td>'
       +'<td class="mono">'+fmtT(i.bpk)+'</td><td class="mono">'+fmtT(i.pin)+'</td><td class="mono" style="color:'+pctColor(i.budp)+';font-weight:600">'+fmtP(i.budp)+'</td>'
       +'<td class="mono">'+fmtT(i.bexp)+'</td><td class="mono">'+fmtT(i.s)+'</td><td class="mono" style="color:'+pctColor(i.bude)+';font-weight:600">'+fmtP(i.bude)+'</td>'
