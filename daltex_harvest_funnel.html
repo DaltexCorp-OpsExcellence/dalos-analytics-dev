@@ -999,7 +999,7 @@ function drawFunnelBlock(rows,chartId,cardsId){
         datalabels:{anchor:'end',align:'end',offset:2,font:{family:"'IBM Plex Mono'",size:9.5,weight:'700'},color:'#334155',formatter:v=>fmtT(v)},
         tooltip:{callbacks:{
           title:items=>stages[items[0].dataIndex],
-          label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' t',
+          label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T',
           afterBody:items=>{
             const i=items[0].dataIndex;
             const lines=['% Achievement: '+fmtP(bpct[i])];
@@ -1029,9 +1029,9 @@ function renderOverview(rows){
   const a=agg(rowsForFunnel);
   renderLastDates(rowsForFunnel);
   document.getElementById('kpis').innerHTML=
-    kcard('Harvest','ti-plant-2',fmtT(a.h)+'<span style="font-size:11px;color:#8a95b0"> t</span>','خام المحطة · farm raw',100)
-    +kcard('Packhouse','ti-building-warehouse',fmtT(a.pin)+'<span style="font-size:11px;color:#8a95b0"> t</span>','incoming raw at packhouse',pct(a.pin,a.h)||0)
-    +kcard('Export','ti-ship',fmtT(a.s)+'<span style="font-size:11px;color:#8a95b0"> t</span>','net weight loaded',pct(a.s,a.h)||0)
+    kcard('Harvest','ti-plant-2',fmtT(a.h)+'<span style="font-size:11px;color:#8a95b0"> T</span>','خام المحطة · farm raw',100)
+    +kcard('Packhouse','ti-building-warehouse',fmtT(a.pin)+'<span style="font-size:11px;color:#8a95b0"> T</span>','incoming raw at packhouse',pct(a.pin,a.h)||0)
+    +kcard('Export','ti-ship',fmtT(a.s)+'<span style="font-size:11px;color:#8a95b0"> T</span>','net weight loaded',pct(a.s,a.h)||0)
     +kcard('End-to-End','ti-arrow-narrow-right',fmtP(pct(a.s,a.h)),'shipped ÷ harvested',pct(a.s,a.h)||0);
 
   drawFunnelBlock(rowsForFunnel,'ch-funnel','conv-cards');
@@ -1045,7 +1045,7 @@ function renderOverview(rows){
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18,right:14}},
       plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}},
         datalabels:{align:'top',offset:2,font:{family:"'IBM Plex Mono'",size:8,weight:'600'},formatter:v=>v>0?fmtT(v):''},
-        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' t'}}},
+        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
       scales:{x:{ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{display:false}},y:{grace:'10%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});
 
   renderInsights(a,rowsForFunnel);
@@ -1073,7 +1073,7 @@ function renderBudget(rows){
     {l:'PK',act:a.pin,bud:a.bpk,ic:'ti-building-warehouse'},
     {l:'Export',act:a.s,bud:a.bexp,ic:'ti-ship'}
   ];
-  document.getElementById('budget-cards').innerHTML=cards.map(c=>kcard(c.l+' Achievement',c.ic,fmtP(pct(c.act,c.bud)),fmtT(c.act)+' / '+fmtT(c.bud)+' t',pct(c.act,c.bud)||0)).join('');
+  document.getElementById('budget-cards').innerHTML=cards.map(c=>kcard(c.l+' Achievement',c.ic,fmtP(pct(c.act,c.bud)),fmtT(c.act)+' / '+fmtT(c.bud)+' T',pct(c.act,c.bud)||0)).join('');
 
   mkChart('ch-budget-overall',{type:'bar',data:{labels:['Raw','PK','Export'],datasets:[
       {label:'Budget',data:[a.braw,a.bpk,a.bexp].map(r1),backgroundColor:'#DC6428',borderRadius:4,maxBarThickness:50},
@@ -1081,7 +1081,7 @@ function renderBudget(rows){
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:24}},
       plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}},
         datalabels:{anchor:'end',align:'end',font:{family:"'IBM Plex Mono'",size:10,weight:'700'},formatter:v=>fmtT(v)},
-        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' t'}}},
+        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
       scales:{x:{ticks:{font:{size:12,weight:'600'}},grid:{display:false}},y:{grace:'12%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});
 
   drawAchByDim(rows,'farm','ch-budfarm','ch-budfarm-wrap',t=>drillTo('farm',t,'fv'));
@@ -1098,7 +1098,7 @@ function drawAchByDim(rows,dim,chartId,wrapId,onClick){
       onClick:(e,els)=>{if(els.length)onClick(items[els[0].index].name);},
       plugins:{legend:{display:false},
         datalabels:{anchor:'end',align:'end',offset:4,font:{family:"'IBM Plex Mono'",size:9.5,weight:'700'},color:'#142850',formatter:v=>fmtP(v)},
-        tooltip:{callbacks:{label:c=>{const i=items[c.dataIndex];return[' '+fmtP(c.raw)+' of budget',' '+fmtT(i.h)+' / '+fmtT(i.braw)+' t'];}}}},
+        tooltip:{callbacks:{label:c=>{const i=items[c.dataIndex];return[' '+fmtP(c.raw)+' of budget',' '+fmtT(i.h)+' / '+fmtT(i.braw)+' T'];}}}},
       scales:{x:{grace:'12%',ticks:{callback:v=>v+'%',font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{autoSkip:false,font:{size:10,weight:'500'}},grid:{display:false}}}}});
   document.getElementById(chartId).style.cursor='pointer';
 }
@@ -1112,8 +1112,8 @@ function renderFV(rows){
     pkf:pct(x.pin,x.h),expk:pct(x.s,x.pin),expf:pct(x.s,x.h),budr:pct(x.h,x.braw),budp:pct(x.pin,x.bpk),bude:pct(x.s,x.bexp)};});
   items=items.filter(i=>i.h>0||i.pin>0||i.s>0||i.braw>0||i.bpk>0||i.bexp>0);
   items.sort((p,q)=>{const A=p[FVSORT.k],B=q[FVSORT.k];const a=(A==null?-Infinity:(typeof A==='string'?A.toLowerCase():A));const b=(B==null?-Infinity:(typeof B==='string'?B.toLowerCase():B));return (a<b?-1:a>b?1:0)*FVSORT.dir;});
-  const cols=[['farm','Farm'],['variety','Variety'],['src','Src'],['braw','Raw Bud t'],['h','Raw Act t'],['budr','Raw %'],
-    ['bpk','PK Bud t'],['pin','PK Act t'],['budp','PK %'],['bexp','Exp Bud t'],['s','Exp Act t'],['bude','Exp %'],
+  const cols=[['farm','Farm'],['variety','Variety'],['src','Src'],['braw','Raw Bud T'],['h','Raw Act T'],['budr','Raw %'],
+    ['bpk','PK Bud T'],['pin','PK Act T'],['budp','PK %'],['bexp','Exp Bud T'],['s','Exp Act T'],['bude','Exp %'],
     ['pkf','PK-Farm %'],['expk','Exp-PK %'],['expf','Exp-Farm %']];
   const tot=agg(rows);
   let html='<thead><tr>'+cols.map(c=>'<th onclick="setFVSort(\''+c[0]+'\')" title="Sort">'+c[1]+(FVSORT.k===c[0]?(FVSORT.dir<0?' ▾':' ▴'):'')+'</th>').join('')+'</tr></thead><tbody>';
@@ -1149,7 +1149,7 @@ function renderSrc(rows){
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:22}},
       plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:9.5}}},
         datalabels:{anchor:'end',align:'end',font:{family:"'IBM Plex Mono'",size:9,weight:'700'},formatter:v=>v>0?fmtT(v):''},
-        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' t'}}},
+        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
       scales:{x:{ticks:{font:{size:12,weight:'600'}},grid:{display:false}},y:{grace:'12%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});
 
   mkChart('ch-src-bud',{type:'bar',data:{labels:srcs,datasets:[
@@ -1162,7 +1162,7 @@ function renderSrc(rows){
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtP(c.raw)}}},
       scales:{x:{ticks:{font:{size:12,weight:'600'}},grid:{display:false}},y:{grace:'12%',ticks:{callback:v=>v+'%',font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}}}}});
 
-  let html='<thead><tr><th>Source</th><th>Raw Bud t</th><th>Raw Act t</th><th>Raw %</th><th>PK Bud t</th><th>PK Act t</th><th>PK %</th><th>Exp Bud t</th><th>Exp Act t</th><th>Exp %</th><th>PK-Farm %</th><th>Exp-PK %</th><th>Exp-Farm %</th></tr></thead><tbody>';
+  let html='<thead><tr><th>Source</th><th>Raw Bud T</th><th>Raw Act T</th><th>Raw %</th><th>PK Bud T</th><th>PK Act T</th><th>PK %</th><th>Exp Bud T</th><th>Exp Act T</th><th>Exp %</th><th>PK-Farm %</th><th>Exp-PK %</th><th>Exp-Farm %</th></tr></thead><tbody>';
   srcs.forEach((s0,i)=>{const x=sa[i];
     html+='<tr style="cursor:pointer" onclick="drillTo(\'src\',\''+s0+'\',\''+(s0==='Insource'?'in':'out')+'\')"><td class="mkt-name">'+s0+'</td>'
       +'<td class="mono">'+fmtT(x.braw)+'</td><td class="mono">'+fmtT(x.h)+'</td><td class="mono" style="color:'+pctColor(pct(x.h,x.braw))+';font-weight:600">'+fmtP(pct(x.h,x.braw))+'</td>'
@@ -1195,11 +1195,11 @@ function renderSourceDetail(rows,srcName,suffix){
       onClick:(e,els)=>{if(els.length)drillTo('farm',items[els[0].index].name,'fv');},
       plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
         datalabels:{anchor:'end',align:'end',offset:2,font:{family:"'IBM Plex Mono'",size:8,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
-        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' t'}}},
+        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
       scales:{x:{grace:'10%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{autoSkip:false,font:{size:10.5,weight:'500'}},grid:{display:false}}}}});
   document.getElementById('ch-'+suffix).style.cursor='pointer';
 
-  let html='<thead><tr><th>Farm</th><th>Raw Bud t</th><th>Raw Act t</th><th>Raw %</th><th>PK Bud t</th><th>PK Act t</th><th>PK %</th><th>Exp Bud t</th><th>Exp Act t</th><th>Exp %</th><th>PK-Farm %</th><th>Exp-PK %</th><th>Exp-Farm %</th></tr></thead><tbody>';
+  let html='<thead><tr><th>Farm</th><th>Raw Bud T</th><th>Raw Act T</th><th>Raw %</th><th>PK Bud T</th><th>PK Act T</th><th>PK %</th><th>Exp Bud T</th><th>Exp Act T</th><th>Exp %</th><th>PK-Farm %</th><th>Exp-PK %</th><th>Exp-Farm %</th></tr></thead><tbody>';
   items.forEach(i=>{
     html+='<tr style="cursor:pointer" onclick="drillTo(\'farm\',\''+esc(i.name).replace(/'/g,"\\'")+'\',\'fv\')"><td class="mkt-name">'+esc(i.name)+'</td>'
       +'<td class="mono">'+fmtT(i.braw)+'</td><td class="mono">'+fmtT(i.h)+'</td><td class="mono" style="color:'+pctColor(i.budr)+';font-weight:600">'+fmtP(i.budr)+'</td>'
