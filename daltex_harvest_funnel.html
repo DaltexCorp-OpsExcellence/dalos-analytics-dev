@@ -591,7 +591,12 @@ input,select,button{font-family:var(--font)}
         <div style="overflow-y:auto;max-height:420px"><div style="position:relative" id="ch-budfarm-wrap"><canvas id="ch-budfarm"></canvas></div></div>
       </div>
       <div class="cc">
-        <div class="cc-header"><div><div class="cc-title" id="budvar-title">Raw Achievement by Variety</div><div class="cc-sub">click a bar to drill in</div></div></div>
+        <div class="cc-header"><div><div class="cc-title" id="budvar-title">Raw Achievement by Variety</div><div class="cc-sub">click a bar to drill in</div></div>
+          <div class="cc-actions"><select id="budvar-src" onchange="setBudVarSrc(this.value)" style="font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;color:var(--navy);background:#fff;cursor:pointer">
+            <option value="all">All Sourcing</option>
+            <option value="Insource">Insource</option>
+            <option value="Outsource">Outsource</option>
+          </select></div></div>
         <div style="overflow-y:auto;max-height:420px"><div style="position:relative" id="ch-budvar-wrap"><canvas id="ch-budvar"></canvas></div></div>
       </div>
     </div>
@@ -989,6 +994,8 @@ function renderLastDates(rows){
 let OVSRC='all';
 let WKSTAGE='all';
 let BUDSTAGE='h';
+let BUDVAR_SRC='all';
+function setBudVarSrc(v){BUDVAR_SRC=v;apply();}
 function setBudStage(v,btn){
   BUDSTAGE=v;
   document.querySelectorAll('#bs-h,#bs-pin,#bs-s').forEach(b=>b.classList.remove('on'));
@@ -1124,7 +1131,8 @@ function renderBudget(rows){
   document.getElementById('budfarm-title').textContent=f.label+' Achievement by Farm';
   document.getElementById('budvar-title').textContent=f.label+' Achievement by Variety';
   drawAchByDim(rows,'farm','ch-budfarm','ch-budfarm-wrap',t=>drillTo('farm',t,'fv'),BUDSTAGE);
-  drawAchByDim(rows,'variety','ch-budvar','ch-budvar-wrap',t=>drillTo('variety',t,'fv'),BUDSTAGE);
+  const budvarRows = BUDVAR_SRC==='all' ? rows : rows.filter(r=>r.src===BUDVAR_SRC);
+  drawAchByDim(budvarRows,'variety','ch-budvar','ch-budvar-wrap',t=>drillTo('variety',t,'fv'),BUDSTAGE);
 }
 const BUD_STAGE_FIELDS={h:{act:'h',bud:'braw',label:'Raw'},pin:{act:'pin',bud:'bpk',label:'PK'},s:{act:'s',bud:'bexp',label:'Export'}};
 function drawAchByDim(rows,dim,chartId,wrapId,onClick,stage){
