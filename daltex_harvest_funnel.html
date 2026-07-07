@@ -519,6 +519,19 @@ input,select,button{font-family:var(--font)}
 </div>
 <div class="fchips" id="fchips"></div>
 
+<div id="drill-modal" style="display:none;position:fixed;inset:0;background:rgba(20,40,80,.45);z-index:998;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeDrill()">
+  <div style="background:#fff;border-radius:14px;max-width:720px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <div style="font-size:15px;font-weight:700;color:var(--navy)" id="drill-title">Funnel</div>
+      <button onclick="closeDrill()" style="background:none;border:none;cursor:pointer;color:#8a95b0;font-size:18px;line-height:1"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="padding:18px 20px">
+      <div style="position:relative;height:260px;margin-bottom:16px"><canvas id="drill-funnel-chart"></canvas></div>
+      <div class="kgrid" style="grid-template-columns:repeat(3,1fr);gap:10px" id="drill-conv-cards"></div>
+    </div>
+  </div>
+</div>
+
 <div id="unmapped-modal" style="display:none;position:fixed;inset:0;background:rgba(20,40,80,.45);z-index:999;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
@@ -883,7 +896,15 @@ function drillTo(field,val,tab){
   const ms=document.querySelector('.ms[data-f="'+field+'"]');
   if(ms){S[field]=[val];ms.querySelectorAll('input[data-v]').forEach(i=>{i.checked=(i.dataset.v===val);});const a=ms.querySelector('.ms-all input');if(a)a.checked=false;syncMS(ms,field);}
   goTab(tab);
+  if(field==='farm'||field==='variety')showDrillFunnel(field,val);
 }
+function showDrillFunnel(field,val){
+  const rows=rowsExcept(field).filter(r=>r[field]===val);
+  document.getElementById('drill-title').textContent=(field==='farm'?'Farm: ':'Variety: ')+val;
+  document.getElementById('drill-modal').style.display='flex';
+  drawFunnelBlock(rows,'drill-funnel-chart','drill-conv-cards');
+}
+function closeDrill(){document.getElementById('drill-modal').style.display='none';}
 
 /* ---------- filters ---------- */
 function F(){return ROWS.filter(r=>{
@@ -1231,15 +1252,15 @@ function renderSourceDetail(rows,srcName,suffix){
     pkf:pct(x.pin,x.h),expk:pct(x.s,x.pin),expf:pct(x.s,x.h),budr:pct(x.h,x.braw),budp:pct(x.pin,x.bpk),bude:pct(x.s,x.bexp)};});
   items=items.filter(i=>i.h>0||i.pin>0||i.s>0||i.braw>0);
   items.sort((a,b)=>b.h-a.h);
-  const colW=90,cw=Math.max(500,items.length*colW+80);
+  const colW=260,cw=Math.max(700,items.length*colW+100);
   document.getElementById('ch-'+suffix+'-wrap').style.width=cw+'px';
   mkChart('ch-'+suffix,{type:'bar',data:{labels:items.map(i=>i.name),datasets:[
-      {label:'Raw Budget',data:items.map(i=>r1(i.braw)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
-      {label:'Raw Actual',data:items.map(i=>r1(i.h)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8},
-      {label:'PK Budget',data:items.map(i=>r1(i.bpk)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
-      {label:'PK Actual',data:items.map(i=>r1(i.pin)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8},
-      {label:'Export Budget',data:items.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.85,categoryPercentage:.8},
-      {label:'Export Actual',data:items.map(i=>r1(i.s)),backgroundColor:'#2563eb',barPercentage:.85,categoryPercentage:.8}]},
+      {label:'Raw Budget',data:items.map(i=>r1(i.braw)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.65},
+      {label:'Raw Actual',data:items.map(i=>r1(i.h)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.65},
+      {label:'PK Budget',data:items.map(i=>r1(i.bpk)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.65},
+      {label:'PK Actual',data:items.map(i=>r1(i.pin)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.65},
+      {label:'Export Budget',data:items.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.65},
+      {label:'Export Actual',data:items.map(i=>r1(i.s)),backgroundColor:'#2563eb',barPercentage:.9,categoryPercentage:.65}]},
     options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:22}},
       onClick:(e,els)=>{if(els.length)drillTo('farm',items[els[0].index].name,'fv');},
       plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
