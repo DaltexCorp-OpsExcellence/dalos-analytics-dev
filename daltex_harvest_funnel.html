@@ -557,7 +557,13 @@ input,select,button{font-family:var(--font)}
       </div>
     </div>
     <div class="cc" style="margin-bottom:12px">
-      <div class="cc-header"><div><div class="cc-title">Weekly Flow</div><div class="cc-sub">tons per ISO week, each stage on its own operational date</div></div></div>
+      <div class="cc-header"><div><div class="cc-title">Weekly Flow</div><div class="cc-sub">tons per ISO week, each stage on its own operational date</div></div>
+        <div class="cc-actions"><span class="seg" style="display:inline-flex;gap:0">
+          <button class="cc-btn on" id="wk-all" onclick="setWkStage('all',this)">Overall</button>
+          <button class="cc-btn" id="wk-h" onclick="setWkStage('h',this)">Harvest</button>
+          <button class="cc-btn" id="wk-pin" onclick="setWkStage('pin',this)">Packhouse</button>
+          <button class="cc-btn" id="wk-s" onclick="setWkStage('s',this)">Export</button>
+        </span></div></div>
       <div style="position:relative;height:300px"><canvas id="ch-weekly"></canvas></div>
     </div>
     <div class="insights" id="insights"></div>
@@ -972,6 +978,13 @@ function renderLastDates(rows){
 }
 
 let OVSRC='all';
+let WKSTAGE='all';
+function setWkStage(v,btn){
+  WKSTAGE=v;
+  document.querySelectorAll('#wk-all,#wk-h,#wk-pin,#wk-s').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  apply();
+}
 function setOvSrc(v,btn){
   OVSRC=v;
   document.querySelectorAll('#ovsrc-all,#ovsrc-in,#ovsrc-out').forEach(b=>b.classList.remove('on'));
@@ -1047,7 +1060,8 @@ function renderOverview(rows){
     if(r.st==='h')wk[w].h+=r.v;else if(r.st==='p')wk[w].pin+=r.vin;else if(r.st==='s')wk[w].s+=r.v;});
   const wks=Object.keys(wk).map(Number).sort((a,b)=>a-b);
   const STG={h:{n:'Harvest',c:'#142850'},pin:{n:'Packhouse',c:'#2563eb'},s:{n:'Export',c:'#16a34a'}};
-  mkChart('ch-weekly',{type:'line',data:{labels:wks.map(w=>'W'+String(w).padStart(2,'0')),datasets:Object.keys(STG).map(k=>({label:STG[k].n,data:wks.map(w=>r1(wk[w][k])),borderColor:STG[k].c,backgroundColor:STG[k].c,borderWidth:2,pointRadius:2.5,tension:.3,fill:false}))},
+  const wkKeys = WKSTAGE==='all' ? Object.keys(STG) : [WKSTAGE];
+  mkChart('ch-weekly',{type:'line',data:{labels:wks.map(w=>'W'+String(w).padStart(2,'0')),datasets:wkKeys.map(k=>({label:STG[k].n,data:wks.map(w=>r1(wk[w][k])),borderColor:STG[k].c,backgroundColor:STG[k].c,borderWidth:2,pointRadius:2.5,tension:.3,fill:false}))},
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18,right:14}},
       plugins:{legend:{display:true,labels:{boxWidth:10,font:{size:10}}},
         datalabels:{align:'top',offset:2,font:{family:"'IBM Plex Mono'",size:8,weight:'600'},formatter:v=>v>0?fmtT(v):''},
