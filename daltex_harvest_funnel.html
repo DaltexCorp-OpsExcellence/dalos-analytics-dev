@@ -1188,7 +1188,7 @@ function renderSrc(rows){
   const sa=srcs.map(s0=>agg(rows.filter(r=>r.src===s0)));
   document.getElementById('src-cards').innerHTML=srcs.map((s0,i)=>{
     const x=sa[i];const e2e=pct(x.s,x.h);
-    return kcard(s0,s0==='Insource'?'ti-home':'ti-truck-delivery',fmtT(x.h)+'<span style="font-size:11px;color:#8a95b0"> t harvested</span>','End-to-end '+fmtP(e2e),e2e||0);
+    return kcard(s0,s0==='Insource'?'ti-home':'ti-truck-delivery',fmtT(x.h)+'<span style="font-size:11px;color:#8a95b0"> T harvested</span>','End-to-end '+fmtP(e2e),e2e||0);
   }).join('');
 
   mkChart('ch-src-vol',{type:'bar',data:{labels:srcs,datasets:[
