@@ -61,7 +61,7 @@
     if(!el){
       el=document.createElement('div');
       el.id='dalos-chart-tip';
-      el.style.cssText='position:fixed;pointer-events:none;z-index:9999;background:#0e1f3d;color:#fff;border-radius:8px;padding:8px 10px;font-family:\'IBM Plex Mono\',monospace;font-size:11px;line-height:1.5;box-shadow:0 6px 22px rgba(14,31,61,.28);opacity:0;transition:opacity .12s;max-width:280px;white-space:nowrap';
+      el.style.cssText='position:fixed;pointer-events:none;z-index:9999;background:#0e1f3d;color:#fff;border-radius:8px;padding:8px 10px;font-family:\'IBM Plex Mono\',monospace;font-size:11px;line-height:1.5;box-shadow:0 6px 22px rgba(14,31,61,.28);opacity:0;transition:opacity .12s;max-width:320px;white-space:nowrap';
       document.body.appendChild(el);
     }
     return el;
@@ -84,6 +84,11 @@
       shown++;
     });
     if(!shown){tip.style.opacity='0';return;}
+    if(tt.afterBody&&tt.afterBody.length){
+      html+='<div style="margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.18)">';
+      tt.afterBody.forEach(line=>{html+='<div>'+(line||'&nbsp;')+'</div>';});
+      html+='</div>';
+    }
     tip.innerHTML=html;
     tip.style.opacity='1';
     const canvasRect=context.chart.canvas.getBoundingClientRect();
