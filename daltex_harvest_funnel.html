@@ -715,9 +715,19 @@ function dalUserEmail(){
   try{
     const raw=localStorage.getItem('sb-sfyjvgjwvtwkrnqrvqyc-auth-token');
     if(!raw)return'';
-    const s=JSON.parse(raw);
-    const sess=(s&&s.access_token)?s:((s&&s.currentSession)?s.currentSession:null);
-    return ((sess&&sess.user&&sess.user.email)||'').trim().toLowerCase();
+    let s=JSON.parse(raw);
+    if(Array.isArray(s))s={access_token:s[0],user:null};
+    const sess=(s&&s.access_token)?s:((s&&s.currentSession)?s.currentSession:s);
+    let email=(sess&&sess.user&&sess.user.email)||'';
+    if(!email){
+      // fall back to decoding the JWT payload (email claim)
+      const tok=(sess&&sess.access_token)||(typeof s==='string'?s:'');
+      if(tok&&tok.split('.').length===3){
+        const p=JSON.parse(decodeURIComponent(escape(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))));
+        email=p.email||(p.user_metadata&&p.user_metadata.email)||'';
+      }
+    }
+    return String(email).trim().toLowerCase();
   }catch(e){return'';}
 }
 function dalIsAdmin(){return DAL_ADMINS.map(e=>e.toLowerCase()).includes(dalUserEmail());}
