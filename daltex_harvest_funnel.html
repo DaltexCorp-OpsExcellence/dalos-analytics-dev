@@ -510,6 +510,7 @@ input,select,button{font-family:var(--font)}
   <div class="tab" data-tab="budget"><i class="ti ti-target"></i>Budget vs Actual</div>
   <div class="tab" data-tab="fv"><i class="ti ti-table"></i>Farm &amp; Variety</div>
   <div class="tab" data-tab="variety"><i class="ti ti-plant-2"></i>Variety</div>
+  <div class="tab" data-tab="color"><i class="ti ti-palette"></i>Color</div>
   <div class="tab" data-tab="src"><i class="ti ti-arrows-split"></i>Insource vs Outsource</div>
   <div class="tab" data-tab="in"><i class="ti ti-home"></i>Insource Farms</div>
   <div class="tab" data-tab="out"><i class="ti ti-truck-delivery"></i>Outsource Farms</div>
@@ -653,6 +654,14 @@ input,select,button{font-family:var(--font)}
       <div style="overflow-x:auto"><div style="position:relative;height:420px" id="ch-variety-wrap"><canvas id="ch-variety"></canvas></div></div>
     </div>
     <div class="cc"><div class="tbl-wrap" style="max-height:520px;overflow-y:auto"><table class="mkt-table" id="tbl-variety"></table></div></div>
+  </div>
+
+  <!-- ============ TAB: COLOR ============ -->
+  <div class="tabpage" id="tp-color" style="display:none">
+    <div class="cc" style="margin-bottom:12px">
+      <div class="cc-header"><div><div class="cc-title">Color × Variety × Farm — Consolidated</div><div class="cc-sub">grouped by color, then variety, then farm · subtotals shown</div></div></div>
+      <div class="tbl-wrap" style="max-height:640px;overflow-y:auto"><table class="mkt-table" id="tbl-color"></table></div>
+    </div>
   </div>
 
 
@@ -1192,6 +1201,7 @@ function apply(){
   else if(S.tab==='budget')renderBudget(rows);
   else if(S.tab==='fv')renderFV(rows);
   else if(S.tab==='variety')renderDimTab(rows,'variety','ch-variety','ch-variety-wrap','tbl-variety','Variety',true);
+  else if(S.tab==='color')renderColorTab(rows);
   
   else if(S.tab==='src')renderSrc(rows);
   else if(S.tab==='in')renderSourceDetail(rows,'Insource','in');
@@ -1436,6 +1446,72 @@ function renderFV(rows){
   document.getElementById('tbl-fv').innerHTML=html;
 }
 function setFVSort(k){if(FVSORT.k===k)FVSORT.dir*=-1;else{FVSORT.k=k;FVSORT.dir=-1;}apply();}
+
+/* ========== TAB: COLOR (Color > Variety > Farm hierarchy) ========== */
+function renderColorTab(rows){
+  function metricCells(x){
+    const budr=pct(x.h,x.braw),budp=pct(x.pin,x.bpk),bude=pct(x.s,x.bexp);
+    const pkf=pct(x.pin,x.h),expk=pct(x.s,x.pin),expf=pct(x.s,x.h);
+    return '<td class="mono">'+fmtT(x.braw)+'</td><td class="mono">'+fmtT(x.h)+'</td><td class="mono" style="color:'+pctColor(budr)+';font-weight:600">'+fmtP(budr)+'</td>'
+      +'<td class="mono">'+fmtT(x.bpk)+'</td><td class="mono">'+fmtT(x.pin)+'</td><td class="mono" style="color:'+pctColor(budp)+';font-weight:600">'+fmtP(budp)+'</td>'
+      +'<td class="mono">'+fmtT(x.bexp)+'</td><td class="mono">'+fmtT(x.s)+'</td><td class="mono" style="color:'+pctColor(bude)+';font-weight:600">'+fmtP(bude)+'</td>'
+      +'<td class="mono">'+fmtP(pkf)+'</td><td class="mono">'+fmtP(expk)+'</td><td class="mono">'+fmtP(expf)+'</td>';
+  }
+  const cols=['Color','Variety','Farm','Raw Bud T','Raw Act T','Raw %','PK Bud T','PK Act T','PK %','Exp Bud T','Exp Act T','Exp %','PK-Farm %','Exp-PK %','Exp-Farm %'];
+  let html='<thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>';
+
+  const byColor={};
+  rows.forEach(r=>{
+    const c=r.cat||'Other';
+    byColor[c]=byColor[c]||{};
+    const v=r.variety||'(blank)';
+    byColor[c][v]=byColor[c][v]||{};
+    const f=r.farm||'(blank)';
+    (byColor[c][v][f]=byColor[c][v][f]||[]).push(r);
+  });
+
+  const colorOrder=['Red','White','Black'];
+  const colorKeys=Object.keys(byColor).sort((a,b)=>{
+    const ia=colorOrder.indexOf(a), ib=colorOrder.indexOf(b);
+    const ra=ia<0?(a==='Other'?99:50):ia, rb=ib<0?(b==='Other'?99:50):ib;
+    return ra-rb || a.localeCompare(b);
+  });
+
+  const allRows=[];
+  colorKeys.forEach(color=>{
+    const varsObj=byColor[color];
+    const colorRows=[];
+    Object.values(varsObj).forEach(farmsObj=>Object.values(farmsObj).forEach(rs=>rs.forEach(r=>colorRows.push(r))));
+    allRows.push(...colorRows);
+    const cx=agg(colorRows);
+    html+='<tr style="background:#eef1f7;font-weight:700"><td>All '+esc(color)+'</td><td>All '+esc(color)+'</td><td>All</td>'+metricCells(cx)+'</tr>';
+    const varKeys=Object.keys(varsObj).sort((a,b)=>{
+      const xa=agg([].concat(...Object.values(varsObj[a]))), xb=agg([].concat(...Object.values(varsObj[b])));
+      return (pct(xb.s,xb.h)||-1)-(pct(xa.s,xa.h)||-1);
+    });
+    varKeys.forEach(variety=>{
+      const farmsObj=varsObj[variety];
+      const varRows=[].concat(...Object.values(farmsObj));
+      const vx=agg(varRows);
+      html+='<tr style="background:#f6f8fb;font-weight:600"><td></td><td>All '+esc(variety)+'</td><td>All</td>'+metricCells(vx)+'</tr>';
+      const farmKeys=Object.keys(farmsObj).sort((a,b)=>{
+        const xa=agg(farmsObj[a]), xb=agg(farmsObj[b]);
+        return (pct(xb.s,xb.h)||-1)-(pct(xa.s,xa.h)||-1);
+      });
+      farmKeys.forEach(farm=>{
+        const fx=agg(farmsObj[farm]);
+        const fn=esc(farm).replace(/'/g,"\\'");
+        html+='<tr><td></td><td style="color:#DC6428">'+esc(variety)+'</td>'
+          +'<td class="drillcell" onclick="drillTo(\'farm\',\''+fn+'\',\'fv\')" title="Click to view '+esc(farm)+' funnel">'+esc(farm)+' <i class="ti ti-chevron-right drill-arrow"></i></td>'
+          +metricCells(fx)+'</tr>';
+      });
+    });
+  });
+
+  const tot=agg(allRows);
+  html+='</tbody><tfoot><tr style="border-top:2px solid var(--border2);font-weight:700"><td>Total</td><td></td><td></td>'+metricCells(tot)+'</tr></tfoot>';
+  document.getElementById('tbl-color').innerHTML=html;
+}
 
 /* ========== GENERIC: single-dimension tab (Variety, Category) ========== */
 let DIMSORT={};
