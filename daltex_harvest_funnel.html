@@ -784,9 +784,10 @@ function toTons(rows,get){
 }
 
 async function loadAll(){
-  const [farms,vars,H,P,SH,B]=await Promise.all([
+  const [farms,vars,cats,H,P,SH,B]=await Promise.all([
     pget('farms?select=name,canonical_name,raw_names,source_type,active&active=eq.true'),
-    pget('varieties?select=name,canonical_name,raw_names,product_id,active&product_id=eq.grapes&active=eq.true'),
+    pget('varieties?select=name,canonical_name,raw_names,product_id,active,category_id&product_id=eq.grapes&active=eq.true'),
+    pget('categories?select=id,name').catch(()=>[]),
     pget('harvest_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,raw_station,harvest_date,color'),
     pget('packhouse_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,incoming_raw,exportable_weight,operation_date,category'),
     pget('grapes_shipments_view?season_id=eq.'+SID+'&select=farm_source,variety,net_weight,loading_date,color'),
@@ -803,6 +804,23 @@ async function loadAll(){
     (v.raw_names||[]).forEach(rn=>{VMAP[norm(rn).toLowerCase()]=canon;});
     VMAP[norm(v.name).toLowerCase()]=VMAP[norm(v.name).toLowerCase()]||canon;
   });
+  // category_id -> color name, then canonical variety -> color
+  const CATNAME={};
+  (cats||[]).forEach(c=>{CATNAME[c.id]=norm(c.name);});
+  function normColor(str){
+    if(!str)return'';
+    const s=String(str).toLowerCase();
+    if(s.includes('red'))return'Red';
+    if(s.includes('white'))return'White';
+    if(s.includes('black'))return'Black';
+    return'';
+  }
+  const VCOLOR={}; // canonical variety name -> Red/White/Black
+  vars.forEach(v=>{
+    const canon=norm(v.canonical_name)||norm(v.name);
+    const col=normColor(CATNAME[v.category_id]);
+    if(col)VCOLOR[canon.toLowerCase()]=col;
+  });
   function cf(raw){const k=norm(raw).toLowerCase();if(!k)return{canon:'(blank)',src:'—'};const m=FMAP[k];if(!m){const rn=norm(raw);UNMAPPED.farm[rn]=(UNMAPPED.farm[rn]||0)+1;return{canon:rn,src:'—'};}return m;}
   function cv(raw){const k=norm(raw).toLowerCase();if(!k)return'(blank)';const m=VMAP[k];if(!m){const rn=norm(raw);UNMAPPED.variety[rn]=(UNMAPPED.variety[rn]||0)+1;return rn;}return m;}
 
@@ -812,18 +830,18 @@ async function loadAll(){
   const gS=toTons(SH,r=>num(r.net_weight));
 
   ROWS=[];
-  function catOf(str){
-    if(!str)return'Other';
-    const s=String(str).toLowerCase();
-    if(s.includes('red'))return'Red';
-    if(s.includes('white'))return'White';
-    if(s.includes('black'))return'Black';
+  // Prefer color derived from the variety's category; fall back to any color/category text on the row.
+  function catOf(canonVariety,txt){
+    const byVar=canonVariety?VCOLOR[String(canonVariety).toLowerCase()]:'';
+    if(byVar)return byVar;
+    const byTxt=normColor(txt);
+    if(byTxt)return byTxt;
     return'Other';
   }
-  H.forEach(r=>{const f=cf(r.farm);ROWS.push({st:'h',farm:f.canon,src:f.src,variety:cv(r.variety),cat:catOf(r.color),d:norm(r.harvest_date),v:gH(r)});});
-  P.forEach(r=>{const f=cf(r.farm);ROWS.push({st:'p',farm:f.canon,src:f.src,variety:cv(r.variety),cat:catOf(r.category),d:norm(r.operation_date),vin:gPin(r),vout:gPout(r)});});
-  SH.forEach(r=>{const f=cf(r.farm_source);ROWS.push({st:'s',farm:f.canon,src:f.src,variety:cv(r.variety),cat:catOf(r.color),d:norm(r.loading_date),v:gS(r)});});
-  B.forEach(r=>{const f=cf(r.farm);ROWS.push({st:'b',farm:f.canon,src:f.src,variety:cv(r.variety),cat:catOf(r.category),d:'',braw:num(r.budget_raw_qty),bpk:num(r.budget_raw_pk_qty),bexp:num(r.budget_export_qty)});});
+  H.forEach(r=>{const f=cf(r.farm);const vc=cv(r.variety);ROWS.push({st:'h',farm:f.canon,src:f.src,variety:vc,cat:catOf(vc,r.color),d:norm(r.harvest_date),v:gH(r)});});
+  P.forEach(r=>{const f=cf(r.farm);const vc=cv(r.variety);ROWS.push({st:'p',farm:f.canon,src:f.src,variety:vc,cat:catOf(vc,r.category),d:norm(r.operation_date),vin:gPin(r),vout:gPout(r)});});
+  SH.forEach(r=>{const f=cf(r.farm_source);const vc=cv(r.variety);ROWS.push({st:'s',farm:f.canon,src:f.src,variety:vc,cat:catOf(vc,r.color),d:norm(r.loading_date),v:gS(r)});});
+  B.forEach(r=>{const f=cf(r.farm);const vc=cv(r.variety);ROWS.push({st:'b',farm:f.canon,src:f.src,variety:vc,cat:catOf(vc,r.category),d:'',braw:num(r.budget_raw_qty),bpk:num(r.budget_raw_pk_qty),bexp:num(r.budget_export_qty)});});
 
   const ds=ROWS.map(r=>r.d).filter(Boolean).sort();
   LDF=ds[0]||'';LDT=ds[ds.length-1]||'';
