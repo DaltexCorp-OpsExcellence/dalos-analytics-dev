@@ -159,6 +159,11 @@ input,select,button{font-family:var(--font)}
 .tbadge-live{background:rgba(22,163,74,.2);color:#6ee7a0;border:1px solid rgba(22,163,74,.3)}
 .tbadge-ok{background:rgba(22,163,74,.2);color:#6ee7a0;border:1px solid rgba(22,163,74,.3)}
 .live-dot{width:5px;height:5px;border-radius:50%;background:#6ee7a0;animation:pulse 2s infinite}
+.chart-legend{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin:2px 0 10px;font-size:11px;color:#334155;font-weight:600}
+.chart-legend .cl-item{display:inline-flex;align-items:center;gap:5px}
+.chart-legend .cl-box{width:11px;height:11px;border-radius:2px;display:inline-block}
+.chart-legend .cl-sep{color:#cbd5e1}
+.chart-legend .cl-muted{color:#8a95b0;font-weight:500}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* TABS */
@@ -641,6 +646,12 @@ input,select,button{font-family:var(--font)}
   <div class="tabpage" id="tp-variety" style="display:none">
     <div class="cc" style="margin-bottom:12px">
       <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Variety</div><div class="cc-sub">click a bar to drill in</div></div></div>
+      <div class="chart-legend">
+        <span class="cl-item"><span class="cl-box" style="background:#DC6428"></span>Budget</span>
+        <span class="cl-item"><span class="cl-box" style="background:#142850"></span>Actual</span>
+        <span class="cl-sep">·</span>
+        <span class="cl-item cl-muted">Raw → PK → Export per group</span>
+      </div>
       <div style="overflow-x:auto"><div style="position:relative;height:420px" id="ch-variety-wrap"><canvas id="ch-variety"></canvas></div></div>
     </div>
     <div class="cc"><div class="tbl-wrap" style="max-height:520px;overflow-y:auto"><table class="mkt-table" id="tbl-variety"></table></div></div>
@@ -678,6 +689,12 @@ input,select,button{font-family:var(--font)}
     </div>
     <div class="cc" style="margin-bottom:12px">
       <div class="cc-header"><div><div class="cc-title">Insource Farms — Actual vs Budget</div><div class="cc-sub">click a bar to drill in</div></div></div>
+      <div class="chart-legend">
+        <span class="cl-item"><span class="cl-box" style="background:#DC6428"></span>Budget</span>
+        <span class="cl-item"><span class="cl-box" style="background:#142850"></span>Actual</span>
+        <span class="cl-sep">·</span>
+        <span class="cl-item cl-muted">Raw → PK → Export per group</span>
+      </div>
       <div style="overflow-x:auto"><div style="position:relative;height:420px" id="ch-in-wrap"><canvas id="ch-in"></canvas></div></div>
     </div>
     <div class="cc"><div class="tbl-wrap" style="max-height:420px;overflow-y:auto"><table class="mkt-table" id="tbl-in"></table></div></div>
@@ -697,6 +714,12 @@ input,select,button{font-family:var(--font)}
     </div>
     <div class="cc" style="margin-bottom:12px">
       <div class="cc-header"><div><div class="cc-title">Outsource Farms — Actual vs Budget</div><div class="cc-sub">click a bar to drill in</div></div></div>
+      <div class="chart-legend">
+        <span class="cl-item"><span class="cl-box" style="background:#DC6428"></span>Budget</span>
+        <span class="cl-item"><span class="cl-box" style="background:#142850"></span>Actual</span>
+        <span class="cl-sep">·</span>
+        <span class="cl-item cl-muted">Raw → PK → Export per group</span>
+      </div>
       <div style="overflow-x:auto"><div style="position:relative;height:420px" id="ch-out-wrap"><canvas id="ch-out"></canvas></div></div>
     </div>
     <div class="cc"><div class="tbl-wrap" style="max-height:420px;overflow-y:auto"><table class="mkt-table" id="tbl-out"></table></div></div>
@@ -1385,7 +1408,7 @@ function renderDimTab(rows,dim,chartId,wrapId,tblId,drillLabel,allowDrill){
       {label:'Export Actual',data:chartItems.map(i=>r1(i.s)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85}]},
     options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:26}},
       onClick: allowDrill ? ((e,els)=>{if(els.length)showDrillFunnel(dim,chartItems[els[0].index].name,dim==='variety'?'fv':dim);}) : undefined,
-      plugins:{legend:{display:true,position:'top',align:'start',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
+      plugins:{legend:{display:false},
         datalabels:{anchor:'end',align:'end',offset:3,font:{family:"'IBM Plex Mono'",size:9,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
       scales:{y:{grace:'18%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,font:{size:11,weight:'600'}},grid:{display:false}}}}});
@@ -1478,7 +1501,7 @@ function renderSourceDetail(rows,srcName,suffix){
       {label:'Export Actual',data:items.map(i=>r1(i.s)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85}]},
     options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:22}},
       onClick:(e,els)=>{if(els.length)drillTo('farm',items[els[0].index].name,'fv');},
-      plugins:{legend:{display:true,position:'top',align:'start',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
+      plugins:{legend:{display:false},
         datalabels:{anchor:'end',align:'end',offset:2,font:{family:"'IBM Plex Mono'",size:8,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
       scales:{y:{grace:'10%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,font:{size:10.5,weight:'500'}},grid:{display:false}}}}});
