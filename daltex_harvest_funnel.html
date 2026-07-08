@@ -658,7 +658,6 @@ input,select,button{font-family:var(--font)}
 
   <!-- ============ TAB: COLOR ============ -->
   <div class="tabpage" id="tp-color" style="display:none">
-    <div class="kgrid" style="grid-template-columns:repeat(3,1fr)" id="color-cards"></div>
     <div class="cc" style="margin-bottom:12px">
       <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Color</div><div class="cc-sub">Raw / PK / Export per color</div></div></div>
       <div class="chart-legend">
@@ -1524,21 +1523,6 @@ function renderColorTab(rows){
   html+='</tbody><tfoot><tr style="border-top:2px solid var(--border2);font-weight:700"><td>Total</td><td></td><td></td>'+metricCells(tot)+'</tr></tfoot>';
   document.getElementById('tbl-color').innerHTML=html;
 
-  // ---- KPI cards per color: Export budget achievement % + funnel conversion % ----
-  const cardColors=colorKeys.filter(c=>c!=='Other');
-  document.getElementById('color-cards').style.gridTemplateColumns='repeat('+Math.max(1,cardColors.length)+',1fr)';
-  document.getElementById('color-cards').innerHTML = cardColors.map(color=>{
-    const cr=[];Object.values(byColor[color]).forEach(fo=>Object.values(fo).forEach(rs=>rs.forEach(r=>cr.push(r))));
-    const x=agg(cr);
-    const budExp=pct(x.s,x.bexp);   // Export vs Budget
-    const convEF=pct(x.s,x.h);      // Export ÷ Harvest conversion
-    return kcard(
-      color+' — Export vs Budget','ti-palette',
-      fmtP(budExp),
-      'Exp÷Harvest conv '+fmtP(convEF)+' · '+fmtT(x.s)+' / '+fmtT(x.bexp)+' T',
-      budExp||0);
-  }).join('');
-
   // ---- chart: Actual vs Budget by color ----
   const chartItems=colorKeys.map(color=>{
     const cr=[];Object.values(byColor[color]).forEach(fo=>Object.values(fo).forEach(rs=>rs.forEach(r=>cr.push(r))));
@@ -1553,9 +1537,25 @@ function renderColorTab(rows){
       {label:'Export Budget',data:chartItems.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
       {label:'Export Actual',data:chartItems.map(i=>r1(i.s)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85}]},
     options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:26,bottom:30}},
+      interaction:{mode:'index',intersect:false},
       plugins:{legend:{display:false},
         datalabels:{anchor:'end',align:'end',offset:3,font:{family:"'IBM Plex Mono'",size:9,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
-        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
+        tooltip:{callbacks:{
+          title:items=>chartItems[items[0].dataIndex].name,
+          label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T',
+          afterBody:items=>{
+            const x=chartItems[items[0].dataIndex];
+            const lines=['',' % Actual over Budget:',
+              '  Raw: '+fmtP(pct(x.h,x.braw)),
+              '  PK: '+fmtP(pct(x.pin,x.bpk)),
+              '  Export: '+fmtP(pct(x.s,x.bexp)),
+              '',' Conversion (actual):',
+              '  PK ÷ Harvest: '+fmtP(pct(x.pin,x.h)),
+              '  Export ÷ PK: '+fmtP(pct(x.s,x.pin)),
+              '  Export ÷ Harvest: '+fmtP(pct(x.s,x.h))];
+            return lines;
+          }
+        }}},
       scales:{y:{grace:'18%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,padding:22,font:{size:11,weight:'600'}},grid:{display:false}}}},
     plugins:[stageAxisLabels]});
 }
