@@ -1161,6 +1161,28 @@ function renderWeeklyChart(data, s) {
     const v   = byWeek[w];
     const pv  = PRIOR_WEEKLY[w] || 0;
     const x   = left + i*(bW+gap);
+    const both = (WLBL==='both');
+
+    if (both) {
+      // side-by-side: current bar (left) + prior bar (right)
+      const halfW = (bW-4)/2;
+      const curX  = x;
+      const priX  = x + halfW + 4;
+      const bH  = Math.max(3, v/maxV*(H-top));
+      const pbH = Math.max(pv>0?3:0, pv/maxV*(H-top));
+      const y   = H - bH;
+      const py  = H - pbH;
+      const curCol = v > 500 ? 'var(--navy)' : v > 200 ? 'var(--navy2)' : '#5a7cc2';
+      // current
+      svg += `<rect x="${curX}" y="${y}" width="${halfW}" height="${bH}" rx="3" fill="${curCol}"/>`;
+      if (v > 0) svg += `<text x="${curX+halfW/2}" y="${y>14?y-4:y+11}" font-size="8" fill="${y>14?curCol:'white'}" text-anchor="middle" font-weight="600" font-family="'IBM Plex Mono',monospace">${v.toFixed(0)}</text>`;
+      // prior
+      svg += `<rect x="${priX}" y="${py}" width="${halfW}" height="${pbH}" rx="3" fill="rgba(120,135,165,0.55)" stroke="rgba(90,107,138,0.9)" stroke-width="1"/>`;
+      if (pv > 0) svg += `<text x="${priX+halfW/2}" y="${py>14?py-4:py+11}" font-size="8" fill="var(--text3)" text-anchor="middle" font-weight="400" font-family="'IBM Plex Mono',monospace">${pv.toFixed(0)}</text>`;
+      svg += `<text x="${x+bW/2}" y="${H+14}" font-size="9" fill="var(--text3)" text-anchor="middle">Wk ${w}</text>`;
+      return;
+    }
+
     const bH  = Math.max(3, v/maxV*(H-top));
     const pbH = pv/maxV*(H-top);
     const y   = H - bH;
@@ -1172,20 +1194,15 @@ function renderWeeklyChart(data, s) {
 
     // prior ghost bar (always drawn as visual reference)
     svg += `<rect x="${x}" y="${py}" width="${bW}" height="${pbH}" rx="3" fill="${priorFill}" stroke="${priorStroke}" stroke-width="1"/>`;
-    // prior-season number label (shown in 'prior' and 'both' modes)
-    if (pv > 0 && (WLBL==='prior' || WLBL==='both')) {
-      // current label sits at y-5 (or y+12 for very short bars); in 'both' mode,
-      // if the prior label (py-4) would collide with it, push the prior label down.
-      const curLabelY = (WLBL==='cur'||WLBL==='both') && v>0 ? (y>14?y-5:y+12) : null;
-      let py2 = py-4;
-      if (WLBL==='both' && curLabelY!==null && Math.abs(py2-curLabelY)<11) py2 = curLabelY + 11;
-      svg += `<text x="${x+bW/2}" y="${py2}" font-size="${WLBL==='both'?8:9}" fill="var(--text3)" text-anchor="middle" font-weight="${WLBL==='both'?'400':'600'}" font-family="'IBM Plex Mono',monospace">${pv.toFixed(WLBL==='both'?0:1)}</text>`;
+    // prior-season number label (shown in 'prior' mode)
+    if (pv > 0 && WLBL==='prior') {
+      svg += `<text x="${x+bW/2}" y="${py-4}" font-size="9" fill="var(--text3)" text-anchor="middle" font-weight="600" font-family="'IBM Plex Mono',monospace">${pv.toFixed(1)}</text>`;
     }
 
     // current bar
     svg += `<rect x="${x}" y="${y}" width="${bW}" height="${bH}" rx="3" fill="${col}"/>`;
-    // current-season number label (shown in 'cur' and 'both' modes)
-    if (v > 0 && (WLBL==='cur' || WLBL==='both')) {
+    // current-season number label (shown in 'cur' mode)
+    if (v > 0 && WLBL==='cur') {
       svg += `<text x="${x+bW/2}" y="${y > 14 ? y-5 : y+12}" font-size="9" fill="${y > 14 ? col : 'white'}" text-anchor="middle" font-weight="600" font-family="'IBM Plex Mono',monospace">${v.toFixed(1)}</text>`;
     }
     svg += `<text x="${x+bW/2}" y="${H+14}" font-size="9" fill="var(--text3)" text-anchor="middle">Wk ${w}</text>`;
