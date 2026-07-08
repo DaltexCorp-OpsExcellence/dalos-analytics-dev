@@ -859,7 +859,16 @@ async function loadAll(){
   H.forEach(r=>{const f=cf(r.farm);const vc=cv(r.variety);ROWS.push({st:'h',farm:f.canon,src:f.src,variety:vc,cat:catOf(vc,r.color),d:norm(r.harvest_date),v:gH(r)});});
   P.forEach(r=>{const f=cf(r.farm);const vc=cv(r.variety);ROWS.push({st:'p',farm:f.canon,src:f.src,variety:vc,cat:catOf(vc,r.category),d:norm(r.operation_date),vin:gPin(r),vout:gPout(r)});});
   SH.forEach(r=>{const f=cf(r.farm_source);const vc=cv(r.variety);ROWS.push({st:'s',farm:f.canon,src:f.src,variety:vc,cat:catOf(vc,r.color),d:norm(r.loading_date),v:gS(r)});});
-  B.forEach(r=>{const f=cf(r.farm);const vc=cv(r.variety);ROWS.push({st:'b',farm:f.canon,src:f.src,variety:vc,cat:catOf(vc,r.category),d:'',braw:num(r.budget_raw_qty),bpk:num(r.budget_raw_pk_qty),bexp:num(r.budget_export_qty)});});
+  B.forEach(r=>{
+    const rawFarm=norm(r.farm);
+    const isOutBud=rawFarm.toLowerCase()==='outsource_budget';
+    const f=cf(r.farm);const vc=cv(r.variety);
+    ROWS.push({st:'b',
+      farm:isOutBud?SENTINEL_FARM:f.canon,
+      src:isOutBud?'Outsource':f.src,
+      variety:vc,cat:catOf(vc,r.category),d:'',
+      braw:num(r.budget_raw_qty),bpk:num(r.budget_raw_pk_qty),bexp:num(r.budget_export_qty)});
+  });
 
   const ds=ROWS.map(r=>r.d).filter(Boolean).sort();
   LDF=ds[0]||'';LDT=ds[ds.length-1]||'';
