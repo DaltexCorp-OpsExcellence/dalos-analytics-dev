@@ -649,8 +649,6 @@ input,select,button{font-family:var(--font)}
       <div class="chart-legend">
         <span class="cl-item"><span class="cl-box" style="background:#DC6428"></span>Budget</span>
         <span class="cl-item"><span class="cl-box" style="background:#142850"></span>Actual</span>
-        <span class="cl-sep">·</span>
-        <span class="cl-item cl-muted">Raw → PK → Export per group</span>
       </div>
       <div style="overflow-x:auto"><div style="position:relative;height:420px" id="ch-variety-wrap"><canvas id="ch-variety"></canvas></div></div>
     </div>
@@ -692,8 +690,6 @@ input,select,button{font-family:var(--font)}
       <div class="chart-legend">
         <span class="cl-item"><span class="cl-box" style="background:#DC6428"></span>Budget</span>
         <span class="cl-item"><span class="cl-box" style="background:#142850"></span>Actual</span>
-        <span class="cl-sep">·</span>
-        <span class="cl-item cl-muted">Raw → PK → Export per group</span>
       </div>
       <div style="overflow-x:auto"><div style="position:relative;height:420px" id="ch-in-wrap"><canvas id="ch-in"></canvas></div></div>
     </div>
@@ -717,8 +713,6 @@ input,select,button{font-family:var(--font)}
       <div class="chart-legend">
         <span class="cl-item"><span class="cl-box" style="background:#DC6428"></span>Budget</span>
         <span class="cl-item"><span class="cl-box" style="background:#142850"></span>Actual</span>
-        <span class="cl-sep">·</span>
-        <span class="cl-item cl-muted">Raw → PK → Export per group</span>
       </div>
       <div style="overflow-x:auto"><div style="position:relative;height:420px" id="ch-out-wrap"><canvas id="ch-out"></canvas></div></div>
     </div>
@@ -1130,6 +1124,33 @@ function killChip(f){
 /* ---------- chart infra ---------- */
 if(window.ChartDataLabels){Chart.register(window.ChartDataLabels);}
 function mkChart(id,cfg){const el=document.getElementById(id);if(!el)return;const ex=Chart.getChart(el);if(ex)ex.destroy();charts[id]=new Chart(el,cfg);}
+
+/* Draws Raw / PK / Export sub-labels centered under each stage's Budget+Actual bar pair.
+   Assumes dataset order: [0,1]=Raw, [2,3]=PK, [4,5]=Export. */
+const stageAxisLabels={
+  id:'stageAxisLabels',
+  afterDatasetsDraw(chart){
+    const {ctx,chartArea:{bottom},scales:{x}}=chart;
+    if(!x)return;
+    const pairs=[[0,1,'Raw'],[2,3,'PK'],[4,5,'Export']];
+    const n=(chart.data.labels||[]).length;
+    ctx.save();
+    ctx.font="600 9px 'Plus Jakarta Sans', sans-serif";
+    ctx.fillStyle='#64748b';
+    ctx.textAlign='center';
+    ctx.textBaseline='top';
+    for(let i=0;i<n;i++){
+      pairs.forEach(([a,b,lbl])=>{
+        const ma=chart.getDatasetMeta(a).data[i];
+        const mb=chart.getDatasetMeta(b).data[i];
+        if(!ma||!mb)return;
+        const cx=(ma.x+mb.x)/2;
+        ctx.fillText(lbl,cx,bottom+4);
+      });
+    }
+    ctx.restore();
+  }
+};
 function kcard(label,icon,val,sub,bar){return '<div class="kcard"><div class="kcard-label"><i class="ti '+icon+'"></i>'+label+'</div><div class="kcard-val">'+val+'</div><div class="kcard-sub">'+sub+'</div><div class="kcard-bar"><div class="kcard-bar-fill" style="width:'+Math.max(0,Math.min(100,bar||0))+'%"></div></div></div>';}
 
 /* ---------- aggregate ---------- */
@@ -1406,12 +1427,13 @@ function renderDimTab(rows,dim,chartId,wrapId,tblId,drillLabel,allowDrill){
       {label:'PK Actual',data:chartItems.map(i=>r1(i.pin)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85},
       {label:'Export Budget',data:chartItems.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
       {label:'Export Actual',data:chartItems.map(i=>r1(i.s)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85}]},
-    options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:26}},
+    options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:26,bottom:16}},
       onClick: allowDrill ? ((e,els)=>{if(els.length)showDrillFunnel(dim,chartItems[els[0].index].name,dim==='variety'?'fv':dim);}) : undefined,
       plugins:{legend:{display:false},
         datalabels:{anchor:'end',align:'end',offset:3,font:{family:"'IBM Plex Mono'",size:9,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
-      scales:{y:{grace:'18%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,font:{size:11,weight:'600'}},grid:{display:false}}}}});
+      scales:{y:{grace:'18%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,font:{size:11,weight:'600'}},grid:{display:false}}}},
+    plugins:[stageAxisLabels]});
   document.getElementById(chartId).style.cursor = allowDrill ? 'pointer' : 'default';
 
   /* table, sortable */
@@ -1499,12 +1521,13 @@ function renderSourceDetail(rows,srcName,suffix){
       {label:'PK Actual',data:items.map(i=>r1(i.pin)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85},
       {label:'Export Budget',data:items.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
       {label:'Export Actual',data:items.map(i=>r1(i.s)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85}]},
-    options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:22}},
+    options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:22,bottom:16}},
       onClick:(e,els)=>{if(els.length)drillTo('farm',items[els[0].index].name,'fv');},
       plugins:{legend:{display:false},
         datalabels:{anchor:'end',align:'end',offset:2,font:{family:"'IBM Plex Mono'",size:8,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
-      scales:{y:{grace:'10%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,font:{size:10.5,weight:'500'}},grid:{display:false}}}}});
+      scales:{y:{grace:'10%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,font:{size:10.5,weight:'500'}},grid:{display:false}}}},
+    plugins:[stageAxisLabels]});
   document.getElementById('ch-'+suffix).style.cursor='pointer';
 
   let html='<thead><tr><th>Farm</th><th>Raw Bud T</th><th>Raw Act T</th><th>Raw %</th><th>PK Bud T</th><th>PK Act T</th><th>PK %</th><th>Exp Bud T</th><th>Exp Act T</th><th>Exp %</th><th>PK-Farm %</th><th>Exp-PK %</th><th>Exp-Farm %</th></tr></thead><tbody>';
