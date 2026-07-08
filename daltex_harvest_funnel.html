@@ -1372,12 +1372,12 @@ function drawAchByDim(rows,dim,chartId,wrapId,onClick,stage){
   items.sort((a,b)=>b.ach-a.ach);
   const rowH=24,ch=Math.max(260,items.length*rowH+40);
   document.getElementById(wrapId).style.height=ch+'px';
-  mkChart(chartId,{type:'bar',data:{labels:items.map(i=>i.name),datasets:[{data:items.map(i=>r1(i.ach)),backgroundColor:items.map(i=>i.ach>=100?'#16a34a':i.ach>=70?'#d97706':'#dc2626'),borderRadius:4,barThickness:16}]},
+  mkChart(chartId,{type:'bar',data:{labels:items.map(i=>i.name),datasets:[{data:items.map(i=>r1(i.ach)),backgroundColor:items.map(i=>i.ach>=95?'#16a34a':i.ach>=70?'#d97706':'#dc2626'),borderRadius:4,barThickness:16}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,layout:{padding:{right:42}},
       onClick:(e,els)=>{if(els.length)onClick(items[els[0].index].name);},
       plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect',generateLabels:function(){return [
-          {text:'≥ 100% (on/above budget)',fillStyle:'#16a34a',strokeStyle:'#16a34a',lineWidth:0},
-          {text:'70–99%',fillStyle:'#d97706',strokeStyle:'#d97706',lineWidth:0},
+          {text:'≥ 95% (on/above budget)',fillStyle:'#16a34a',strokeStyle:'#16a34a',lineWidth:0},
+          {text:'70–94%',fillStyle:'#d97706',strokeStyle:'#d97706',lineWidth:0},
           {text:'< 70%',fillStyle:'#dc2626',strokeStyle:'#dc2626',lineWidth:0}
         ];}}},
         datalabels:{anchor:'end',align:'end',offset:4,font:{family:"'IBM Plex Mono'",size:9.5,weight:'700'},color:'#142850',formatter:v=>fmtP(v)},
