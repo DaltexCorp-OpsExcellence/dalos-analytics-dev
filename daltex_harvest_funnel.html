@@ -1042,7 +1042,7 @@ function showDrillFunnel(field,val,tab){
   const a=agg(rows);
   DRILL_PENDING={field,val,tab:tab||'fv'};
   document.getElementById('drill-eyebrow').textContent = field==='farm' ? 'Farm' : 'Variety';
-  document.getElementById('drill-title').textContent = val;
+  document.getElementById('drill-title').textContent = val + ' (Overall)';
   const stages=[
     {name:'Harvest',value:a.h,color:'#142850'},
     {name:'Packhouse',value:a.pin,color:'#2563eb'},
