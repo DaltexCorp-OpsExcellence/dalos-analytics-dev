@@ -658,13 +658,14 @@ input,select,button{font-family:var(--font)}
 
   <!-- ============ TAB: COLOR ============ -->
   <div class="tabpage" id="tp-color" style="display:none">
+    <div class="kgrid" style="grid-template-columns:repeat(3,1fr)" id="color-cards"></div>
     <div class="cc" style="margin-bottom:12px">
       <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Color</div><div class="cc-sub">Raw / PK / Export per color</div></div></div>
       <div class="chart-legend">
         <span class="cl-item"><span class="cl-box" style="background:#DC6428"></span>Budget</span>
         <span class="cl-item"><span class="cl-box" style="background:#142850"></span>Actual</span>
       </div>
-      <div style="overflow-x:auto"><div style="position:relative;height:360px" id="ch-color-wrap"><canvas id="ch-color"></canvas></div></div>
+      <div style="position:relative;height:360px" id="ch-color-wrap"><canvas id="ch-color"></canvas></div>
     </div>
     <div class="cc" style="margin-bottom:12px">
       <div class="cc-header"><div><div class="cc-title">Color × Variety × Farm — Consolidated</div><div class="cc-sub">grouped by color, then variety, then farm · subtotals shown</div></div></div>
@@ -1076,7 +1077,7 @@ function showDrillFunnel(field,val,tab){
   const rows=rowsExcept(field).filter(r=>r[field]===val);
   const a=agg(rows);
   DRILL_PENDING={field,val,tab:tab||'fv'};
-  document.getElementById('drill-eyebrow').textContent = field==='farm' ? 'Farm' : 'Variety';
+  document.getElementById('drill-eyebrow').textContent = field==='farm' ? 'Farm' : field==='cat' ? 'Color' : 'Variety';
   document.getElementById('drill-title').textContent = val + ' (Overall)';
   const stages=[
     {name:'Harvest',value:a.h,color:'#142850'},
@@ -1492,7 +1493,8 @@ function renderColorTab(rows){
     Object.values(varsObj).forEach(farmsObj=>Object.values(farmsObj).forEach(rs=>rs.forEach(r=>colorRows.push(r))));
     allRows.push(...colorRows);
     const cx=agg(colorRows);
-    html+='<tr style="background:#eef1f7;font-weight:700"><td>All '+esc(color)+'</td><td>All '+esc(color)+'</td><td>All</td>'+metricCells(cx)+'</tr>';
+    const cn=esc(color).replace(/'/g,"\\'");
+    html+='<tr style="background:#eef1f7;font-weight:700"><td class="drillcell" onclick="showDrillFunnel(\'cat\',\''+cn+'\',\'color\')" title="Click to view '+esc(color)+' funnel">All '+esc(color)+' <i class="ti ti-chevron-right drill-arrow"></i></td><td>All '+esc(color)+'</td><td>All</td>'+metricCells(cx)+'</tr>';
     const varKeys=Object.keys(varsObj).sort((a,b)=>{
       const xa=agg([].concat(...Object.values(varsObj[a]))), xb=agg([].concat(...Object.values(varsObj[b])));
       return (pct(xb.s,xb.h)||-1)-(pct(xa.s,xa.h)||-1);
@@ -1501,7 +1503,8 @@ function renderColorTab(rows){
       const farmsObj=varsObj[variety];
       const varRows=[].concat(...Object.values(farmsObj));
       const vx=agg(varRows);
-      html+='<tr style="background:#f6f8fb;font-weight:600"><td>'+esc(color)+'</td><td>All '+esc(variety)+'</td><td>All</td>'+metricCells(vx)+'</tr>';
+      const vn2=esc(variety).replace(/'/g,"\\'");
+      html+='<tr style="background:#f6f8fb;font-weight:600"><td>'+esc(color)+'</td><td class="drillcell" onclick="showDrillFunnel(\'variety\',\''+vn2+'\',\'fv\')" title="Click to view '+esc(variety)+' funnel">All '+esc(variety)+' <i class="ti ti-chevron-right drill-arrow"></i></td><td>All</td>'+metricCells(vx)+'</tr>';
       const farmKeys=Object.keys(farmsObj).sort((a,b)=>{
         const xa=agg(farmsObj[a]), xb=agg(farmsObj[b]);
         return (pct(xb.s,xb.h)||-1)-(pct(xa.s,xa.h)||-1);
@@ -1509,7 +1512,8 @@ function renderColorTab(rows){
       farmKeys.forEach(farm=>{
         const fx=agg(farmsObj[farm]);
         const fn=esc(farm).replace(/'/g,"\\'");
-        html+='<tr><td style="color:#8a95b0">'+esc(color)+'</td><td style="color:#DC6428">'+esc(variety)+'</td>'
+        const vn3=esc(variety).replace(/'/g,"\\'");
+        html+='<tr><td style="color:#8a95b0">'+esc(color)+'</td><td class="drillcell" onclick="showDrillFunnel(\'variety\',\''+vn3+'\',\'fv\')" title="Click to view '+esc(variety)+' funnel">'+esc(variety)+' <i class="ti ti-chevron-right drill-arrow"></i></td>'
           +'<td class="drillcell" onclick="drillTo(\'farm\',\''+fn+'\',\'fv\')" title="Click to view '+esc(farm)+' funnel">'+esc(farm)+' <i class="ti ti-chevron-right drill-arrow"></i></td>'
           +metricCells(fx)+'</tr>';
       });
@@ -1520,13 +1524,27 @@ function renderColorTab(rows){
   html+='</tbody><tfoot><tr style="border-top:2px solid var(--border2);font-weight:700"><td>Total</td><td></td><td></td>'+metricCells(tot)+'</tr></tfoot>';
   document.getElementById('tbl-color').innerHTML=html;
 
+  // ---- KPI cards per color: Export budget achievement % + funnel conversion % ----
+  const cardColors=colorKeys.filter(c=>c!=='Other');
+  document.getElementById('color-cards').style.gridTemplateColumns='repeat('+Math.max(1,cardColors.length)+',1fr)';
+  document.getElementById('color-cards').innerHTML = cardColors.map(color=>{
+    const cr=[];Object.values(byColor[color]).forEach(fo=>Object.values(fo).forEach(rs=>rs.forEach(r=>cr.push(r))));
+    const x=agg(cr);
+    const budExp=pct(x.s,x.bexp);   // Export vs Budget
+    const convEF=pct(x.s,x.h);      // Export ÷ Harvest conversion
+    return kcard(
+      color+' — Export vs Budget','ti-palette',
+      fmtP(budExp),
+      'Exp÷Harvest conv '+fmtP(convEF)+' · '+fmtT(x.s)+' / '+fmtT(x.bexp)+' T',
+      budExp||0);
+  }).join('');
+
   // ---- chart: Actual vs Budget by color ----
   const chartItems=colorKeys.map(color=>{
     const cr=[];Object.values(byColor[color]).forEach(fo=>Object.values(fo).forEach(rs=>rs.forEach(r=>cr.push(r))));
     return Object.assign({name:color},agg(cr));
   });
-  const colW=340,cw=Math.max(560,chartItems.length*colW+80);
-  document.getElementById('ch-color-wrap').style.width=cw+'px';
+  document.getElementById('ch-color-wrap').style.width='';
   mkChart('ch-color',{type:'bar',data:{labels:chartItems.map(i=>i.name),datasets:[
       {label:'Raw Budget',data:chartItems.map(i=>r1(i.braw)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
       {label:'Raw Actual',data:chartItems.map(i=>r1(i.h)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85},
