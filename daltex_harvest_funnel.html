@@ -772,6 +772,7 @@ let FARMS_CACHE=[],VARIETIES_CACHE=[];
 let S={farm:[],variety:[],src:[],cat:[],from:'',to:'',tab:'ov'};
 let LDF='',LDT='';
 const MSF=['farm','variety','src','cat'];
+const SENTINEL_FARM='Outsource (variety budget)'; // variety-level outsource budget; hidden from farm views
 
 const num=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
 const r1=v=>Math.round(v*10)/10;
@@ -1123,7 +1124,7 @@ function rowsExcept(skip){return ROWS.filter(r=>{
 function buildMS(){
   document.querySelectorAll('.ms[data-f]').forEach(el=>{
     const f=el.dataset.f;
-    const vals=[...new Set(ROWS.map(r=>r[f]).filter(v=>v&&v!=='—'))].sort();
+    const vals=[...new Set(ROWS.map(r=>r[f]).filter(v=>v&&v!=='—'&&!(f==='farm'&&v===SENTINEL_FARM)))].sort();
     el.innerHTML='<button class="ms-btn" onclick="toggleDD(event,this)"><span class="ms-lbl">All</span><span class="cnt" style="display:none"></span><i class="ti ti-chevron-down" style="font-size:10px"></i></button>'
       +'<div class="ms-dd"><div style="padding:6px 8px;border-bottom:1px solid #e2e6f0;position:sticky;top:0;background:#fff;z-index:2"><input type="text" placeholder="Search…" style="width:100%;padding:5px 8px;border:1px solid #e2e6f0;border-radius:6px;font-size:11px;outline:none;font-family:inherit;box-sizing:border-box" oninput="filterMS(this)" onclick="event.stopPropagation()"></div>'
       +'<label class="ms-opt ms-all"><input type="checkbox" checked onchange="msAll(\''+f+'\',this)"> All</label>'
@@ -1426,7 +1427,7 @@ function drawAchByDim(rows,dim,chartId,wrapId,onClick,stage){
 let FVSORT={k:'expf',dir:-1};
 function renderFV(rows){
   const by={};
-  rows.forEach(r=>{const k=r.farm+'|†|'+r.variety;(by[k]=by[k]||{farm:r.farm,variety:r.variety,src:r.src,rows:[]}).rows.push(r);if(r.src!=='—')by[k].src=r.src;});
+  rows.forEach(r=>{if(r.farm===SENTINEL_FARM)return;const k=r.farm+'|†|'+r.variety;(by[k]=by[k]||{farm:r.farm,variety:r.variety,src:r.src,rows:[]}).rows.push(r);if(r.src!=='—')by[k].src=r.src;});
   let items=Object.values(by).map(g=>{const x=agg(g.rows);return{farm:g.farm,variety:g.variety,src:g.src,h:x.h,pin:x.pin,pout:x.pout,s:x.s,braw:x.braw,bpk:x.bpk,bexp:x.bexp,
     pkf:pct(x.pin,x.h),expk:pct(x.s,x.pin),expf:pct(x.s,x.h),budr:pct(x.h,x.braw),budp:pct(x.pin,x.bpk),bude:pct(x.s,x.bexp)};});
   items=items.filter(i=>i.h>0||i.pin>0||i.s>0||i.braw>0||i.bpk>0||i.bexp>0);
@@ -1660,7 +1661,7 @@ function renderSrc(rows){
 function renderSourceDetail(rows,srcName,suffix){
   const filtered=rows.filter(r=>r.src===srcName);
   drawFunnelBlock(filtered,'ch-funnel-'+suffix,'conv-cards-'+suffix);
-  const by={};filtered.forEach(r=>{if(!r.farm)return;(by[r.farm]=by[r.farm]||[]).push(r);});
+  const by={};filtered.forEach(r=>{if(!r.farm||r.farm===SENTINEL_FARM)return;(by[r.farm]=by[r.farm]||[]).push(r);});
   let items=Object.keys(by).map(k=>{const x=agg(by[k]);return{name:k,h:x.h,braw:x.braw,pin:x.pin,bpk:x.bpk,s:x.s,bexp:x.bexp,
     pkf:pct(x.pin,x.h),expk:pct(x.s,x.pin),expf:pct(x.s,x.h),budr:pct(x.h,x.braw),budp:pct(x.pin,x.bpk),bude:pct(x.s,x.bexp)};});
   items=items.filter(i=>i.h>0||i.pin>0||i.s>0||i.braw>0);
