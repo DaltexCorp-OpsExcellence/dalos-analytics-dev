@@ -1385,7 +1385,7 @@ function renderDimTab(rows,dim,chartId,wrapId,tblId,drillLabel,allowDrill){
       {label:'Export Actual',data:chartItems.map(i=>r1(i.s)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85}]},
     options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:26}},
       onClick: allowDrill ? ((e,els)=>{if(els.length)showDrillFunnel(dim,chartItems[els[0].index].name,dim==='variety'?'fv':dim);}) : undefined,
-      plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
+      plugins:{legend:{display:true,position:'top',align:'start',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
         datalabels:{anchor:'end',align:'end',offset:3,font:{family:"'IBM Plex Mono'",size:9,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
       scales:{y:{grace:'18%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,font:{size:11,weight:'600'}},grid:{display:false}}}}});
@@ -1478,7 +1478,7 @@ function renderSourceDetail(rows,srcName,suffix){
       {label:'Export Actual',data:items.map(i=>r1(i.s)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85}]},
     options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:22}},
       onClick:(e,els)=>{if(els.length)drillTo('farm',items[els[0].index].name,'fv');},
-      plugins:{legend:{display:true,position:'top',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
+      plugins:{legend:{display:true,position:'top',align:'start',labels:{boxWidth:10,font:{size:9.5},usePointStyle:true,pointStyle:'rect'}},
         datalabels:{anchor:'end',align:'end',offset:2,font:{family:"'IBM Plex Mono'",size:8,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
         tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
       scales:{y:{grace:'10%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,font:{size:10.5,weight:'500'}},grid:{display:false}}}}});
