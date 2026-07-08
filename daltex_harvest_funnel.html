@@ -1213,12 +1213,24 @@ let OVSRC='all';
 let WKSTAGE='all';
 let BUDSTAGE='h';
 let BUDVAR_SRC='all';
-function setBudVarSrc(v){BUDVAR_SRC=v;apply();}
+function setBudVarSrc(v){
+  BUDVAR_SRC=v;
+  const rows=F();
+  const budvarRows = BUDVAR_SRC==='all' ? rows : rows.filter(r=>r.src===BUDVAR_SRC);
+  drawAchByDim(budvarRows,'variety','ch-budvar','ch-budvar-wrap',t=>drillTo('variety',t,'fv'),BUDSTAGE);
+}
 function setBudStage(v,btn){
   BUDSTAGE=v;
   document.querySelectorAll('#bs-h,#bs-pin,#bs-s').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  apply();
+  // Only the two achievement-by-dimension charts depend on the stage; redraw just those
+  const rows=F();
+  const f=BUD_STAGE_FIELDS[BUDSTAGE];
+  document.getElementById('budfarm-title').textContent=f.label+' Achievement by Farm';
+  document.getElementById('budvar-title').textContent=f.label+' Achievement by Variety';
+  drawAchByDim(rows,'farm','ch-budfarm','ch-budfarm-wrap',t=>drillTo('farm',t,'fv'),BUDSTAGE);
+  const budvarRows = BUDVAR_SRC==='all' ? rows : rows.filter(r=>r.src===BUDVAR_SRC);
+  drawAchByDim(budvarRows,'variety','ch-budvar','ch-budvar-wrap',t=>drillTo('variety',t,'fv'),BUDSTAGE);
 }
 function setWkStage(v,btn){
   WKSTAGE=v;
