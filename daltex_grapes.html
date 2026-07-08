@@ -360,26 +360,32 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     if(lds.length){const d=lds[0],p=n=>String(n).padStart(2,'0');set('g-updated',p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear());}
   }catch(e){console.warn('Grapes landing: live unavailable',e.message);}
 
-  // ── Fetch QC data ──
+  // ── Fetch QC data (paginated — REST caps at 1000 rows/request) ──
   try{
-    const qcRes=await fetch(SB_URL+'/rest/v1/cqc_samples_export?select=report_id,major_total,minor_total&limit=5000',{
-      headers:{apikey:SB_KEY,'Authorization':'Bearer '+SB_KEY}
-    });
-    if(qcRes.ok){
-      const qcData=await qcRes.json();
-      if(qcData&&qcData.length){
-        const insp=new Set(qcData.map(r=>r.report_id)).size;
-        const avgMaj=qcData.reduce((s,r)=>s+(parseFloat(r.major_total)||0),0)/qcData.length;
-        const avgMin=qcData.reduce((s,r)=>s+(parseFloat(r.minor_total)||0),0)/qcData.length;
-        var qi=document.getElementById('qc-insp');
-        var qs=document.getElementById('qc-samples');
-        var qm=document.getElementById('qc-major');
-        var qn=document.getElementById('qc-minor');
-        if(qi) qi.textContent=insp+' reports';
-        if(qs) qs.textContent=qcData.length+' samples';
-        if(qm) qm.textContent=avgMaj.toFixed(2)+'%';
-        if(qn) qn.textContent=avgMin.toFixed(2)+'%';
-      }
+    let qcData=[],from=0,page=1000;
+    for(;;){
+      const qcRes=await fetch(SB_URL+'/rest/v1/cqc_samples_export?select=report_id,major_total,minor_total&order=created_date.asc&offset='+from+'&limit='+page,{
+        headers:{apikey:SB_KEY,'Authorization':'Bearer '+SB_KEY}
+      });
+      if(!qcRes.ok) break;
+      const chunk=await qcRes.json();
+      if(!chunk||!chunk.length) break;
+      qcData=qcData.concat(chunk);
+      if(chunk.length<page) break;
+      from+=page;
+    }
+    if(qcData.length){
+      const insp=new Set(qcData.map(r=>r.report_id)).size;
+      const avgMaj=qcData.reduce((s,r)=>s+(parseFloat(r.major_total)||0),0)/qcData.length;
+      const avgMin=qcData.reduce((s,r)=>s+(parseFloat(r.minor_total)||0),0)/qcData.length;
+      var qi=document.getElementById('qc-insp');
+      var qs=document.getElementById('qc-samples');
+      var qm=document.getElementById('qc-major');
+      var qn=document.getElementById('qc-minor');
+      if(qi) qi.textContent=insp.toLocaleString('en-US')+' reports';
+      if(qs) qs.textContent=qcData.length.toLocaleString('en-US')+' samples';
+      if(qm) qm.textContent=avgMaj.toFixed(2)+'%';
+      if(qn) qn.textContent=avgMin.toFixed(2)+'%';
     }
   }catch(e){console.warn('QC fetch failed',e);}
 
