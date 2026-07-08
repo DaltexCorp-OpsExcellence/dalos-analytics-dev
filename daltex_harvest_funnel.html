@@ -659,6 +659,14 @@ input,select,button{font-family:var(--font)}
   <!-- ============ TAB: COLOR ============ -->
   <div class="tabpage" id="tp-color" style="display:none">
     <div class="cc" style="margin-bottom:12px">
+      <div class="cc-header"><div><div class="cc-title">Actual vs Budget by Color</div><div class="cc-sub">Raw / PK / Export per color</div></div></div>
+      <div class="chart-legend">
+        <span class="cl-item"><span class="cl-box" style="background:#DC6428"></span>Budget</span>
+        <span class="cl-item"><span class="cl-box" style="background:#142850"></span>Actual</span>
+      </div>
+      <div style="overflow-x:auto"><div style="position:relative;height:360px" id="ch-color-wrap"><canvas id="ch-color"></canvas></div></div>
+    </div>
+    <div class="cc" style="margin-bottom:12px">
       <div class="cc-header"><div><div class="cc-title">Color × Variety × Farm — Consolidated</div><div class="cc-sub">grouped by color, then variety, then farm · subtotals shown</div></div></div>
       <div class="tbl-wrap" style="max-height:640px;overflow-y:auto"><table class="mkt-table" id="tbl-color"></table></div>
     </div>
@@ -1493,7 +1501,7 @@ function renderColorTab(rows){
       const farmsObj=varsObj[variety];
       const varRows=[].concat(...Object.values(farmsObj));
       const vx=agg(varRows);
-      html+='<tr style="background:#f6f8fb;font-weight:600"><td></td><td>All '+esc(variety)+'</td><td>All</td>'+metricCells(vx)+'</tr>';
+      html+='<tr style="background:#f6f8fb;font-weight:600"><td>'+esc(color)+'</td><td>All '+esc(variety)+'</td><td>All</td>'+metricCells(vx)+'</tr>';
       const farmKeys=Object.keys(farmsObj).sort((a,b)=>{
         const xa=agg(farmsObj[a]), xb=agg(farmsObj[b]);
         return (pct(xb.s,xb.h)||-1)-(pct(xa.s,xa.h)||-1);
@@ -1501,7 +1509,7 @@ function renderColorTab(rows){
       farmKeys.forEach(farm=>{
         const fx=agg(farmsObj[farm]);
         const fn=esc(farm).replace(/'/g,"\\'");
-        html+='<tr><td></td><td style="color:#DC6428">'+esc(variety)+'</td>'
+        html+='<tr><td style="color:#8a95b0">'+esc(color)+'</td><td style="color:#DC6428">'+esc(variety)+'</td>'
           +'<td class="drillcell" onclick="drillTo(\'farm\',\''+fn+'\',\'fv\')" title="Click to view '+esc(farm)+' funnel">'+esc(farm)+' <i class="ti ti-chevron-right drill-arrow"></i></td>'
           +metricCells(fx)+'</tr>';
       });
@@ -1511,6 +1519,27 @@ function renderColorTab(rows){
   const tot=agg(allRows);
   html+='</tbody><tfoot><tr style="border-top:2px solid var(--border2);font-weight:700"><td>Total</td><td></td><td></td>'+metricCells(tot)+'</tr></tfoot>';
   document.getElementById('tbl-color').innerHTML=html;
+
+  // ---- chart: Actual vs Budget by color ----
+  const chartItems=colorKeys.map(color=>{
+    const cr=[];Object.values(byColor[color]).forEach(fo=>Object.values(fo).forEach(rs=>rs.forEach(r=>cr.push(r))));
+    return Object.assign({name:color},agg(cr));
+  });
+  const colW=340,cw=Math.max(560,chartItems.length*colW+80);
+  document.getElementById('ch-color-wrap').style.width=cw+'px';
+  mkChart('ch-color',{type:'bar',data:{labels:chartItems.map(i=>i.name),datasets:[
+      {label:'Raw Budget',data:chartItems.map(i=>r1(i.braw)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
+      {label:'Raw Actual',data:chartItems.map(i=>r1(i.h)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85},
+      {label:'PK Budget',data:chartItems.map(i=>r1(i.bpk)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
+      {label:'PK Actual',data:chartItems.map(i=>r1(i.pin)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85},
+      {label:'Export Budget',data:chartItems.map(i=>r1(i.bexp)),backgroundColor:'#DC6428',barPercentage:.9,categoryPercentage:.85},
+      {label:'Export Actual',data:chartItems.map(i=>r1(i.s)),backgroundColor:'#142850',barPercentage:.9,categoryPercentage:.85}]},
+    options:{indexAxis:'x',responsive:true,maintainAspectRatio:false,layout:{padding:{top:26,bottom:30}},
+      plugins:{legend:{display:false},
+        datalabels:{anchor:'end',align:'end',offset:3,font:{family:"'IBM Plex Mono'",size:9,weight:'700'},color:'#334155',formatter:v=>v>0?fmtT(v):''},
+        tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T'}}},
+      scales:{y:{grace:'18%',ticks:{font:{family:"'IBM Plex Mono'",size:9}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{autoSkip:false,padding:22,font:{size:11,weight:'600'}},grid:{display:false}}}},
+    plugins:[stageAxisLabels]});
 }
 
 /* ========== GENERIC: single-dimension tab (Variety, Category) ========== */
