@@ -1172,7 +1172,7 @@ function renderWeeklyChart(data, s) {
     const py  = H - pbH;
     const emphCur = (WLBL!=='prior');
     const emphPri = (WLBL!=='cur');
-    let curCol = v > 500 ? 'var(--navy)' : v > 200 ? 'var(--navy2)' : '#5a7cc2';
+    let curCol = 'var(--navy)';
     if(!emphCur) curCol='rgba(180,190,210,0.55)';
     const priFill  = emphPri ? 'rgba(120,135,165,0.55)' : 'var(--bg2)';
     const priStroke= emphPri ? 'rgba(90,107,138,0.9)'   : 'var(--border)';
