@@ -1545,14 +1545,14 @@ function renderColorTab(rows){
           label:c=>' '+c.dataset.label+': '+fmtT(c.raw)+' T',
           afterBody:items=>{
             const x=chartItems[items[0].dataIndex];
-            const lines=['',' % Actual over Budget:',
-              '  Raw: '+fmtP(pct(x.h,x.braw)),
-              '  PK: '+fmtP(pct(x.pin,x.bpk)),
-              '  Export: '+fmtP(pct(x.s,x.bexp)),
-              '',' Conversion (actual):',
-              '  PK ÷ Harvest: '+fmtP(pct(x.pin,x.h)),
-              '  Export ÷ PK: '+fmtP(pct(x.s,x.pin)),
-              '  Export ÷ Harvest: '+fmtP(pct(x.s,x.h))];
+            const stg=['Harvest','Packhouse','Export'];
+            const bp=[pct(x.h,x.braw),pct(x.pin,x.bpk),pct(x.s,x.bexp)];
+            const cv=[null,pct(x.pin,x.h),pct(x.s,x.pin)];
+            const lines=['',' % Actual over Budget:'];
+            stg.forEach((st,j)=>lines.push('  '+st+': '+fmtP(bp[j])));
+            lines.push('',' Conversion (actual):');
+            lines.push('  Packhouse vs Harvest: '+fmtP(cv[1]));
+            lines.push('  Export vs Packhouse: '+fmtP(cv[2]));
             return lines;
           }
         }}},
