@@ -694,6 +694,7 @@ function buildRAW(rows){
   const by_mkt_variety=sum2N(rows,r=>norm(r.receiving_country),r=>norm(r.variety)).map(o=>({c:o.a,v:o.b,nw:r2(o.nw)}));
   const by_mkt_color  =sum2N(rows,r=>norm(r.receiving_country),r=>norm(r.color)).map(o=>({c:o.a,col:o.b,nw:r2(o.nw)}));
   const by_mkt_client =sum2N(rows,r=>norm(r.receiving_country),r=>norm(r.client)).map(o=>({c:o.a,cl:o.b,nw:r2(o.nw)}));
+  const by_mkt_subclient =sum2N(rows,r=>norm(r.receiving_country),r=>norm(r.subclient)).map(o=>({c:o.a,scl:o.b,nw:r2(o.nw)}));
   const by_mkt_cls    =sum2N(rows,r=>norm(r.receiving_country),r=>parseInt(r.daltex_class)).filter(o=>!isNaN(o.b)).map(o=>({c:o.a,cls:o.b,nw:r2(o.nw)}));
   const mwM={};rows.forEach(r=>{const c=norm(r.receiving_country),w=parseInt(r.shipping_week)||0;if(!c||!w)return;const k=c+'\u0001'+w;if(!mwM[k])mwM[k]={c,wk:w,nw:0,ctr:{}};mwM[k].nw+=num(r.net_weight);if(r.container_number)__ctAdd(mwM[k],r);});
   const by_mkt_week=Object.values(mwM).map(o=>({c:o.c,wk:o.wk,nw:r2(o.nw),ctr:__ctClusters(o.ctr)}));
@@ -703,7 +704,7 @@ function buildRAW(rows){
   const portM={};
   rows.forEach(r=>{const c=norm(r.receiving_country),p=norm(r.receiving_port);if(!c||!p)return;(portM[c]=portM[c]||{})[p]=(portM[c][p]||0)+num(r.net_weight);});
   const ports={};Object.keys(portM).forEach(c=>{ports[c]=Object.keys(portM[c]).sort((a,b)=>portM[c][b]-portM[c][a]).join(', ');});
-  return {by_mkt,by_mkt_variety,by_mkt_color,by_mkt_client,by_mkt_cls,by_mkt_week,by_mkt_ld,ports};
+  return {by_mkt,by_mkt_variety,by_mkt_color,by_mkt_client,by_mkt_subclient,by_mkt_cls,by_mkt_week,by_mkt_ld,ports};
 }
 
 // Apply the active row-level filters (date, week, variety, color).
@@ -1404,6 +1405,7 @@ function drillMarket(country){
   const varieties=RAW.by_mkt_variety.filter(r=>r.c===country).sort((a,b)=>b.nw-a.nw);
   const colors=RAW.by_mkt_color.filter(r=>r.c===country).sort((a,b)=>b.nw-a.nw);
   const clients=RAW.by_mkt_client.filter(r=>r.c===country).sort((a,b)=>b.nw-a.nw);
+  const subclients=(RAW.by_mkt_subclient||[]).filter(r=>r.c===country&&r.scl).sort((a,b)=>b.nw-a.nw);
   const loadDates=RAW.by_mkt_ld.filter(r=>r.c===country).sort((a,b)=>new Date(a.ld)-new Date(b.ld));
   const port=RAW.ports[country]||'—';
   const c1=RAW.by_mkt_cls.find(r=>r.c===country&&r.cls===1)?.nw||0;
@@ -1543,6 +1545,17 @@ function drillMarket(country){
               <span style="font-family:'IBM Plex Mono';font-size:12px;font-weight:700;color:#142850">${c.nw.toFixed(1)}T</span>
             </div>`).join('')}
         </div>
+
+        ${subclients.length?`<div style="margin-top:20px;padding-top:16px;border-top:1px solid #e2e6f0">
+          <div style="font-size:12px;font-weight:700;color:#142850;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+            <i class="ti ti-user-circle" style="color:#DC6428"></i> Sub-Clients
+          </div>
+          ${subclients.map(c=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #e2e6f0">
+              <span style="font-size:12px;color:#4a5778">${c.scl}</span>
+              <span style="font-family:'IBM Plex Mono';font-size:12px;font-weight:700;color:#142850">${c.nw.toFixed(1)}T</span>
+            </div>`).join('')}
+        </div>`:''}
       </div>
 
       <div>

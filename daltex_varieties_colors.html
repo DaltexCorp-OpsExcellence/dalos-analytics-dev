@@ -660,6 +660,7 @@ let COL_FARM = [{"c":"Black","f":"El khier","nw":22.96},{"c":"Red","f":"Abu Dhab
 let VAR_WEEK = [{"v":"Arra 30","wk":21,"nw":12.48},{"v":"Arra 30","wk":22,"nw":69.91},{"v":"Early Flame","wk":20,"nw":24.71},{"v":"Early Flame","wk":21,"nw":0.06},{"v":"Early Pearl","wk":21,"nw":21.96},{"v":"Early Pearl","wk":22,"nw":1.0},{"v":"Exotic Pearl","wk":22,"nw":14.4},{"v":"Flame","wk":19,"nw":6.84},{"v":"Flame","wk":20,"nw":359.3},{"v":"Flame","wk":21,"nw":378.19},{"v":"Flame","wk":22,"nw":564.23},{"v":"Prime","wk":19,"nw":43.81},{"v":"Prime","wk":20,"nw":273.21},{"v":"Prime","wk":21,"nw":144.13},{"v":"Prime","wk":22,"nw":218.86},{"v":"Prime","wk":23,"nw":12.48},{"v":"Star Light","wk":20,"nw":24.96},{"v":"Star Light","wk":21,"nw":10.56},{"v":"Star Light","wk":22,"nw":84.41},{"v":"Sugraone","wk":22,"nw":48.65}];
 let COL_WEEK = [{"c":"Black","wk":21,"nw":21.96},{"c":"Black","wk":22,"nw":1.0},{"c":"Red","wk":19,"nw":6.84},{"c":"Red","wk":20,"nw":408.97},{"c":"Red","wk":21,"nw":388.81},{"c":"Red","wk":22,"nw":663.04},{"c":"White","wk":19,"nw":43.81},{"c":"White","wk":20,"nw":273.21},{"c":"White","wk":21,"nw":156.61},{"c":"White","wk":22,"nw":337.42},{"c":"White","wk":23,"nw":12.48}];
 let VAR_CLS = [{"v":"Arra 30","cls":"1","nw":82.39},{"v":"Early Flame","cls":"1","nw":15.83},{"v":"Early Flame","cls":"2","nw":8.94},{"v":"Early Pearl","cls":"1","nw":22.96},{"v":"Exotic Pearl","cls":"1","nw":14.4},{"v":"Flame","cls":"1","nw":1222.15},{"v":"Flame","cls":"2","nw":86.4},{"v":"Prime","cls":"1","nw":588.1},{"v":"Prime","cls":"2","nw":104.39},{"v":"Star Light","cls":"1","nw":119.33},{"v":"Star Light","cls":"2","nw":0.6},{"v":"Sugraone","cls":"1","nw":48.65}];
+let VAR_SUBCLIENT = [];
 let COL_CLS = [
   {c:'Red',  cls:1,nw:696.95},{c:'Red',  cls:2,nw:49.32},
   {c:'White',cls:1,nw:451.79},{c:'White',cls:2,nw:65.83},
@@ -723,6 +724,7 @@ function buildVarColData(rows){
     VAR_WEEK: sum2N(rows,r=>norm(r.variety),r=>parseInt(r.shipping_week)||0).map(o=>({v:o.a,wk:o.b,nw:r2(o.nw)})),
     COL_WEEK: sum2N(rows,r=>norm(r.color),r=>parseInt(r.shipping_week)||0).map(o=>({c:o.a,wk:o.b,nw:r2(o.nw)})),
     VAR_CLS : sum2N(rows,r=>norm(r.variety),r=>parseInt(r.daltex_class)).filter(o=>!isNaN(o.b)).map(o=>({v:o.a,cls:o.b,nw:r2(o.nw)})),
+    VAR_SUBCLIENT: sum2N(rows,r=>norm(r.variety),r=>norm(r.subclient)).map(o=>({v:o.a,scl:o.b,nw:r2(o.nw)})),
     COL_CLS : sum2N(rows,r=>norm(r.color),r=>parseInt(r.daltex_class)).filter(o=>!isNaN(o.b)).map(o=>({c:o.a,cls:o.b,nw:r2(o.nw)}))
   };
 }
@@ -871,6 +873,7 @@ async function loadLiveData(){
     VAR_WEEK=sum2N(cur,r=>norm(r.variety),r=>parseInt(r.shipping_week)||0).map(o=>({v:o.a,wk:o.b,nw:r2(o.nw)}));
     COL_WEEK=sum2N(cur,r=>norm(r.color),r=>parseInt(r.shipping_week)||0).map(o=>({c:o.a,wk:o.b,nw:r2(o.nw)}));
     VAR_CLS =sum2N(cur,r=>norm(r.variety),r=>parseInt(r.daltex_class)).filter(o=>!isNaN(o.b)).map(o=>({v:o.a,cls:o.b,nw:r2(o.nw)}));
+    VAR_SUBCLIENT=sum2N(cur,r=>norm(r.variety),r=>norm(r.subclient)).map(o=>({v:o.a,scl:o.b,nw:r2(o.nw)}));
     COL_CLS =sum2N(cur,r=>norm(r.color),r=>parseInt(r.daltex_class)).filter(o=>!isNaN(o.b)).map(o=>({c:o.a,cls:o.b,nw:r2(o.nw)}));
 
     PRIOR_VAR=sumByN(prior,r=>norm(r.variety)); Object.keys(PRIOR_VAR).forEach(k=>PRIOR_VAR[k]=r2(PRIOR_VAR[k]));
@@ -925,7 +928,7 @@ function filteredColors(){
 function render(){
   // Rebuild all variety/colour cross-tabs from rows matching market/farm/week/date,
   // so every chart, heatmap and class breakdown reflects the active filters. Guarded.
-  try{ if(__ROWS&&__ROWS.length){ const d=buildVarColData(__vcFilteredRows()); VARIETIES=d.VARIETIES;COLORS=d.COLORS;VAR_MKT=d.VAR_MKT;COL_MKT=d.COL_MKT;VAR_FARM=d.VAR_FARM;COL_FARM=d.COL_FARM;VAR_WEEK=d.VAR_WEEK;COL_WEEK=d.COL_WEEK;VAR_CLS=d.VAR_CLS;COL_CLS=d.COL_CLS; } }
+  try{ if(__ROWS&&__ROWS.length){ const d=buildVarColData(__vcFilteredRows()); VARIETIES=d.VARIETIES;COLORS=d.COLORS;VAR_MKT=d.VAR_MKT;COL_MKT=d.COL_MKT;VAR_FARM=d.VAR_FARM;COL_FARM=d.COL_FARM;VAR_WEEK=d.VAR_WEEK;COL_WEEK=d.COL_WEEK;VAR_CLS=d.VAR_CLS;COL_CLS=d.COL_CLS;VAR_SUBCLIENT=d.VAR_SUBCLIENT; } }
   catch(err){ console.warn('Varieties/Colors: filter rebuild failed, showing unfiltered:',err); }
   const vars=filteredVarieties();const cols=filteredColors();
   const vTotal=vars.reduce((s,r)=>s+r.nw,0);
@@ -1421,6 +1424,7 @@ function drillVariety(variety){
 
   const mkts=VAR_MKT.filter(r=>r.v===variety).sort((a,b)=>b.nw-a.nw);
   const farms=VAR_FARM.filter(r=>r.v===variety).sort((a,b)=>b.nw-a.nw);
+  const subclients=(VAR_SUBCLIENT||[]).filter(r=>r.v===variety&&r.scl).sort((a,b)=>b.nw-a.nw);
   const wkData=VAR_WEEK.filter(r=>r.v===variety).sort((a,b)=>a.wk-b.wk);
   const cls1=VAR_CLS.find(r=>r.v===variety&&r.cls===1)?.nw||0;
   const cls2=VAR_CLS.find(r=>r.v===variety&&r.cls===2)?.nw||0;
@@ -1540,6 +1544,17 @@ function drillVariety(variety){
             </div>`:''}
           </div>`;
         }).join('')}
+
+        ${subclients.length?`<div style="margin-top:20px;padding-top:16px;border-top:1px solid #e2e6f0">
+          <div style="font-size:12px;font-weight:700;color:#142850;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+            <i class="ti ti-user-circle" style="color:#DC6428"></i> Sub-Clients
+          </div>
+          ${subclients.map(c=>`
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #e2e6f0">
+              <span style="font-size:12px;color:#4a5778">${c.scl}</span>
+              <span style="font-family:'IBM Plex Mono';font-size:12px;font-weight:700;color:#142850">${c.nw.toFixed(1)}T</span>
+            </div>`).join('')}
+        </div>`:''}
       </div>
 
     </div>`;
