@@ -724,7 +724,7 @@ async function loadLiveData(){
   const num=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
   const r2=x=>Math.round(x*100)/100;
   async function sbFetch(sid){
-    const r=await fetch(`${SB_URL}/rest/v1/grapes_shipments_view?season_id=eq.${sid}&select=*`,
+    const r=await fetch(`${SB_URL}/rest/v1/grapes_shipments_view?season_id=eq.${sid}&product_id=eq.grapes&select=*`,
       {headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Range':'0-99999'}});
     if(!r.ok) throw new Error('SB '+r.status);
     return r.json();

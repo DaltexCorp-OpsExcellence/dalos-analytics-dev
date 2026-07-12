@@ -600,7 +600,7 @@ async function fetchArrivalMap(){
   const SID='19482d39-6074-4c60-b772-ced5df1ffdcb';
   const map={};
   try{
-    const res=await fetch(SB+'/rest/v1/grapes_shipments_view?season_id=eq.'+SID+'&select=container_number,eta',{headers:{apikey:AK}});
+    const res=await fetch(SB+'/rest/v1/grapes_shipments_view?season_id=eq.'+SID+'&product_id=eq.grapes&select=container_number,eta',{headers:{apikey:AK}});
     if(!res.ok) return map;
     const js=await res.json();
     js.forEach(r=>{const c=norm(r.container_number);const e=r.eta;if(c&&e&&!map[c])map[c]=String(e).slice(0,10);});

@@ -808,7 +808,7 @@ async function loadAll(){
     pget('categories?select=id,name').catch(()=>[]),
     pget('harvest_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,raw_station,harvest_date,color'),
     pget('packhouse_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,incoming_raw,exportable_weight,operation_date,category'),
-    pget('grapes_shipments_view?season_id=eq.'+SID+'&select=farm_source,variety,net_weight,loading_date,color'),
+    pget('grapes_shipments_view?season_id=eq.'+SID+'&product_id=eq.grapes&select=farm_source,variety,net_weight,loading_date,color'),
     pget('budget_data?product_id=eq.grapes&season_id=eq.'+SID+'&select=farm,variety,budget_raw_qty,budget_raw_pk_qty,budget_export_qty,category')
   ]);
   const FMAP={},VMAP={};

@@ -337,7 +337,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   const num=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   try{
-    const r=await fetch(`${SB_URL}/rest/v1/grapes_shipments_view?season_id=eq.${SID}&select=*`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Range':'0-99999'}});
+    const r=await fetch(`${SB_URL}/rest/v1/grapes_shipments_view?season_id=eq.${SID}&product_id=eq.grapes&select=*`,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Range':'0-99999'}});
     if(!r.ok)throw new Error('SB '+r.status);
     const rows=await r.json();
     const total=rows.reduce((s,x)=>s+num(x.net_weight),0);
