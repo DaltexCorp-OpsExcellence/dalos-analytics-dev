@@ -604,7 +604,7 @@ input, select, button { font-family: var(--font); }
     <div class="ms" data-f="farm" data-col="farm_source" data-label="Farm"></div>
     <div class="ms" data-f="market" data-col="receiving_country" data-label="Market"></div>
     <div class="ms" data-f="variety" data-col="variety" data-label="Variety"></div>
-    <div class="ms" data-f="color" data-col="color" data-label="Color"></div>
+    <div class="ms" data-f="color" data-col="color" data-label="Color" style="display:none"></div>
     <div class="ms" data-f="mix" data-col="mix_single" data-label="Mix/Single"></div>
 
     <div class="factions">
@@ -1318,7 +1318,7 @@ function renderInsights(data, s) {
 
 // ── AI SEARCH ──
 function buildCtx(s) {
-  return `You are an analytical assistant for Daltex, an Egyptian grape exporter. Answer concisely with specific numbers. Max 6 bullet points. Focus on actionable insights for directors and C-level executives.
+  return `You are an analytical assistant for Daltex, an Egyptian mango exporter. Answer concisely with specific numbers. Max 6 bullet points. Focus on actionable insights for directors and C-level executives.
 
 CURRENT FILTER: ${F.from} to ${F.to}${F.week.length?' · Week '+F.week.join('/'):''}${F.status.length?' · '+F.status.join('/'):''}${F.farm.length?' · '+F.farm.join('/'):''}${F.market.length?' · '+F.market.join('/'):''}${F.variety.length?' · '+F.variety.join('/'):''}
 
@@ -1360,7 +1360,7 @@ async function runAI() {
       .replace(/\n•/g,'<br><br>•')
       .replace(/\n\n/g,'<br><br>')
       .replace(/\n/g,'<br>') +
-      `<div class="ai-src"><i class="ti ti-database"></i> Based on real Daltex 2025/26 grapes shipments · ${s.nw.toFixed(1)}T selected</div>`;
+      `<div class="ai-src"><i class="ti ti-database"></i> Based on real Daltex 2024/25 mango shipments · ${s.nw.toFixed(1)}T selected</div>`;
     res.classList.add('show');
   } catch(e) {
     txt.innerHTML='<span style="color:var(--red)">Connection error. Please try again.</span>';

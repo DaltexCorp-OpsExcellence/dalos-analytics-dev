@@ -414,7 +414,7 @@ input,select,button,textarea{font-family:var(--font)}
   <div class="ms" data-f="mkt" data-col="receiving_country" data-label="Market"></div>
   <div class="ms" data-f="client" data-col="client" data-label="Client"></div>
   <div class="ms" data-f="var" data-col="variety" data-label="Variety"></div>
-  <div class="ms" data-f="color" data-col="color" data-label="Color"></div>
+  <div class="ms" data-f="color" data-col="color" data-label="Color" style="display:none"></div>
   <div class="ms" data-f="mix" data-col="mix_single" data-label="Mix/Single"></div>
   <div class="factions">
     <button class="fbtn fbtn-reset" onclick="resetF()"><i class="ti ti-refresh" style="font-size:11px"></i> Reset</button>
@@ -1100,7 +1100,7 @@ async function askAI(){
   document.getElementById('ai-thinking').classList.add('vis');
   document.getElementById('ai-answer').classList.remove('vis');
   const ct=filtCT(),pt=filtPT();
-  const ctx=`Daltex grapes 2025/26 packaging. Cartons: ${ct.map(x=>x.n+': '+x.nw.toFixed(1)+'T (prior: '+(PRIOR_CT[x.n]||0)+'T)').join(', ')}. Punnets: ${pt.map(x=>x.n+': '+x.nw.toFixed(1)+'T').join(', ')}. Brands: ${BRAND.map(b=>b.b+': '+b.nw.toFixed(1)+'T').join(', ')}. Sizes: ${SIZE.map(s=>s.s+': '+s.nw.toFixed(1)+'T').join(', ')}. Single: ${MIX.find(x=>x.m==='Single Variety')?.nw.toFixed(1)||0}T, Mix: ${MIX.find(x=>x.m==='Mix Variety')?.nw.toFixed(1)||0}T.`;
+  const ctx=`Daltex mango 2025/26 packaging. Cartons: ${ct.map(x=>x.n+': '+x.nw.toFixed(1)+'T (prior: '+(PRIOR_CT[x.n]||0)+'T)').join(', ')}. Punnets: ${pt.map(x=>x.n+': '+x.nw.toFixed(1)+'T').join(', ')}. Brands: ${BRAND.map(b=>b.b+': '+b.nw.toFixed(1)+'T').join(', ')}. Sizes: ${SIZE.map(s=>s.s+': '+s.nw.toFixed(1)+'T').join(', ')}. Single: ${MIX.find(x=>x.m==='Single Variety')?.nw.toFixed(1)||0}T, Mix: ${MIX.find(x=>x.m==='Mix Variety')?.nw.toFixed(1)||0}T.`;
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:'You are a packaging analyst for Daltex. Focus on NET WEIGHT. 2-4 sentences, numbers, plain text only.',messages:[{role:'user',content:ctx+' Question: '+q}]})});
     const d=await resp.json();

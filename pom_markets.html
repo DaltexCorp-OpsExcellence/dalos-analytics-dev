@@ -448,7 +448,7 @@ input,select,button{font-family:var(--font)}
     <div class="ms" data-f="farm" data-col="farm_source" data-label="Farm"></div>
     <div class="ms" data-f="market" data-col="receiving_country" data-label="Market"></div>
     <div class="ms" data-f="variety" data-col="variety" data-label="Variety"></div>
-    <div class="ms" data-f="color" data-col="color" data-label="Color"></div>
+    <div class="ms" data-f="color" data-col="color" data-label="Color" style="display:none"></div>
     <div class="ms" data-f="mix" data-col="mix_single" data-label="Mix/Single"></div>
     <div class="factions">
       <button class="fbtn fbtn-reset" onclick="resetFilters()"><i class="ti ti-refresh" style="font-size:11px"></i> Reset</button>
@@ -580,7 +580,7 @@ input,select,button{font-family:var(--font)}
 
 <!-- Color dist -->
 <div style="margin-bottom:12px">
-  <div class="cc">
+  <div class="cc" style="display:none">
     <div class="cc-header">
       <div><div class="cc-title">Color Split by Market</div><div class="cc-sub">Red · White · Black — net weight %</div></div>
     </div>
@@ -1485,7 +1485,7 @@ function drillMarket(country){
           </div>`;
         }).join('')}
 
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e2e6f0">
+        <div style="display:none;margin-top:20px;padding-top:16px;border-top:1px solid #e2e6f0">
           <div style="font-size:12px;font-weight:700;color:#142850;margin-bottom:14px;display:flex;align-items:center;gap:6px">
             <i class="ti ti-palette" style="color:#DC6428"></i> Color Split
           </div>
@@ -1588,7 +1588,7 @@ async function askAI(){
   document.getElementById('ai-answer').classList.remove('vis');
 
   const mkts=filteredMkts();const total=mkts.reduce((s,r)=>s+r.nw,0);
-  const ctx=`Daltex grapes export, Season 2025/26 (12 May–1 Jun 2026). Primary metric: NET WEIGHT (tonnes).
+  const ctx=`Daltex pomegranate export, Season 2025/26 (12 May–1 Jun 2026). Primary metric: NET WEIGHT (tonnes).
 Total NW: ${total.toFixed(2)}T across ${mkts.length} markets, ${mkts.reduce((s,r)=>s+r.containers,0)} containers.
 Markets (NW): ${mkts.map(m=>`${m.c}: ${m.nw.toFixed(2)}T (${Math.round(m.nw/total*100)}%, ${m.containers} containers)`).join('; ')}.
 Varieties (NW): ${RAW.by_mkt_variety.map(r=>`${r.c}/${r.v}: ${r.nw.toFixed(2)}T`).join('; ')}.
@@ -1601,7 +1601,7 @@ Clients (NW): ${RAW.by_mkt_client.map(r=>`${r.c}/${r.cl}: ${r.nw.toFixed(2)}T`).
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
-        system:'You are a concise market analyst for Daltex, an Egyptian grape exporter. Focus on NET WEIGHT as the primary business metric. Answer in 2-4 sentences with specific numbers. Plain text only.',
+        system:'You are a concise market analyst for Daltex, an Egyptian pomegranate exporter. Focus on NET WEIGHT as the primary business metric. Answer in 2-4 sentences with specific numbers. Plain text only.',
         messages:[{role:'user',content:`Data:\n${ctx}\n\nQuestion: ${q}`}]})
     });
     const data=await resp.json();

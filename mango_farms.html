@@ -412,7 +412,7 @@ input,select,button,textarea{font-family:var(--font)}
   <div class="ms" data-f="farm" data-col="farm_source" data-label="Farm"></div>
   <div class="ms" data-f="mkt" data-col="receiving_country" data-label="Market"></div>
   <div class="ms" data-f="variety" data-col="variety" data-label="Variety"></div>
-  <div class="ms" data-f="color" data-col="color" data-label="Color"></div>
+  <div class="ms" data-f="color" data-col="color" data-label="Color" style="display:none"></div>
   <div class="ms" data-f="mix" data-col="mix_single" data-label="Mix/Single"></div>
   <div class="factions">
     <button class="fbtn fbtn-reset" onclick="reset()"><i class="ti ti-refresh" style="font-size:11px"></i> Reset</button>
@@ -1166,7 +1166,7 @@ async function askAI(){
   document.getElementById('ai-thinking').classList.add('vis');
   document.getElementById('ai-answer').classList.remove('vis');
   const r=filt(),tot=r.reduce((s,x)=>s+x.nw,0);
-  const ctx=`Daltex grapes 2025/26 farm supply. Farms: ${r.map(x=>x.f+' ('+x.src+'): '+x.nw.toFixed(1)+'T, prior: '+(PFARM[x.f]||0)+'T').join(', ')}. Total: ${tot.toFixed(2)}T.`;
+  const ctx=`Daltex mango 2025/26 farm supply. Farms: ${r.map(x=>x.f+' ('+x.src+'): '+x.nw.toFixed(1)+'T, prior: '+(PFARM[x.f]||0)+'T').join(', ')}. Total: ${tot.toFixed(2)}T.`;
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,

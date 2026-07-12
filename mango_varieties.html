@@ -384,6 +384,9 @@ input,select,button{font-family:var(--font)}
 @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
 .sk{background:#f1f5f9;background-image:linear-gradient(90deg,transparent 0,rgba(0,0,0,.06) 40px,transparent 80px);background-size:600px 100%;background-repeat:no-repeat;animation:shimmer 1.4s infinite linear;border-radius:8px;display:inline-block}
 .sk-kcard{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px}
+
+/* Hide color halves in variety rows (color removed for mango) */
+[data-colorrow] > .cc:first-child{display:none !important;}
 </style>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwYjE1MTAiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg3LjAwMCwzOC42MjEpIHNjYWxlKDAuMDE4OTE4LC0wLjAxODkxOCkiPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAsMCkiIGQ9Ik0yMiAwVjEwTDQzIDE4UTc1IDMxIDc1IDY5VjU5MVE3NSA2MzEgNDMgNjQyTDIyIDY1MFY2NjBIMjg2UTM5MiA2NjAgNDY4LjUgNjIwLjVRNTQ1IDU4MSA1ODYuNSA1MDcuNVE2MjggNDM0IDYyOCAzMzFRNjI4IDIyNiA1ODMuMCAxNTIuMFE1MzggNzggNDU3LjUgMzkuMFEzNzcgMCAyNjggMFpNMjI1IDIwSDI2OFEzNDAgMjAgMzg0LjAgNDguNVE0MjggNzcgNDQ4LjUgMTQ0LjVRNDY5IDIxMiA0NjkgMzMwUTQ2OSA0NDggNDQ4LjUgNTE1LjVRNDI4IDU4MyAzODUuMCA2MTEuNVEzNDIgNjQwIDI3MiA2NDBIMjI1WiIgZmlsbD0iI2ZmZmZmZiIvPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDY0OCwwKSIgZD0iTTE2NiAtMTVRMTA4IC0xNSA2OC41IDE4LjBRMjkgNTEgMjkgMTEzUTI5IDE2MCA3Ny4wIDE5OS41UTEyNSAyMzkgMjI4IDI1OVEyNDQgMjYyIDI2NC4wIDI2NS41UTI4NCAyNjkgMzA2IDI3M1YzNTJRMzA2IDQyMCAyODkuNSA0NDcuNVEyNzMgNDc1IDIzOCA0NzVRMjE0IDQ3NSAyMDAuMCA0NTkuNVExODYgNDQ0IDE4MiA0MDZMMTgwIDM5NVExNzggMzUyIDE1OS4wIDMzMi4wUTE0MCAzMTIgMTEyIDMxMlE4NiAzMTIgNjkuMCAzMjguMFE1MiAzNDQgNTIgMzcxUTUyIDQxMiA4MC41IDQ0MC4wUTEwOSA0NjggMTU2LjAgNDgyLjBRMjAzIDQ5NiAyNTggNDk2UTM0NyA0OTYgMzk1LjUgNDUyLjVRNDQ0IDQwOSA0NDQgMzExVjkwUTQ0NCA0NSA0ODYgNDVINTA4TDUxNyAzN1E0OTggMTMgNDc1LjUgMC4wUTQ1MyAtMTMgNDEyIC0xM1EzNjggLTEzIDM0Mi41IDcuNVEzMTcgMjggMzA5IDYyUTI3OSAzMCAyNDcuNSA3LjVRMjE2IC0xNSAxNjYgLTE1Wk0yMjcgNDZRMjQ3IDQ2IDI2NC41IDU1LjVRMjgyIDY1IDMwNiA4NVYyNTNRMjk2IDI1MSAyODYuMCAyNDkuMFEyNzYgMjQ3IDI2MyAyNDVRMjE3IDIzMyAxODkuNSAyMDQuNVExNjIgMTc2IDE2MiAxMjhRMTYyIDg3IDE4MS4wIDY2LjVRMjAwIDQ2IDIyNyA0NloiIGZpbGw9IiNmZmZmZmYiLz48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMTY2LDApIiBkPSJNMjMgMFYxMEwzNSAxNFE3MSAyNiA3MSA2NFY1OTlRNzEgNjE5IDYzLjAgNjI5LjVRNTUgNjQwIDM1IDY0NUwyMiA2NDhWNjU4TDIwNSA3MDFMMjE3IDY5MkwyMTMgNTUyVjIxMFEyMTMgMTczIDIxMy41IDEzNi41UTIxNCAxMDAgMjE0IDY0UTIxNCA0NCAyMjIuMCAzMS41UTIzMCAxOSAyNDkgMTNMMjYyIDEwVjBaIiBmaWxsPSIjZmZmZmZmIi8+PHBhdGggdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTQ1MiwwKSIgZD0iTTMzNSAtMThRMjc0IC0xOCAyMTcuNSA0LjBRMTYxIDI2IDExNi41IDY5LjVRNzIgMTEzIDQ2LjAgMTc4LjBRMjAgMjQzIDIwIDMzMFEyMCA0MTYgNDYuMCA0ODEuMFE3MiA1NDYgMTE3LjAgNTg5LjVRMTYyIDYzMyAyMTguNSA2NTUuNVEyNzUgNjc4IDMzNSA2NzhRMzk2IDY3OCA0NTIuNSA2NTYuNVE1MDkgNjM1IDU1My41IDU5MS41UTU5OCA1NDggNjI0LjAgNDgyLjVRNjUwIDQxNyA2NTAgMzMwUTY1MCAyNDUgNjI0LjAgMTc5LjVRNTk4IDExNCA1NTMuNSA3MC41UTUwOSAyNyA0NTIuNSA0LjVRMzk2IC0xOCAzMzUgLTE4Wk0zMzUgM1EzOTAgMyA0MjQuMCAzMi41UTQ1OCA2MiA0NzMuNSAxMzMuNVE0ODkgMjA1IDQ4OSAzMzBRNDg5IDQ1NiA0NzMuNSA1MjcuNVE0NTggNTk5IDQyNC4wIDYyOC41UTM5MCA2NTggMzM1IDY1OFEyODEgNjU4IDI0Ny4wIDYyOC41UTIxMyA1OTkgMTk3LjUgNTI3LjVRMTgyIDQ1NiAxODIgMzMwUTE4MiAyMDUgMTk3LjUgMTMzLjVRMjEzIDYyIDI0Ny4wIDMyLjVRMjgxIDMgMzM1IDNaIiBmaWxsPSIjNmZjMTkxIi8+PHBhdGggdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjEyMiwwKSIgZD0iTTIzNyAtMThRMTgyIC0xOCAxMjUuMCAtNC41UTY4IDkgMzAgMzFMMzUgMTY3SDQ1TDc2IDEwMlE5MCA3NCAxMDYuMCA1Mi41UTEyMiAzMSAxNTAgMTlRMTcwIDkgMTg4LjUgNS41UTIwNyAyIDIzMCAyUTI5MSAyIDMyNi41IDM1LjBRMzYyIDY4IDM2MiAxMjBRMzYyIDE2OSAzMzguMCAxOTYuNVEzMTQgMjI0IDI2MSAyNTBMMjIwIDI2OFExMzQgMzA2IDg1LjUgMzU1LjVRMzcgNDA1IDM3IDQ4N1EzNyA1NDYgNjcuNSA1ODkuMFE5OCA2MzIgMTUyLjUgNjU1LjBRMjA3IDY3OCAyODAgNjc4UTMzMyA2NzggMzgwLjUgNjY0LjBRNDI4IDY1MCA0NjMgNjI2TDQ1NyA1MDZINDQ3TDQwNiA1ODFRMzg5IDYxNiAzNzIuMCA2MzAuNVEzNTUgNjQ1IDMzMyA2NTFRMzIwIDY1NSAzMDkuMCA2NTYuNVEyOTggNjU4IDI4MSA2NThRMjMwIDY1OCAxOTUuMCA2MjguNVExNjAgNTk5IDE2MCA1NDlRMTYwIDQ5OCAxODcuMCA0NjcuNVEyMTQgNDM3IDI2NiA0MTNMMzEyIDM5M1E0MDggMzUxIDQ1MC4wIDMwMy41UTQ5MiAyNTYgNDkyIDE4MVE0OTIgOTMgNDI1LjUgMzcuNVEzNTkgLTE4IDIzNyAtMThaIiBmaWxsPSIjNmZjMTkxIi8+PC9nPjwvc3ZnPg=="/>
 </head>
@@ -426,7 +429,7 @@ input,select,button{font-family:var(--font)}
 <div class="page-header">
   <div>
     <div class="page-title">Varieties <span>— Product Analysis</span></div>
-    <div class="page-subtitle" id="page-sub">Season 2025/26 · 6 varieties · 3 colors · 1,285.85 T net weight</div>
+    <div class="page-subtitle" id="page-sub">Mango Shipments · Season 2024/25</div>
   </div>
 </div>
 
@@ -450,7 +453,7 @@ input,select,button{font-family:var(--font)}
     <div class="ms" data-f="farm" data-col="farm_source" data-label="Farm"></div>
     <div class="ms" data-f="market" data-col="receiving_country" data-label="Market"></div>
     <div class="ms" data-f="variety" data-col="variety" data-label="Variety"></div>
-    <div class="ms" data-f="color" data-col="color" data-label="Color"></div>
+    <div class="ms" data-f="color" data-col="color" data-label="Color" style="display:none"></div>
     <div class="ms" data-f="mix" data-col="mix_single" data-label="Mix/Single"></div>
     <div class="factions">
       <button class="fbtn fbtn-reset" onclick="resetFilters()"><i class="ti ti-refresh" style="font-size:11px"></i> Reset</button>
@@ -464,14 +467,14 @@ input,select,button{font-family:var(--font)}
 
 <!-- COLOR SUMMARY CARDS -->
 <div class="sdiv"><div class="sdiv-line"></div><div class="sdiv-txt"><i class="ti ti-palette" style="font-size:11px;color:var(--navy)"></i> Colors <span class="sdiv-badge sdiv-c">Net Weight</span></div><div class="sdiv-line"></div></div>
-<div class="summary-cards" id="color-cards" style="grid-template-columns:repeat(3,1fr)"></div>
+<div class="summary-cards" id="color-cards" style="display:none"></div>
 
 <!-- VARIETY SUMMARY CARDS -->
 <div class="sdiv"><div class="sdiv-line"></div><div class="sdiv-txt"><i class="ti ti-plant" style="font-size:11px;color:var(--orange)"></i> Varieties <span class="sdiv-badge sdiv-v">Net Weight</span></div><div class="sdiv-line"></div></div>
 <div class="summary-cards" id="variety-cards" style="grid-template-columns:repeat(6,1fr)"></div>
 
-<!-- ROW 1: Color bar LEFT, Variety bar RIGHT -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<!-- ROW 1: Variety bar (color hidden) -->
+<div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px" data-colorrow="1">
   <div class="cc">
     <div class="cc-header">
       <div><div class="cc-title">Net Weight by Color (T)</div><div class="cc-sub">2025/26 vs 2024/25 prior · data labels shown</div></div>
@@ -490,8 +493,8 @@ input,select,button{font-family:var(--font)}
   </div>
 </div>
 
-<!-- ROW 2: Color donut LEFT, Variety donut RIGHT -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<!-- ROW 2: Variety donut (color hidden) -->
+<div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px" data-colorrow="2">
   <div class="cc">
     <div class="cc-header">
       <div><div class="cc-title">Color Share of Total NW</div><div class="cc-sub" id="col-share-sub">% of season total</div></div>
@@ -508,8 +511,8 @@ input,select,button{font-family:var(--font)}
   </div>
 </div>
 
-<!-- ROW 3: Weekly Color LEFT, Weekly Variety RIGHT -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<!-- ROW 3: Weekly Variety (color hidden) -->
+<div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px" data-colorrow="3">
   <div class="cc">
     <div class="cc-header">
       <div><div class="cc-title">Weekly NW by Color (T)</div><div class="cc-sub" id="cwk-sub">ghost = 2024/25 prior</div></div>
@@ -543,7 +546,7 @@ input,select,button{font-family:var(--font)}
 </div>
 
 <!-- ROW 4: Color×Market full-width, Variety×Market full-width below -->
-<div class="cc" style="margin-bottom:12px">
+<div class="cc" style="margin-bottom:12px;display:none">
   <div class="cc-header"><div><div class="cc-title">Color × Market</div><div class="cc-sub">Net weight per cell</div></div><select onchange="setHeatMode('cm',this.value)" style="height:28px;border:1px solid #e2e6f0;border-radius:6px;background:#fff;color:#142850;font-size:11px;font-weight:600;padding:0 6px;cursor:pointer;font-family:inherit"><option value="t">Tonnes (T)</option><option value="row">% of row</option><option value="col">% of column</option><option value="grand">% of grand total</option></select></div>
   <div class="heat-wrap" id="heat-col-mkt"></div>
 </div>
@@ -552,8 +555,8 @@ input,select,button{font-family:var(--font)}
   <div class="heat-wrap" id="heat-var-mkt"></div>
 </div>
 
-<!-- ROW 5: Color×Farm LEFT, Variety×Farm RIGHT -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<!-- ROW 5: Variety×Farm (color hidden) -->
+<div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px" data-colorrow="5">
   <div class="cc">
     <div class="cc-header"><div><div class="cc-title">Color × Farm</div><div class="cc-sub">NW breakdown per color per farm</div></div></div>
     <div id="col-farm-bars"></div>
@@ -564,8 +567,8 @@ input,select,button{font-family:var(--font)}
   </div>
 </div>
 
-<!-- ROW 6: Color table LEFT, Variety table RIGHT -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+<!-- ROW 6: Variety table (color hidden) -->
+<div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px" data-colorrow="6">
   <div class="cc">
     <div class="cc-header">
       <div><div class="cc-title">Color Performance Table</div><div class="cc-sub">Click row to drill through</div></div>
@@ -633,14 +636,14 @@ input,select,button{font-family:var(--font)}
     <div><div class="cc-title">AI Product Analyst</div><div class="cc-sub">Ask anything about variety mix, color distribution, or market-product alignment</div></div>
   </div>
   <div class="ai-bar">
-    <input class="ai-input" id="ai-q" type="text" placeholder="e.g. 'Which variety dominates UK shipments?' or 'Compare Red vs White net weight by market'">
+    <input class="ai-input" id="ai-q" type="text" placeholder="e.g. 'Which variety dominates UK shipments?' ">
     <button class="ai-submit" onclick="askAI()"><i class="ti ti-send" style="font-size:11px"></i> Ask</button>
   </div>
   <div class="ai-chips">
     <div class="ai-chip" onclick="setQ('Which variety has the highest net weight this season?')">Top variety by NW</div>
-    <div class="ai-chip" onclick="setQ('How is Red vs White color split across markets?')">Red vs White by market</div>
+    
     <div class="ai-chip" onclick="setQ('Which variety grew the most year on year?')">YoY growth by variety</div>
-    <div class="ai-chip" onclick="setQ('What is the relationship between color and variety in Daltex shipments?')">Color-variety relationship</div>
+    
     <div class="ai-chip" onclick="setQ('Which market receives the most diverse variety mix?')">Most diverse market</div>
   </div>
   <div class="ai-thinking" id="ai-thinking"><div class="dot-anim"><span>●</span><span>●</span><span>●</span></div> Analysing product data…</div>
@@ -651,40 +654,26 @@ input,select,button{font-family:var(--font)}
 
 <script>
 /* ── MASTER DATA ── */
-let VARIETIES = [{"v":"Flame","nw":1308.55,"pallets":2039.5,"containers":111,"shipments":112,"color":"Red"},{"v":"Prime","nw":692.49,"pallets":1120.25,"containers":65,"shipments":65,"color":"White"},{"v":"Star Light","nw":119.93,"pallets":198.0,"containers":11,"shipments":11,"color":"Red"},{"v":"Arra 30","nw":82.39,"pallets":128.0,"containers":6,"shipments":6,"color":"White"},{"v":"Sugraone","nw":48.65,"pallets":71.0,"containers":5,"shipments":5,"color":"White"},{"v":"Early Flame","nw":24.77,"pallets":39.5,"containers":5,"shipments":5,"color":"Red"},{"v":"Early Pearl","nw":22.96,"pallets":44.0,"containers":3,"shipments":3,"color":"Black"},{"v":"Exotic Pearl","nw":14.4,"pallets":24.0,"containers":1,"shipments":1,"color":"Red"}];
-let COLORS = [{"c":"Red","nw":1467.65,"pallets":2301.0,"containers":121,"shipments":122},{"c":"White","nw":823.53,"pallets":1319.25,"containers":74,"shipments":74},{"c":"Black","nw":22.96,"pallets":44.0,"containers":3,"shipments":3}];
-let VAR_MKT = [{"v":"Arra 30","m":"Holland","nw":24.96},{"v":"Arra 30","m":"Lativia","nw":12.48},{"v":"Arra 30","m":"UAE","nw":15.6},{"v":"Arra 30","m":"UK","nw":29.35},{"v":"Early Flame","m":"UK","nw":24.77},{"v":"Early Pearl","m":"UAE","nw":1.0},{"v":"Early Pearl","m":"UK","nw":21.96},{"v":"Exotic Pearl","m":"UAE","nw":14.4},{"v":"Flame","m":"Holland","nw":43.94},{"v":"Flame","m":"Norway","nw":12.48},{"v":"Flame","m":"Poland","nw":6.49},{"v":"Flame","m":"Russia","nw":9.18},{"v":"Flame","m":"Slovenia","nw":37.44},{"v":"Flame","m":"Spain","nw":24.96},{"v":"Flame","m":"Switzerland","nw":24.46},{"v":"Flame","m":"UK","nw":1149.6},{"v":"Prime","m":"Belarus","nw":15.91},{"v":"Prime","m":"Holland","nw":67.34},{"v":"Prime","m":"Lativia","nw":37.44},{"v":"Prime","m":"Norway","nw":37.44},{"v":"Prime","m":"Poland","nw":6.0},{"v":"Prime","m":"Russia","nw":38.56},{"v":"Prime","m":"Slovenia","nw":24.96},{"v":"Prime","m":"Spain","nw":12.48},{"v":"Prime","m":"Switzerland","nw":47.82},{"v":"Prime","m":"UK","nw":404.54},{"v":"Star Light","m":"South Africa","nw":74.88},{"v":"Star Light","m":"UK","nw":45.05},{"v":"Sugraone","m":"UK","nw":48.65}];
-let COL_MKT = [{"c":"Black","m":"UAE","nw":1.0},{"c":"Black","m":"UK","nw":21.96},{"c":"Red","m":"Holland","nw":43.94},{"c":"Red","m":"Norway","nw":12.48},{"c":"Red","m":"Poland","nw":6.49},{"c":"Red","m":"Russia","nw":9.18},{"c":"Red","m":"Slovenia","nw":37.44},{"c":"Red","m":"South Africa","nw":74.88},{"c":"Red","m":"Spain","nw":24.96},{"c":"Red","m":"Switzerland","nw":24.46},{"c":"Red","m":"UAE","nw":14.4},{"c":"Red","m":"UK","nw":1219.42},{"c":"White","m":"Belarus","nw":15.91},{"c":"White","m":"Holland","nw":92.3},{"c":"White","m":"Lativia","nw":49.92},{"c":"White","m":"Norway","nw":37.44},{"c":"White","m":"Poland","nw":6.0},{"c":"White","m":"Russia","nw":38.56},{"c":"White","m":"Slovenia","nw":24.96},{"c":"White","m":"Spain","nw":12.48},{"c":"White","m":"Switzerland","nw":47.82},{"c":"White","m":"UAE","nw":15.6},{"c":"White","m":"UK","nw":482.54}];
-let VAR_FARM = [{"v":"Arra 30","f":"Menia","nw":66.48},{"v":"Arra 30","f":"Salma","nw":15.91},{"v":"Early Flame","f":"Salma","nw":24.77},{"v":"Early Pearl","f":"El khier","nw":22.96},{"v":"Exotic Pearl","f":"El khier","nw":14.4},{"v":"Flame","f":"Akram Shawky","nw":48.05},{"v":"Flame","f":"El khier","nw":290.04},{"v":"Flame","f":"Hana","nw":643.64},{"v":"Flame","f":"Menia","nw":26.81},{"v":"Flame","f":"Salma","nw":300.01},{"v":"Prime","f":"Akram Shawky","nw":39.87},{"v":"Prime","f":"Dina Farms","nw":167.56},{"v":"Prime","f":"El khier","nw":13.68},{"v":"Prime","f":"Elmasa","nw":69.5},{"v":"Prime","f":"Menia","nw":228.09},{"v":"Prime","f":"Salma","nw":173.78},{"v":"Star Light","f":"Abu Dhabi","nw":3.68},{"v":"Star Light","f":"Dina Farms","nw":16.37},{"v":"Star Light","f":"El khier","nw":28.48},{"v":"Star Light","f":"Salma","nw":71.4},{"v":"Sugraone","f":"El khier","nw":34.92},{"v":"Sugraone","f":"Hana","nw":13.73}];
-let COL_FARM = [{"c":"Black","f":"El khier","nw":22.96},{"c":"Red","f":"Abu Dhabi","nw":3.68},{"c":"Red","f":"Akram Shawky","nw":48.05},{"c":"Red","f":"Dina Farms","nw":16.37},{"c":"Red","f":"El khier","nw":332.92},{"c":"Red","f":"Hana","nw":643.64},{"c":"Red","f":"Menia","nw":26.81},{"c":"Red","f":"Salma","nw":396.18},{"c":"White","f":"Akram Shawky","nw":39.87},{"c":"White","f":"Dina Farms","nw":167.56},{"c":"White","f":"El khier","nw":48.6},{"c":"White","f":"Elmasa","nw":69.5},{"c":"White","f":"Hana","nw":13.73},{"c":"White","f":"Menia","nw":294.57},{"c":"White","f":"Salma","nw":189.69}];
-let VAR_WEEK = [{"v":"Arra 30","wk":21,"nw":12.48},{"v":"Arra 30","wk":22,"nw":69.91},{"v":"Early Flame","wk":20,"nw":24.71},{"v":"Early Flame","wk":21,"nw":0.06},{"v":"Early Pearl","wk":21,"nw":21.96},{"v":"Early Pearl","wk":22,"nw":1.0},{"v":"Exotic Pearl","wk":22,"nw":14.4},{"v":"Flame","wk":19,"nw":6.84},{"v":"Flame","wk":20,"nw":359.3},{"v":"Flame","wk":21,"nw":378.19},{"v":"Flame","wk":22,"nw":564.23},{"v":"Prime","wk":19,"nw":43.81},{"v":"Prime","wk":20,"nw":273.21},{"v":"Prime","wk":21,"nw":144.13},{"v":"Prime","wk":22,"nw":218.86},{"v":"Prime","wk":23,"nw":12.48},{"v":"Star Light","wk":20,"nw":24.96},{"v":"Star Light","wk":21,"nw":10.56},{"v":"Star Light","wk":22,"nw":84.41},{"v":"Sugraone","wk":22,"nw":48.65}];
-let COL_WEEK = [{"c":"Black","wk":21,"nw":21.96},{"c":"Black","wk":22,"nw":1.0},{"c":"Red","wk":19,"nw":6.84},{"c":"Red","wk":20,"nw":408.97},{"c":"Red","wk":21,"nw":388.81},{"c":"Red","wk":22,"nw":663.04},{"c":"White","wk":19,"nw":43.81},{"c":"White","wk":20,"nw":273.21},{"c":"White","wk":21,"nw":156.61},{"c":"White","wk":22,"nw":337.42},{"c":"White","wk":23,"nw":12.48}];
-let VAR_CLS = [{"v":"Arra 30","cls":"1","nw":82.39},{"v":"Early Flame","cls":"1","nw":15.83},{"v":"Early Flame","cls":"2","nw":8.94},{"v":"Early Pearl","cls":"1","nw":22.96},{"v":"Exotic Pearl","cls":"1","nw":14.4},{"v":"Flame","cls":"1","nw":1222.15},{"v":"Flame","cls":"2","nw":86.4},{"v":"Prime","cls":"1","nw":588.1},{"v":"Prime","cls":"2","nw":104.39},{"v":"Star Light","cls":"1","nw":119.33},{"v":"Star Light","cls":"2","nw":0.6},{"v":"Sugraone","cls":"1","nw":48.65}];
+let VARIETIES = [];
+let COLORS = [];
+let VAR_MKT = [];
+let COL_MKT = [];
+let VAR_FARM = [];
+let COL_FARM = [];
+let VAR_WEEK = [];
+let COL_WEEK = [];
+let VAR_CLS = [];
 let VAR_SUBCLIENT = [];
 let COL_CLS = [
-  {c:'Red',  cls:1,nw:696.95},{c:'Red',  cls:2,nw:49.32},
-  {c:'White',cls:1,nw:451.79},{c:'White',cls:2,nw:65.83},
-  {c:'Black',cls:1,nw:21.96},
-];
+  ];
 // Prior season estimates
-let PRIOR_VAR = {Flame:583.0, Prime:391.0,'Arra 30':56.0,'Star Light':30.0,'Early Flame':15.0,'Early Pearl':10.0};
-let PRIOR_COL = {Red:628.0, White:447.0, Black:10.0};
-let PRIOR_VAR_WEEKLY = {
-  Flame:      {19:5.5,20:308.0,21:234.0,22:35.5},
-  Prime:      {19:37.5,20:234.0,21:107.0,22:12.5},
-  'Arra 30':  {21:10.0,22:46.0},
-  'Star Light':{20:20.0,21:10.0},
-  'Early Flame':{20:10.0},
-  'Early Pearl':{21:10.0},
-};
-let PRIOR_COL_WEEKLY = {
-  Red:  {19:5.5,20:342.0,21:244.0,22:36.5},
-  White:{19:37.5,20:234.0,21:117.0,22:55.5},
-  Black:{21:10.0},
-};
+let PRIOR_VAR = {};
+let PRIOR_COL = {};
+let PRIOR_VAR_WEEKLY = {};
+let PRIOR_COL_WEEKLY = {};
 
-const VCOL = {Flame:'#DC6428',Prime:'#142850','Arra 30':'#3d6fa8','Star Light':'#16a34a','Early Flame':'#e8872e','Early Pearl':'#6b7280'};
-const CCOL = {Red:'#DC6428',White:'#8a95b0',Black:'#142850'};
+const VCOL = {};
+const CCOL = {};
 let TOTAL_NW = 1285.85;
 
 let S={variety:[],color:[],market:[],farm:[],src:[],status:[],mix:[],week:[],fromDate:'2026-05-12',toDate:'2026-06-01',varSortCol:'nw',varSortDir:-1,colSortCol:'nw',colSortDir:-1,varWeekView:'stacked',colWeekView:'stacked'};
@@ -1003,7 +992,7 @@ function renderVarietyCards(vars,total){
         <div style="width:8px;height:8px;border-radius:50%;background:${VCOL[r.v]||'#ccc'};flex-shrink:0"></div>
         <div class="sc-name">${r.v}</div>
       </div>
-      <div class="sc-sub">${r.color} grape · ${r.containers} containers</div>
+      <div class="sc-sub">${r.containers} containers</div>
       <div class="sc-nw">${r.nw.toFixed(1)} T</div>
       <div class="sc-meta">${Math.round(r.nw/total*100)}% share · ${r.shipments} shipments</div>
       <div class="sc-yoy" style="color:${ypCol}">${ypStr}</div>
@@ -1454,7 +1443,7 @@ function drillVariety(variety){
       <div style="background:#f4f6fb;border-radius:10px;padding:16px;border-left:4px solid ${vColor}">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8a95b0;margin-bottom:10px;white-space:nowrap">2025/26 Net Weight</div>
         <div style="font-family:'IBM Plex Mono';font-size:26px;font-weight:700;color:#142850;line-height:1">${v.nw.toFixed(2)} T</div>
-        <div style="font-size:11px;color:#8a95b0;margin-top:6px">${v.containers} containers · ${v.color} grape</div>
+        <div style="font-size:11px;color:#8a95b0;margin-top:6px">${v.containers} containers</div>
       </div>
       <div style="background:#f4f6fb;border-radius:10px;padding:16px">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8a95b0;margin-bottom:10px;white-space:nowrap">Season 24/25</div>
@@ -1731,12 +1720,11 @@ function renderInsights(vars,cols,vTotal,cTotal){
   const yoy=priorTotal>0?((vTotal-priorTotal)/priorTotal*100):null;
   if(yoy!==null) ins.push({type:yoy>=0?'up':'warn',text:`<strong>Season ${yoy>=0?'+':''}${yoy.toFixed(1)}% YoY</strong> — ${vTotal.toFixed(1)} T this season vs ${priorTotal.toFixed(0)} T in 2024/25.`});
   // 2. Variety concentration
-  const top=vars[0];if(top) ins.push({type:'flag',text:`<strong>${top.v}</strong> is the dominant variety at <strong>${top.nw.toFixed(1)} T</strong> (${Math.round(top.nw/vTotal*100)}% of total NW). ${top.v==='Flame'?'Flame is exclusively Red and concentrated in UK shipments.':''}`});
+  const top=vars[0];if(top) ins.push({type:'flag',text:`<strong>${top.v}</strong> is the dominant variety at <strong>${top.nw.toFixed(1)} T</strong> (${Math.round(top.nw/vTotal*100)}% of total NW). `});
   // 3. Color balance
-  const red=cols.find(r=>r.c==='Red');const white=cols.find(r=>r.c==='White');
-  if(red&&white) ins.push({type:'info',text:`<strong>Red grapes dominate</strong> at ${red.nw.toFixed(1)} T (${Math.round(red.nw/cTotal*100)}%) vs White at ${white.nw.toFixed(1)} T (${Math.round(white.nw/cTotal*100)}%). Red growth is driven by Flame variety expansion.`});
+  
   // 4. Color-variety link
-  ins.push({type:'info',text:`<strong>Color-variety mapping:</strong> All Flame, Star Light, and Early Flame ship as Red. All Prime and Arra 30 ship as White. Early Pearl is 100% Black — the only black variety in the portfolio.`});
+  
   // 5. Fastest YoY grower
   const withYoy=vars.filter(r=>PRIOR_VAR[r.v]>0).map(r=>({...r,yoy:(r.nw-PRIOR_VAR[r.v])/PRIOR_VAR[r.v]*100}));
   if(withYoy.length){const fastest=withYoy.sort((a,b)=>b.yoy-a.yoy)[0];ins.push({type:'ok',text:`<strong>${fastest.v}</strong> shows the strongest YoY growth at <strong>+${fastest.yoy.toFixed(1)}%</strong> — from ${PRIOR_VAR[fastest.v].toFixed(0)} T to ${fastest.nw.toFixed(1)} T.`});}
@@ -1753,7 +1741,7 @@ async function askAI(){
   const q=document.getElementById('ai-q').value.trim();if(!q) return;
   document.getElementById('ai-thinking').classList.add('vis');document.getElementById('ai-answer').classList.remove('vis');
   const vars=filteredVarieties();const cols=filteredColors();
-  const ctx=`Daltex grapes, Season 2025/26. Primary metric: NET WEIGHT (T).
+  const ctx=`Daltex mango, Season 2025/26. Primary metric: NET WEIGHT (T).
 Varieties: ${vars.map(v=>`${v.v} (${v.color}): ${v.nw.toFixed(1)}T, ${v.containers} ctrs, prior: ${(PRIOR_VAR[v.v]||0).toFixed(0)}T`).join('; ')}.
 Colors: ${cols.map(c=>`${c.c}: ${c.nw.toFixed(1)}T (${Math.round(c.nw/cols.reduce((s,r)=>s+r.nw,0)*100)}%), prior: ${(PRIOR_COL[c.c]||0).toFixed(0)}T`).join('; ')}.
 Variety x Market: ${VAR_MKT.filter(r=>vars.find(v=>v.v===r.v)).map(r=>`${r.v}→${r.m}: ${r.nw.toFixed(1)}T`).join('; ')}.
@@ -1763,7 +1751,7 @@ Class 1 NW: ${VAR_CLS.filter(r=>r.cls===1&&vars.find(v=>v.v===r.v)).map(r=>`${r.
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
-        system:'You are a concise product analyst for Daltex, an Egyptian grape exporter. Focus on NET WEIGHT as the primary metric. Answer in 2-4 sentences with specific numbers. Plain text only.',
+        system:'You are a concise product analyst for Daltex, an Egyptian mango exporter. Focus on NET WEIGHT as the primary metric. Answer in 2-4 sentences with specific numbers. Plain text only.',
         messages:[{role:'user',content:`Data:\n${ctx}\n\nQuestion: ${q}`}]})});
     const data=await resp.json();
     document.getElementById('ai-answer').textContent=data.content?.find(b=>b.type==='text')?.text||'Unable to retrieve answer.';

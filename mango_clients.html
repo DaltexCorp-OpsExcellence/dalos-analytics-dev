@@ -394,7 +394,7 @@ input,select,button{font-family:var(--font)}
     <div class="ms" data-f="client" data-col="client" data-label="Client"></div>
     <div class="ms" data-f="subclient" data-col="subclient" data-label="Sub-Client"></div>
     <div class="ms" data-f="variety" data-col="variety" data-label="Variety"></div>
-    <div class="ms" data-f="color" data-col="color" data-label="Color"></div>
+    <div class="ms" data-f="color" data-col="color" data-label="Color" style="display:none"></div>
     <div class="ms" data-f="mix" data-col="mix_single" data-label="Mix/Single"></div>
     <div class="factions">
       <button class="fbtn fbtn-reset" onclick="resetFilters()"><i class="ti ti-refresh" style="font-size:11px"></i> Reset</button>
@@ -1359,9 +1359,9 @@ async function askAI(){
   const q=document.getElementById('ai-q').value.trim();if(!q) return;
   document.getElementById('ai-thinking').classList.add('vis');document.getElementById('ai-answer').classList.remove('vis');
   const clients=filteredClients();const total=clients.reduce((s,r)=>s+r.nw,0);
-  const ctx='Daltex grapes export, Season 2025/26. Primary metric: NET WEIGHT (T).\nClients: '+clients.map(c=>c.cl+': '+c.nw.toFixed(2)+'T, '+c.containers+' ctrs, market: '+c.mkt+', prior: '+(PRIOR_CL[c.cl]||0).toFixed(1)+'T, YoY: '+(PRIOR_CL[c.cl]>0?((c.nw-PRIOR_CL[c.cl])/PRIOR_CL[c.cl]*100).toFixed(1)+'%':'new')).join('; ')+'.\nDaltex UK subclients: '+SUBCLIENTS.map(s=>s.sub+': '+s.nw.toFixed(1)+'T').join('; ')+'.\nVariety by client: '+CL_VARIETY.filter(r=>clients.find(c=>c.cl===r.cl)).map(r=>r.cl+'/'+r.v+': '+r.nw.toFixed(1)+'T').join('; ')+'.';
+  const ctx='Daltex mango export, Season 2025/26. Primary metric: NET WEIGHT (T).\nClients: '+clients.map(c=>c.cl+': '+c.nw.toFixed(2)+'T, '+c.containers+' ctrs, market: '+c.mkt+', prior: '+(PRIOR_CL[c.cl]||0).toFixed(1)+'T, YoY: '+(PRIOR_CL[c.cl]>0?((c.nw-PRIOR_CL[c.cl])/PRIOR_CL[c.cl]*100).toFixed(1)+'%':'new')).join('; ')+'.\nDaltex UK subclients: '+SUBCLIENTS.map(s=>s.sub+': '+s.nw.toFixed(1)+'T').join('; ')+'.\nVariety by client: '+CL_VARIETY.filter(r=>clients.find(c=>c.cl===r.cl)).map(r=>r.cl+'/'+r.v+': '+r.nw.toFixed(1)+'T').join('; ')+'.';
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:'You are a concise client analyst for Daltex, an Egyptian grape exporter. Focus on NET WEIGHT as the primary metric. Answer in 2-4 sentences with specific numbers. Plain text only.',messages:[{role:'user',content:'Data:\n'+ctx+'\n\nQuestion: '+q}]})});
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:'You are a concise client analyst for Daltex, an Egyptian mango exporter. Focus on NET WEIGHT as the primary metric. Answer in 2-4 sentences with specific numbers. Plain text only.',messages:[{role:'user',content:'Data:\n'+ctx+'\n\nQuestion: '+q}]})});
     const data=await resp.json();
     document.getElementById('ai-answer').textContent=(data.content&&data.content.find(b=>b.type==='text')&&data.content.find(b=>b.type==='text').text)||'Unable to retrieve answer.';
     document.getElementById('ai-answer').classList.add('vis');
