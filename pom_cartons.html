@@ -730,7 +730,7 @@ async function loadLiveData(){
     return r.json();
   }
   try{
-    const [cur,prior0]=await Promise.all([sbFetch(SID_CUR),sbFetch(SID_PRIOR)]);const __cmd=cur.reduce((m,r)=>(r.loading_date&&r.loading_date>m)?r.loading_date:m,'');const __pc=__cmd?((parseInt(__cmd.slice(0,4))-1)+__cmd.slice(4)):'';const prior=prior0.filter(r=>r.loading_date&&__pc&&r.loading_date<=__pc);/* YoY: prior season up to the same calendar date one year earlier *//* YoY = season-to-date vs prior season through same shipping week */
+    const [cur,prior0]=await Promise.all([sbFetch(SID_CUR),sbFetch(SID_PRIOR)]);{const __t=new Date();const __mmdd=(__t.getMonth()+1)*100+__t.getDate();const __ymd=s=>{if(!s)return 0;const p=String(s).split('-');return p.length>=3?(parseInt(p[1])*100+parseInt(p[2])):0;};for(let __i=cur.length-1;__i>=0;__i--){if(__ymd(cur[__i].loading_date)>__mmdd)cur.splice(__i,1);}}const __cmd=cur.reduce((m,r)=>(r.loading_date&&r.loading_date>m)?r.loading_date:m,'');const __pc=__cmd?((parseInt(__cmd.slice(0,4))-1)+__cmd.slice(4)):'';const prior=prior0.filter(r=>r.loading_date&&__pc&&r.loading_date<=__pc);/* YoY: prior season up to the same calendar date one year earlier *//* YoY = season-to-date vs prior season through same shipping week */
     __ROWS=cur;
 
     // single-key nw sum -> {key:nw}
