@@ -295,6 +295,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .sm-prow:last-child{border-bottom:none}
 .sm-prow:hover{background:var(--bg)}
 .sm-prow.sel{background:#eff6ff}
+
+/* per-product access matrix */
+.sm-matrix{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.sm-mx-head{display:flex;align-items:center;background:var(--bg);border-bottom:1px solid var(--border);padding:8px 11px;font-size:11px;font-weight:700;color:var(--muted)}
+.sm-mx-prod{flex:0 0 120px;display:flex;align-items:center;gap:5px}
+.sm-mx-dbs{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center}
+.sm-mx-dbh{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.sm-mxrow{display:flex;align-items:center;padding:8px 11px;border-bottom:1px solid var(--border);transition:background .1s}
+.sm-mxrow:last-of-type{border-bottom:none}
+.sm-mxrow.on{background:#eff6ff}
+.sm-mx-pcell{flex:0 0 120px;display:flex;align-items:center;gap:8px;cursor:pointer}
+.sm-mx-dcells{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;justify-items:center}
+.sm-mx-dchk{width:20px;height:20px;border:1px solid var(--border2);border-radius:5px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:transparent;transition:all .12s}
+.sm-mx-dchk.on{background:var(--orange);border-color:var(--orange);color:#fff}
+.sm-mx-dchk.disabled{opacity:.3;cursor:not-allowed;background:var(--bg)}
+.sm-mx-note{padding:8px 11px;font-size:10px;color:var(--muted);display:flex;align-items:center;gap:5px;background:var(--bg)}
+
 .sm-pname{font-size:12px;font-weight:600;color:var(--navy);flex:1}
 .sm-dbrow{display:flex;align-items:center;gap:8px;padding:7px 11px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
 .sm-dbrow:last-child{border-bottom:none}
@@ -660,23 +677,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       <div class="sm-panel" id="smp3">
         <div class="sm-label"><span class="sm-lpill lp2">Layer 2</span>Products & dashboards</div>
         <div class="sm-prefill"><i class="ti ti-wand" style="font-size:13px"></i><span id="p3note">Pre-filled from role. Adjust as needed.</span></div>
-        <div class="sm-two-col">
-          <div class="sm-col">
-            <div class="sm-col-head"><i class="ti ti-package" style="font-size:12px"></i>Products</div>
-            <div class="sm-prow sel" data-prod="grapes" onclick="smTogProd(this)"><div class="sm-chk on" id="mpc-grapes"><i class="ti ti-check" style="font-size:10px"></i></div><span class="sm-pname">Grapes</span></div>
-            <div class="sm-prow" data-prod="citrus" onclick="smTogProd(this)"><div class="sm-chk" id="mpc-citrus"></div><span class="sm-pname">Citrus</span></div>
-            <div class="sm-prow" data-prod="mango" onclick="smTogProd(this)"><div class="sm-chk" id="mpc-mango"></div><span class="sm-pname">Mango</span></div>
-            <div class="sm-prow" data-prod="pomegranate" onclick="smTogProd(this)"><div class="sm-chk" id="mpc-pomegranate"></div><span class="sm-pname">Pomegranate</span></div>
-            <div class="sm-prow" data-prod="potatoes" onclick="smTogProd(this)"><div class="sm-chk" id="mpc-potatoes"></div><span class="sm-pname">Potatoes</span></div>
+        <div class="sm-matrix" id="sm-matrix">
+          <div class="sm-mx-head">
+            <div class="sm-mx-prod"><i class="ti ti-package" style="font-size:12px"></i> Product</div>
+            <div class="sm-mx-dbs">
+              <span class="sm-mx-dbh">Shipments</span>
+              <span class="sm-mx-dbh">QC</span>
+              <span class="sm-mx-dbh">Harvest</span>
+              <span class="sm-mx-dbh">Budget</span>
+            </div>
           </div>
-          <div class="sm-col">
-            <div class="sm-col-head"><i class="ti ti-layout-dashboard" style="font-size:12px"></i>Dashboards</div>
-            <div class="sm-dbrow allrow" onclick="smTogAllDbs()"><div class="sm-chk on" id="db-all"><i class="ti ti-check" style="font-size:10px"></i></div><div class="sm-dblabel" style="font-weight:700;font-size:11px">Select all</div></div>
-            <div class="sm-dbrow" data-db="shipments" onclick="smTogDb(this)"><div class="sm-chk on" id="dc-shipments"><i class="ti ti-check" style="font-size:10px"></i></div><div class="sm-dblabel">Shipments</div></div>
-            <div class="sm-dbrow" data-db="qc" onclick="smTogDb(this)"><div class="sm-chk on" id="dc-qc"><i class="ti ti-check" style="font-size:10px"></i></div><div class="sm-dblabel">QC</div></div>
-            <div class="sm-dbrow" data-db="harvest" onclick="smTogDb(this)"><div class="sm-chk on" id="dc-harvest"><i class="ti ti-check" style="font-size:10px"></i></div><div class="sm-dblabel">Harvest funnel</div></div>
-            <div class="sm-dbrow" data-db="budget" onclick="smTogDb(this)"><div class="sm-chk on" id="dc-budget"><i class="ti ti-check" style="font-size:10px"></i></div><div class="sm-dblabel">Budget vs actual</div></div>
-          </div>
+          <div id="sm-matrix-rows"></div>
+          <div class="sm-mx-note"><i class="ti ti-info-circle" style="font-size:11px"></i> Tick a product to enable it, then choose which dashboards that product can access.</div>
         </div>
       </div>
       <!-- STEP 4: FILTERS -->
@@ -1128,28 +1140,9 @@ function editUser(permId, name, role, config, expiresAt, email){
       if(chk2){chk2.className='sm-chk';chk2.innerHTML='';}
     }
   });
-  // pre-fill products
+  // pre-fill products + dashboards (nested access, back-compat with legacy flat)
   var cfg=config||{};
-  var prods=cfg.products||[];
-  smProds.forEach(function(p){
-    var el=document.getElementById('mpc-'+p);
-    if(!el) return;
-    var row=el.closest('.sm-prow');
-    var on=prods.includes(p);
-    el.className='sm-chk'+(on?' on':'');
-    el.innerHTML=on?'<i class="ti ti-check" style="font-size:10px"></i>':'';
-    on?row.classList.add('sel'):row.classList.remove('sel');
-  });
-  // pre-fill dashboards
-  var dbs=cfg.dashboards||[];
-  smDbs.forEach(function(db){
-    smDbSt[db]=dbs.includes(db);
-    var el=document.getElementById('dc-'+db);
-    if(!el) return;
-    el.className='sm-chk'+(smDbSt[db]?' on':'');
-    el.innerHTML=smDbSt[db]?'<i class="ti ti-check" style="font-size:10px"></i>':'';
-  });
-  smSyncDbAll();
+  smConfigToAccess(cfg);
   // pre-fill filters
   var filters=cfg.filters||{};
   ['farm','market','variety'].forEach(function(type){
@@ -1241,6 +1234,51 @@ const smTabSt={};smTabs.forEach(t=>smTabSt[t]=true);
 const smDbs=['shipments','qc','harvest','budget'];
 const smDbSt={};smDbs.forEach(d=>smDbSt[d]=true);
 const smProds=['grapes','citrus','mango','pomegranate','potatoes'];
+// ── per-product-per-dashboard access state ──
+// smAccess[product] = {shipments:bool, qc:bool, harvest:bool, budget:bool}
+const smProdLabels={grapes:'Grapes',citrus:'Citrus',mango:'Mango',pomegranate:'Pomegranate',potatoes:'Potatoes'};
+let smAccess={};
+function smBlankAccess(){var o={};smProds.forEach(function(p){o[p]={shipments:false,qc:false,harvest:false,budget:false};});return o;}
+function smProdOn(p){var a=smAccess[p];return !!(a&&(a.shipments||a.qc||a.harvest||a.budget));}
+// Build the matrix rows UI from smAccess
+function smRenderMatrix(){
+  var host=document.getElementById('sm-matrix-rows');if(!host)return;
+  host.innerHTML=smProds.map(function(p){
+    var a=smAccess[p]||{};var on=smProdOn(p);
+    function cell(db){var c=a[db]?' on':'';return '<div class="sm-mx-dchk'+c+'" data-prod="'+p+'" data-db="'+db+'" onclick="smMxTog(this)">'+(a[db]?'<i class=\'ti ti-check\' style=\'font-size:11px\'></i>':'')+'</div>';}
+    var pchk='<div class="sm-chk'+(on?' on':'')+'" >'+(on?'<i class=\'ti ti-check\' style=\'font-size:10px\'></i>':'')+'</div>';
+    return '<div class="sm-mxrow'+(on?' on':'')+'" data-prod="'+p+'">'+
+      '<div class="sm-mx-pcell" onclick="smMxTogProd(\''+p+'\')">'+pchk+'<span class="sm-pname">'+smProdLabels[p]+'</span></div>'+
+      '<div class="sm-mx-dcells">'+cell('shipments')+cell('qc')+cell('harvest')+cell('budget')+'</div>'+
+    '</div>';
+  }).join('');
+}
+// Toggle a single product-dashboard cell
+function smMxTog(el){var p=el.dataset.prod,db=el.dataset.db;if(!smAccess[p])smAccess[p]={shipments:false,qc:false,harvest:false,budget:false};smAccess[p][db]=!smAccess[p][db];smRenderMatrix();}
+// Toggle a whole product row: if any on -> turn all off; if all off -> turn all on
+function smMxTogProd(p){if(!smAccess[p])smAccess[p]={shipments:false,qc:false,harvest:false,budget:false};var on=smProdOn(p);var v=!on;smAccess[p]={shipments:v,qc:v,harvest:v,budget:v};smRenderMatrix();}
+// Convert smAccess -> compact map {product:[dbs]} for saving; also legacy flat arrays for back-compat
+function smAccessToConfig(){
+  var access={},prods=[],dbsSet={};
+  smProds.forEach(function(p){
+    var a=smAccess[p]||{};var list=smDbs.filter(function(d){return a[d];});
+    if(list.length){access[p]=list;prods.push(p);list.forEach(function(d){dbsSet[d]=true;});}
+  });
+  return {access:access,products:prods,dashboards:Object.keys(dbsSet)};
+}
+// Load config (new nested OR legacy flat) into smAccess
+function smConfigToAccess(cfg){
+  cfg=cfg||{};smAccess=smBlankAccess();
+  if(cfg.access&&typeof cfg.access==='object'){
+    // new format
+    smProds.forEach(function(p){var list=cfg.access[p]||[];smDbs.forEach(function(d){smAccess[p][d]=list.indexOf(d)>-1;});});
+  } else {
+    // legacy: flat products[] x dashboards[] -> apply those dashboards to each listed product
+    var prods=cfg.products||[],dbs=cfg.dashboards||[];
+    prods.forEach(function(p){if(!smAccess[p])return;smDbs.forEach(function(d){smAccess[p][d]=dbs.indexOf(d)>-1;});});
+  }
+  smRenderMatrix();
+}
 const roleDefaults={
   director:{farms:'all',markets:'all',varieties:'all',tabs:smTabs.slice(),dbs:smDbs.slice(),prods:smProds.slice()},
   product_manager:{farms:'all',markets:'all',varieties:'all',tabs:smTabs.slice(),dbs:smDbs.slice(),prods:['grapes']},
@@ -1294,9 +1332,9 @@ function smSelRole(card){
 function smApplyDefaults(role){
   const d=roleDefaults[role];const note=(roleNotes[role]||'')+' Adjust as needed.';
   ['p3note','p4note','p5note'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=note;});
-  smProds.forEach(p=>{const el=document.getElementById('mpc-'+p);if(!el)return;const row=el.closest('.sm-prow');const on=d.prods.includes(p);el.className='sm-chk'+(on?' on':'');el.innerHTML=on?'<i class="ti ti-check" style="font-size:10px"></i>':'';on?row.classList.add('sel'):row.classList.remove('sel');});
-  smDbs.forEach(db=>{const on=d.dbs.includes(db);smDbSt[db]=on;const el=document.getElementById('dc-'+db);if(!el)return;el.className='sm-chk'+(on?' on':'');el.innerHTML=on?'<i class="ti ti-check" style="font-size:10px"></i>':'';});
-  smSyncDbAll();
+  smAccess=smBlankAccess();
+  d.prods.forEach(function(p){if(!smAccess[p])return;d.dbs.forEach(function(db){smAccess[p][db]=true;});});
+  smRenderMatrix();
   ['farm','market','variety'].forEach(type=>{
     const grp=document.getElementById(type+'-chips');if(!grp)return;
     const chips=[...grp.children];chips.forEach(c=>c.classList.remove('on'));
@@ -1307,10 +1345,11 @@ function smApplyDefaults(role){
   const allOn=smTabs.every(t=>smTabSt[t]);smAllTabs=allOn;
   const ta=document.getElementById('tall');ta.className='sm-chk'+(allOn?' on':'');ta.innerHTML=allOn?'<i class="ti ti-check" style="font-size:10px"></i>':'';
 }
-function smTogProd(row){row.classList.toggle('sel');const chk=row.querySelector('.sm-chk');const on=row.classList.contains('sel');chk.className='sm-chk'+(on?' on':'');chk.innerHTML=on?'<i class="ti ti-check" style="font-size:10px"></i>':'';}
-function smTogAllDbs(){const allOn=smDbs.every(d=>smDbSt[d]);smDbs.forEach(db=>{smDbSt[db]=!allOn;const el=document.getElementById('dc-'+db);el.className='sm-chk'+(!allOn?' on':'');el.innerHTML=!allOn?'<i class="ti ti-check" style="font-size:10px"></i>':'';});smSyncDbAll();}
-function smTogDb(row){const db=row.dataset.db;smDbSt[db]=!smDbSt[db];const el=document.getElementById('dc-'+db);el.className='sm-chk'+(smDbSt[db]?' on':'');el.innerHTML=smDbSt[db]?'<i class="ti ti-check" style="font-size:10px"></i>':'';smSyncDbAll();}
-function smSyncDbAll(){const allOn=smDbs.every(d=>smDbSt[d]);const el=document.getElementById('db-all');el.className='sm-chk'+(allOn?' on':'');el.innerHTML=allOn?'<i class="ti ti-check" style="font-size:10px"></i>':'';}
+/* legacy toggle fns replaced by matrix (smMxTog / smMxTogProd). Kept as safe no-ops. */
+function smTogProd(){}
+function smTogAllDbs(){}
+function smTogDb(){}
+function smSyncDbAll(){}
 function smChip(chip){const par=chip.parentElement;const siblings=[...par.children];const isAll=chip.classList.contains('all');if(isAll){siblings.forEach(c=>c.classList.remove('on'));chip.classList.add('on');}else{siblings[0].classList.remove('on');chip.classList.toggle('on');if(!siblings.slice(1).some(c=>c.classList.contains('on')))siblings[0].classList.add('on');}}
 function smTogTab(row,tab){smTabSt[tab]=!smTabSt[tab];smSyncTab(tab);const allOn=smTabs.every(t=>smTabSt[t]);smAllTabs=allOn;const ta=document.getElementById('tall');ta.className='sm-chk'+(allOn?' on':'');ta.innerHTML=allOn?'<i class="ti ti-check" style="font-size:10px"></i>':'';}
 function smTogAllTabs(){smAllTabs=!smAllTabs;smTabs.forEach(t=>{smTabSt[t]=smAllTabs;smSyncTab(t);});const ta=document.getElementById('tall');ta.className='sm-chk'+(smAllTabs?' on':'');ta.innerHTML=smAllTabs?'<i class="ti ti-check" style="font-size:10px"></i>':'';}
@@ -1323,8 +1362,9 @@ async function smGrant(){
   const nx=document.getElementById('sm-nx');
   nx.textContent='Saving…';nx.disabled=true;
   const activeTabs=smTabs.filter(t=>smTabSt[t]);
-  const activeDbs=smDbs.filter(d=>smDbSt[d]);
-  const activeProds=[...document.querySelectorAll('.sm-prow.sel')].map(r=>r.dataset.prod);
+  const _ac=smAccessToConfig();
+  const activeDbs=_ac.dashboards;
+  const activeProds=_ac.products;
   const farmSel=[...document.querySelectorAll('#farm-chips .sm-chip.on')].map(c=>c.textContent.trim());
   const mktSel=[...document.querySelectorAll('#market-chips .sm-chip.on')].map(c=>c.textContent.trim());
   const varSel=[...document.querySelectorAll('#variety-chips .sm-chip.on')].map(c=>c.textContent.trim());
@@ -1335,6 +1375,7 @@ async function smGrant(){
   else if(expSel==='3 months'){var d3=new Date(now);d3.setMonth(d3.getMonth()+3);expiresAt=d3.toISOString();}
   else if(expSel==='End of season'){expiresAt=new Date(now.getFullYear()+'-09-30T23:59:59').toISOString();}
   const config={
+    access:_ac.access,
     products:activeProds,dashboards:activeDbs,
     filters:{
       farms:farmSel.includes('All farms')?'all':farmSel,
@@ -1432,7 +1473,7 @@ function smReset(){
   var _nx=document.getElementById('sm-nx');if(_nx){_nx.disabled=false;_nx.textContent='Next';}
   smStep=1;smUser=null;smRole=null;smAllTabs=true;
   smTabs.forEach(t=>{smTabSt[t]=true;smSyncTab(t);});
-  smDbs.forEach(d=>{smDbSt[d]=true;});
+  smAccess=smBlankAccess();smAccess.grapes={shipments:true,qc:true,harvest:true,budget:true};smRenderMatrix();
   document.querySelectorAll('.sm-urow').forEach(r=>{r.classList.remove('sel');const c=r.querySelector('.sm-chk');c.className='sm-chk';c.innerHTML='';});
   document.querySelectorAll('.sm-rcard').forEach(c=>{const f=c.classList.contains('full');c.className=f?'sm-rcard full':'sm-rcard';const chk=c.querySelector('.sm-chk');if(chk){chk.className='sm-chk';chk.innerHTML='';}});
   const ucnt=document.getElementById('sm-ucnt');if(ucnt)ucnt.textContent='No user selected';
@@ -1441,10 +1482,10 @@ function smReset(){
   const ta=document.getElementById('tall');if(ta){ta.className='sm-chk on';ta.innerHTML='<i class="ti ti-check" style="font-size:10px"></i>';}
   smSyncDbAll();
   ['farm','market','variety'].forEach(type=>{const grp=document.getElementById(type+'-chips');if(!grp)return;[...grp.children].forEach((c,i)=>{c.classList.remove('on');if(i===0)c.classList.add('on');});});
-  smProds.forEach(p=>{const el=document.getElementById('mpc-'+p);if(!el)return;const row=el.closest('.sm-prow');if(p==='grapes'){el.className='sm-chk on';el.innerHTML='<i class="ti ti-check" style="font-size:10px"></i>';row.classList.add('sel');}else{el.className='sm-chk';el.innerHTML='';row.classList.remove('sel');}});
+  /* product/dashboard reset handled via smAccess above */
   smShowP('smp1');smUpdateBar();
 }
-smUpdateBar();
+smAccess=smBlankAccess();smAccess.grapes={shipments:true,qc:true,harvest:true,budget:true};smRenderMatrix();smUpdateBar();
 </script>
 
 <script>
@@ -1688,9 +1729,19 @@ updateDate();
 
       // Has permission — show permitted cards, dim locked ones
       var cfg=perm.config||{};
-      var allowedProds=cfg.products||[];
-      // Color the Grapes dashboard chips green by the user's accessible dashboards
-      colorGrapesChips(allowedProds.indexOf('grapes')>-1?(cfg.dashboards||[]):[]);
+      // Derive allowed products from new nested access map, falling back to legacy flat products[]
+      function _dbsFor(cfg,prod){
+        if(cfg.access&&typeof cfg.access==='object'){return cfg.access[prod]||[];}
+        // legacy: flat dashboards apply to every listed product
+        return (cfg.products||[]).indexOf(prod)>-1?(cfg.dashboards||[]):[];
+      }
+      function _allowedProds(cfg){
+        if(cfg.access&&typeof cfg.access==='object'){return Object.keys(cfg.access).filter(function(p){return (cfg.access[p]||[]).length>0;});}
+        return cfg.products||[];
+      }
+      var allowedProds=_allowedProds(cfg);
+      // Color the Grapes dashboard chips green by the user's grapes-accessible dashboards
+      colorGrapesChips(allowedProds.indexOf('grapes')>-1?_dbsFor(cfg,'grapes'):[]);
 
       // Map product name to card id and display name
       var cardMap={
