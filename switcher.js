@@ -107,7 +107,11 @@
               if(!perm) return [];
               if(perm.expires_at && new Date(perm.expires_at)<new Date()) return [];
               var cfg=perm.config||{};
-              return cfg.dashboards||[];
+              // This switcher lists GRAPES dashboards, so read grapes access specifically.
+              if(cfg.access&&typeof cfg.access==='object'){ return cfg.access.grapes||[]; }
+              var lp=cfg.products||[];
+              var ok=lp.length===0||lp.indexOf('grapes')>-1;
+              return ok?(cfg.dashboards||[]):[];
             });
         });
     }

@@ -824,12 +824,19 @@ async function loadPanelUsers(){
       var col=getAvColor(name);
       var role=p.role||'viewer';
       var cfg=p.config||{};
-      var prods=(cfg.products||[]);
-      var dbs=(cfg.dashboards||[]);
       var expiring=p.expires_at&&(new Date(p.expires_at)-now)<3*24*3600*1000;
       var expDays=p.expires_at?Math.ceil((new Date(p.expires_at)-now)/86400000):null;
-      var tags=prods.map(function(x){return '<span class="atag">'+escH(x)+'</span>';}).join('')
-        +dbs.map(function(x){return '<span class="atag">'+escH(x)+'</span>';}).join('')
+      // Build per-product access tags (new format), fallback to legacy flat lists
+      var accTags='';
+      if(cfg.access&&typeof cfg.access==='object'){
+        accTags=Object.keys(cfg.access).filter(function(pr){return (cfg.access[pr]||[]).length;})
+          .map(function(pr){return '<span class="atag">'+escH(pr)+': '+escH((cfg.access[pr]||[]).join(', '))+'</span>';}).join('');
+      } else {
+        var prods=(cfg.products||[]);var dbs=(cfg.dashboards||[]);
+        accTags=prods.map(function(x){return '<span class="atag">'+escH(x)+'</span>';}).join('')
+          +dbs.map(function(x){return '<span class="atag">'+escH(x)+'</span>';}).join('');
+      }
+      var tags=accTags
         +(expiring?'<span class="atag warn"><i class="ti ti-clock" style="font-size:9px"></i> Expires in '+expDays+' day'+(expDays!==1?'s':'')+'</span>':'');
       return '<div class="arow'+(expiring?' expiring':'')+'" id="arow-'+p.id+'">'
         +'<div class="aav" style="background:'+col[0]+';color:'+col[1]+'">'+initials+'</div>'

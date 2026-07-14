@@ -468,7 +468,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
         var expired=perm.expires_at&&new Date(perm.expires_at)<new Date();
         if(!expired){
           var cfg=perm.config||{};
-          allowedDbs=cfg.dashboards||[];
+          // Read per-product access for GRAPES specifically.
+          // New format: cfg.access.grapes = ['shipments','qc',...]
+          // Legacy fallback: only if the flat products[] includes 'grapes'
+          // (or no products[] at all = grandfathered), use the flat dashboards[].
+          if(cfg.access&&typeof cfg.access==='object'){
+            allowedDbs=cfg.access.grapes||[];
+          } else {
+            var legacyProds=cfg.products||[];
+            var grapesOk=legacyProds.length===0||legacyProds.indexOf('grapes')>-1;
+            allowedDbs=grapesOk?(cfg.dashboards||[]):[];
+          }
         }
       }
 
