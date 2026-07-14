@@ -42,6 +42,97 @@
     }catch(e){}
   }
   if(document.readyState!=='loading'){wire();}else{document.addEventListener('DOMContentLoaded',wire);}
+
+  async function enforceProductDashboardAccess(){
+    try{
+      var raw=localStorage.getItem(SKEY);
+      if(!raw) return;
+      var s=JSON.parse(raw);
+      var sess=(s&&s.access_token)?s:((s&&s.currentSession)?s.currentSession:null);
+      var userId=sess&&sess.user&&sess.user.id;
+      if(!userId) return;
+
+      var SB_URL='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
+      var SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmeWp2Z2p3dnR3a3JucXJ2cXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzIxNjYsImV4cCI6MjA5MDQ0ODE2Nn0.FjA75XZsp0Kx5Xam_rrnYoAHX4JHKey6vEFCH_zlMuQ';
+      var userJwt=(sess&&sess.access_token)||SB_ANON;
+      var authH={apikey:SB_ANON,Authorization:'Bearer '+userJwt};
+      var PRODUCT='pomegranate';
+
+      // Admin — unlock shipments and return (QC/Harvest stay Coming Soon until built)
+      var uRes=await fetch(SB_URL+'/rest/v1/users?id=eq.'+userId+'&select=role&limit=1',{headers:authH});
+      var uData=await uRes.json().catch(function(){return [];});
+      var wsRole=(uData&&uData[0]&&uData[0].role)||'';
+      if(!wsRole){var meta=(sess&&sess.user&&sess.user.user_metadata)||{};wsRole=meta.role||meta.user_role||'';}
+      if(wsRole.toLowerCase()==='admin'){
+        var dsa=document.getElementById('dc-shipments');
+        if(dsa){dsa.classList.remove('locked');dsa.setAttribute('href','pom_overview.html');}
+        return;
+      }
+
+      // Read this product's permitted dashboards (new nested format, legacy fallback)
+      var pRes=await fetch(SB_URL+'/rest/v1/dal_analytics_permissions?user_id=eq.'+userId+'&select=config,expires_at&limit=1',{headers:authH});
+      var perms=await pRes.json().catch(function(){return [];});
+      var perm=Array.isArray(perms)&&perms[0];
+      var allowedDbs=[];
+      if(perm){
+        var expired=perm.expires_at&&new Date(perm.expires_at)<new Date();
+        if(!expired){
+          var cfg=perm.config||{};
+          if(cfg.access&&typeof cfg.access==='object'){
+            allowedDbs=cfg.access[PRODUCT]||[];
+          } else {
+            var lp=cfg.products||[];
+            var ok=lp.length===0||lp.indexOf(PRODUCT)>-1;
+            allowedDbs=ok?(cfg.dashboards||[]):[];
+          }
+        }
+      }
+
+      // Only the SHIPMENTS card is live for this product right now.
+      // QC / Harvest / Budget remain Coming Soon (dashboards not built yet) — their
+      // permission plumbing is ready; when the files exist, give them ids
+      // dc-qc / dc-harvest and add to this map.
+      var LIVE={shipments:{id:'dc-shipments',href:'pom_overview.html',name:'Shipments'}};
+
+      Object.keys(LIVE).forEach(function(db){
+        var meta=LIVE[db];var card=document.getElementById(meta.id);
+        if(!card) return;
+        if(allowedDbs.indexOf(db)>-1){
+          card.classList.remove('locked');
+          card.setAttribute('href',meta.href);
+          card.querySelectorAll('.dc-tag').forEach(function(t){t.classList.add('has-access');});
+        } else {
+          card.classList.add('locked');
+          card.removeAttribute('href');
+          card.querySelectorAll('.dc-tag').forEach(function(t){t.classList.remove('has-access');});
+          if(!card.querySelector('.dc-req-btn')){
+            var footer=card.querySelector('.dc-footer');
+            if(footer){
+              var btn=document.createElement('button');
+              btn.className='dc-req-btn';
+              btn.innerHTML='<i class="ti ti-send" style="font-size:12px"></i>Request access';
+              btn.onclick=function(e){e.preventDefault();e.stopPropagation();requestProductDashboardAccess(db,meta.name,userId,btn,authH,SB_URL,PRODUCT);};
+              footer.appendChild(btn);
+            }
+          }
+        }
+      });
+    }catch(e){console.warn('Dashboard access check:',e.message);}
+  }
+
+  async function requestProductDashboardAccess(db,dbName,userId,btn,authH,SB_URL,PRODUCT){
+    try{
+      btn.disabled=true;
+      await fetch(SB_URL+'/rest/v1/dal_access_requests',{
+        method:'POST',
+        headers:Object.assign({},authH,{'Content-Type':'application/json','Prefer':'return=minimal'}),
+        body:JSON.stringify({user_id:userId,product:PRODUCT+'-'+db,status:'pending'})
+      });
+      btn.className='dc-req-btn sent';
+      btn.innerHTML='<i class="ti ti-check" style="font-size:12px"></i>Already requested';
+    }catch(e){btn.disabled=false;}
+  }
+  enforceProductDashboardAccess();
 })();
 </script>
 
