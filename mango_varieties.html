@@ -477,14 +477,6 @@ input,select,button{font-family:var(--font)}
 <div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px" data-colorrow="1">
   <div class="cc">
     <div class="cc-header">
-      <div><div class="cc-title">Net Weight by Color (T)</div><div class="cc-sub">2025/26 vs 2024/25 prior · data labels shown</div></div>
-      <div class="cc-actions"><button class="cc-btn on" id="cblbl-cur" onclick="setBarLbl('cur',this)">2025/26</button><button class="cc-btn" id="cblbl-prior" onclick="setBarLbl('prior',this)">2024/25</button><button class="cc-btn" id="cblbl-both" onclick="setBarLbl('both',this)">Combined</button></div>
-    </div>
-    <div id="col-legend" class="chart-legend" style="margin-bottom:6px"></div>
-    <div style="position:relative;height:200px"><canvas id="bar-color" role="img" aria-label="Bar chart of net weight by color">Color NW.</canvas></div>
-  </div>
-  <div class="cc">
-    <div class="cc-header">
       <div><div class="cc-title">Net Weight by Variety (T)</div><div class="cc-sub">2025/26 vs 2024/25 prior · data labels shown</div></div>
       <div class="cc-actions"><button class="cc-btn on" id="vblbl-cur" onclick="setBarLbl('cur',this)">2025/26</button><button class="cc-btn" id="vblbl-prior" onclick="setBarLbl('prior',this)">2024/25</button><button class="cc-btn" id="vblbl-both" onclick="setBarLbl('both',this)">Combined</button></div>
     </div>
@@ -965,7 +957,6 @@ function renderKPIs(vars,cols,vTotal,cTotal){
   const yoy=priorTotal>0?((totalNw-priorTotal)/priorTotal*100):null;
   const cards=[
     {label:'Total Net Weight',icon:'ti-weight',val:totalNw.toFixed(1)+' T',sub:`Prior: ${priorTotal.toFixed(0)} T`,yoy:yoyBadge(yoy),bar:Math.min(totalNw/13,100)},
-    {label:'Top Color',icon:'ti-palette',val:topC?topC.c:'—',sub:topC?topC.nw.toFixed(1)+'T · '+Math.round(topC.nw/cTotal*100)+'% share':'',yoy:topC?yoyBadge(PRIOR_COL[topC.c]>0?((topC.nw-PRIOR_COL[topC.c])/PRIOR_COL[topC.c]*100):null):'',bar:topC?Math.round(topC.nw/cTotal*100):0},
     {label:'Top Variety',icon:'ti-plant',val:topV?topV.v:'—',sub:topV?topV.nw.toFixed(1)+'T · '+Math.round(topV.nw/totalNw*100)+'% share':'',yoy:topV?yoyBadge(PRIOR_VAR[topV.v]>0?((topV.nw-PRIOR_VAR[topV.v])/PRIOR_VAR[topV.v]*100):null):'',bar:topV?Math.round(topV.nw/totalNw*100):0},
     {label:'Class 1 NW Share',icon:'ti-award',val:totalNw>0?Math.round(c1nw/totalNw*100)+'%':'—',sub:`${c1nw.toFixed(1)} T Class 1`,yoy:'',bar:totalNw>0?Math.round(c1nw/totalNw*100):0},
     {label:'Active Varieties',icon:'ti-list',val:vars.length,sub:`across ${cols.length} color${cols.length>1?'s':''}`,yoy:'',bar:vars.length*16},
