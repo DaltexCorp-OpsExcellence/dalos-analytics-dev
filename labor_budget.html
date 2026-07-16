@@ -164,6 +164,23 @@ table.mx{border-collapse:collapse;font-size:11px}
 .an-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
 .an-val{font-size:10.5px;font-variant-numeric:tabular-nums;text-align:right;font-weight:700;line-height:1.4}
 
+
+/* multi-select filters (QC style) */
+.ms{position:relative}
+.ms-btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:7px 9px;background:var(--white);cursor:pointer;max-width:170px}
+.ms-btn .ms-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px}
+.ms-btn .cnt{background:var(--orange);color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:1px 6px}
+.ms-dd{position:absolute;top:calc(100% + 4px);left:0;z-index:160;background:#fff;border:1px solid var(--border);border-radius:9px;box-shadow:0 8px 24px rgba(14,31,61,.16);min-width:200px;max-height:260px;overflow-y:auto;padding:6px;display:none}
+.ms-dd.open{display:block}
+.ms-opt{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text);padding:5px 8px;border-radius:6px;cursor:pointer}
+.ms-opt:hover{background:var(--bg)}
+.ms-opt input{accent-color:var(--orange)}
+.ms-unavail{display:none!important}
+/* status badges */
+.tagchip{display:inline-flex;align-items:center;padding:1px 6px;border-radius:9px;font-size:8.5px;font-weight:700;margin-left:6px;vertical-align:middle;letter-spacing:.02em}
+.tag-unpl{background:var(--warnbg);color:var(--warn);border:1px solid #fde68a}
+.tag-unm{background:var(--badbg);color:var(--bad);border:1px solid #fecaca}
+
 </style>
 </head>
 <body>
@@ -205,18 +222,14 @@ table.mx{border-collapse:collapse;font-size:11px}
   <!-- FILTER RAIL -->
   <div class="rail" id="rail">
     <div class="gsearch"><i class="ti ti-search" style="color:var(--text3);font-size:15px"></i><input id="g-search" placeholder="Search bucket, operation, farm, product, variety…" oninput="onSearch()"></div>
-    <div class="fl"><label>Season</label><select id="f-season"></select></div>
-    <div class="fl"><label>Product</label><select id="f-product"></select></div>
-    <div class="fl"><label>Farm</label><select id="f-farm"></select></div>
-    <div class="fl"><label>Bucket</label><select id="f-bucket"></select></div>
-    <div class="fl"><label>Variety</label><select id="f-variety"></select></div>
-    <div class="fl"><label>Month</label><select id="f-month"></select></div>
-    <div class="fl"><label>Status</label><select id="f-status">
-      <option value="">All</option>
-      <option value="matched">Planned · active</option>
-      <option value="budget_only">Planned · not started</option>
-      <option value="actual_only">Unplanned</option>
-    </select></div>
+    <div class="fl"><label>Season</label><div class="ms" data-f="budget_season"></div></div>
+    <div class="fl"><label>Product</label><div class="ms" data-f="product"></div></div>
+    <div class="fl"><label>Farm</label><div class="ms" data-f="farm"></div></div>
+    <div class="fl"><label>Bucket</label><div class="ms" data-f="_bucket"></div></div>
+    <div class="fl"><label>Variety</label><div class="ms" data-f="_variety"></div></div>
+    <div class="fl"><label>Plot</label><div class="ms" data-f="_plot"></div></div>
+    <div class="fl"><label>Month</label><div class="ms" data-f="month"></div></div>
+    <div class="fl"><label>Status</label><div class="ms" data-f="join_status"></div></div>
     <button class="f-reset" onclick="resetFilters()"><i class="ti ti-filter-off" style="font-size:13px"></i>Reset</button>
     <div class="chips">
       <span class="chip"><i class="ti ti-calendar-stats" style="color:var(--orange)"></i>Latest actuals <b id="chip-lastm">—</b></span>
@@ -293,7 +306,17 @@ const COLS='budget_season,product,category,farm,variety_en,year,plot,operational
 const ORDER='order=product,farm,variety_en,year,plot,operational_bucket,operation_norm,month,unit,budget_amount,actual_amount';
 
 let RAW=[], METRIC='value', TAB='performance', OVM='amount';
-let F={season:'',product:'',farm:'',bucket:'',variety:'',month:'',status:'',q:''};
+let F={q:''};
+const MSF=['budget_season','product','farm','_bucket','_variety','_plot','month','join_status'];
+const S={budget_season:[],product:[],farm:[],_bucket:[],_variety:[],_plot:[],month:[],join_status:[]};
+// field accessors (virtual fields prefixed _)
+function fval(r,f){
+  if(f==='_bucket') return r.operational_bucket||'(unmapped)';
+  if(f==='_variety') return r.variety_en||'(none)';
+  if(f==='_plot') return r.plot||'(none)';
+  return r[f]==null?'':String(r[f]);
+}
+const STATUS_LBL={matched:'Planned · active',budget_only:'Planned · not started',actual_only:'Unplanned'};
 
 const MONTHS=["Oct'25","Nov'25","Dec'25","Jan'26","Feb'26","Mar'26","Apr'26","May'26","Jun'26","Jul'26","Aug'26","Sep'26"];
 const MO={};MONTHS.forEach((m,i)=>MO[m]=i+1);
@@ -374,33 +397,93 @@ function matchesSearch(r){
   return [r.operational_bucket,r.operation_norm,r.farm,r.product,r.variety_en].some(x=>String(x||'').toLowerCase().includes(q));
 }
 function filtered(){
-  return RAW.filter(r=>
-    (!F.season||r.budget_season===F.season)&&
-    (!F.product||r.product===F.product)&&
-    (!F.farm||r.farm===F.farm)&&
-    (!F.bucket||(r.operational_bucket||'(unmapped)')===F.bucket)&&
-    (!F.variety||(r.variety_en||'(none)')===F.variety)&&
-    (!F.month||r.month===F.month)&&
-    (!F.status||r.join_status===F.status)&&
-    matchesSearch(r));
+  return RAW.filter(r=>{
+    for(const f of MSF){ if(S[f].length && !S[f].includes(fval(r,f))) return false; }
+    return matchesSearch(r);
+  });
+}
+function rowsExcept(skip){
+  return RAW.filter(r=>{
+    for(const f of MSF){ if(f===skip) continue; if(S[f].length && !S[f].includes(fval(r,f))) return false; }
+    return matchesSearch(r);
+  });
 }
 function onSearch(){F.q=document.getElementById('g-search').value.trim();renderAll();}
 function buildFilters(){
-  const uniq=(map)=>[...new Set(RAW.map(map).filter(v=>v!=null&&v!==''))];
-  const put=(id,vals,all)=>{document.getElementById(id).innerHTML=`<option value="">${all}</option>`+vals.map(v=>`<option>${esc(v)}</option>`).join('');};
-  put('f-season',uniq(r=>r.budget_season).sort(),'All seasons');
-  put('f-product',uniq(r=>r.product).sort(),'All products');
-  put('f-farm',uniq(r=>r.farm).sort(),'All farms');
-  put('f-bucket',uniq(r=>r.operational_bucket||'(unmapped)').sort(),'All buckets');
-  put('f-variety',uniq(r=>r.variety_en||'(none)').sort(),'All varieties');
-  put('f-month',uniq(r=>r.month).sort(mCmp),'All months');
-  const map={'f-season':'season','f-product':'product','f-farm':'farm','f-bucket':'bucket','f-variety':'variety','f-month':'month','f-status':'status'};
-  Object.keys(map).forEach(id=>document.getElementById(id).onchange=e=>{F[map[id]]=e.target.value;renderAll();});
+  document.querySelectorAll('.ms[data-f]').forEach(el=>{
+    const f=el.dataset.f;
+    let vals=[...new Set(RAW.map(r=>fval(r,f)).filter(v=>v!==''))];
+    vals = f==='month' ? vals.sort(mCmp) : vals.sort();
+    const lbl=v=>f==='join_status'?(STATUS_LBL[v]||v):nn(v);
+    el.innerHTML=
+      '<button class="ms-btn" onclick="toggleDD(event,this)"><span class="ms-lbl">All</span><span class="cnt" style="display:none"></span><i class="ti ti-chevron-down" style="font-size:10px"></i></button>'
+      +'<div class="ms-dd">'
+      +'<div style="padding:6px 8px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2"><input type="text" placeholder="Search…" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;outline:none;font-family:inherit;box-sizing:border-box" oninput="filterMS(this)" onclick="event.stopPropagation()"></div>'
+      +'<label class="ms-opt ms-all"><input type="checkbox" checked onchange="msAll(\''+f+'\',this)"> All</label>'
+      +vals.map(v=>'<label class="ms-opt" data-val="'+esc(String(v)).toLowerCase()+'"><input type="checkbox" data-v="'+esc(String(v))+'" onchange="msPick(\''+f+'\')"> <span dir="auto">'+esc(lbl(v))+'</span></label>').join('')
+      +'</div>';
+  });
+  document.addEventListener('click',e=>{if(!e.target.closest('.ms'))document.querySelectorAll('.ms-dd').forEach(d=>d.classList.remove('open'));});
 }
-function resetFilters(){F={season:'',product:'',farm:'',bucket:'',variety:'',month:'',status:'',q:''};
-  ['f-season','f-product','f-farm','f-bucket','f-variety','f-month','f-status'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('g-search').value='';renderAll();}
-function setFilter(key,val,selId){F[key]=val;const el=document.getElementById(selId);if(el)el.value=val;renderAll();}
+function toggleDD(e,btn){e.stopPropagation();const dd=btn.parentElement.querySelector('.ms-dd');const was=dd.classList.contains('open');document.querySelectorAll('.ms-dd').forEach(d=>d.classList.remove('open'));if(!was)dd.classList.add('open');}
+function filterMS(input){
+  const q=input.value.toLowerCase().trim();
+  input.closest('.ms-dd').querySelectorAll('.ms-opt:not(.ms-all)').forEach(opt=>{
+    const val=opt.dataset.val||'';
+    const unavail=opt.classList.contains('ms-unavail');
+    opt.style.display=((!q||val.includes(q))&&!unavail)?'':'none';
+  });
+}
+function msPick(f){
+  const el=document.querySelector('.ms[data-f="'+f+'"]');
+  S[f]=[...el.querySelectorAll('input[data-v]:checked')].map(i=>i.dataset.v);
+  el.querySelector('.ms-all input').checked=S[f].length===0;
+  syncMS(el,f); refreshFilterOptions(); renderAll();
+}
+function msAll(f,cb){
+  const el=document.querySelector('.ms[data-f="'+f+'"]');
+  el.querySelectorAll('input[data-v]').forEach(i=>i.checked=false);
+  cb.checked=true; S[f]=[]; syncMS(el,f); refreshFilterOptions(); renderAll();
+}
+function syncMS(el,f){
+  const n=S[f].length,lbl=el.querySelector('.ms-lbl'),cnt=el.querySelector('.cnt');
+  const show=v=>f==='join_status'?(STATUS_LBL[v]||v):nn(v);
+  if(n===0){lbl.textContent='All';cnt.style.display='none';}
+  else if(n===1){lbl.textContent=show(S[f][0]);cnt.style.display='none';}
+  else{lbl.textContent='Multiple';cnt.style.display='';cnt.textContent=n;}
+}
+// dynamic cascade: options narrow to what exists given the OTHER filters
+function refreshFilterOptions(){
+  document.querySelectorAll('.ms[data-f]').forEach(el=>{
+    const f=el.dataset.f;
+    const avail=new Set(rowsExcept(f).map(r=>fval(r,f)).filter(v=>v!==''));
+    el.querySelectorAll('.ms-opt:not(.ms-all)').forEach(opt=>{
+      const inp=opt.querySelector('input[data-v]'); if(!inp) return;
+      const ok=avail.has(inp.dataset.v)||inp.checked;
+      opt.classList.toggle('ms-unavail',!ok);
+    });
+  });
+}
+function resetFilters(){
+  for(const f of MSF) S[f]=[];
+  F.q=''; document.getElementById('g-search').value='';
+  document.querySelectorAll('.ms[data-f]').forEach(el=>{
+    el.querySelectorAll('input[data-v]').forEach(i=>i.checked=false);
+    const all=el.querySelector('.ms-all input'); if(all) all.checked=true;
+    syncMS(el,el.dataset.f);
+  });
+  refreshFilterOptions(); renderAll();
+}
+// kept for compatibility: programmatic filter set (single value) from any remaining callers
+function setFilter(key,val){
+  const map={bucket:'_bucket',variety:'_variety',product:'product',farm:'farm'};
+  const f=map[key]||key;
+  if(!MSF.includes(f)) return;
+  S[f]=[val];
+  const el=document.querySelector('.ms[data-f="'+f+'"]');
+  if(el){el.querySelectorAll('input[data-v]').forEach(i=>i.checked=(i.dataset.v===val));const all=el.querySelector('.ms-all input');if(all)all.checked=false;syncMS(el,f);}
+  refreshFilterOptions(); renderAll();
+}
 
 /* ============ AGG (metric-aware) ============
    Sums raw money + areas per key, then derives the ACTIVE metric's b/a.
@@ -487,13 +570,13 @@ function monthlySVG(rows,mode){
   });
   s+='</svg></div>';return s;
 }
-function pairedBars(data,onClick){
+function pairedBars(data,onClick,tagFn){
   const max=Math.max(1,...data.map(o=>Math.max(o.b,o.a)));
   return data.map(o=>{
-    const c=onClick?onClick.replace('%K',esc(String(o.key)).replace(/'/g,'&#39;')):'';
+    const c=(o.drill!==undefined)?`drillGo(${o.drill})`:(onClick?onClick.replace('%K',esc(String(o.key)).replace(/'/g,'&#39;')):'');
     const t=`${esc(o.key)} — Budget ${mv(o.b)} · Actual ${mv(o.a)} ${metricUnit()} · Var ${signTxt(o.v)}${o.b?` (${((o.v/o.b)*100).toFixed(1)}%)`:''}`;
     return `<div class="pb-row" title="${t}" ${c?`onclick="${c}"`:''}>
-      <div class="pb-name" dir="auto" title="${esc(nn(o.key))}">${esc(nn(o.key))}</div>
+      <div class="pb-name" dir="auto" title="${esc(nn(o.key))}">${esc(nn(o.key))}${tagFn?tagFn(o):(o.tags||'')}</div>
       <div class="pb-bars"><div class="pb-track"><div class="pb-fill" style="width:${100*o.b/max}%;background:var(--orange)"></div></div>
       <div class="pb-track"><div class="pb-fill" style="width:${100*o.a/max}%;background:var(--navy)"></div></div></div>
       <div class="pb-nums">${METRICS[METRIC].unitAware&&o.mixedUnit?'<span style="color:var(--warn)">⚠ mixed units</span>':('B '+mv(o.b)+' · A '+mv(o.a)+'<br>'+varPill(o.v,o.b))}</div></div>`;
@@ -527,6 +610,19 @@ function aggYTD(rows,keyFn,cut){
 }
 // plot label always shows variety + farm
 function nn(s){ const x=String(s==null?'':s).trim(); return (!x||x==='#N/A'||x==='(none)')?'Unmentioned':x; }
+// group-level status tags: does this group contain unplanned spend / unmapped operations?
+function groupTags(rows,keyFn,key){
+  let unpl=0,unm=false;
+  for(const r of rows){
+    if(keyFn(r)!==key) continue;
+    if(r.join_status==='actual_only'&&(r.actual_amount||0)>0) unpl+=r.actual_amount||0;
+    if(r.bucket_status==='unmapped'||!r.operational_bucket) unm=true;
+  }
+  let h='';
+  if(unpl>0) h+=`<span class="tagchip tag-unpl" title="${fmt(unpl)} EGP actual with no budget line">unplanned</span>`;
+  if(unm) h+=`<span class="tagchip tag-unm" title="contains operations with no bucket">unmapped</span>`;
+  return h;
+}
 function plotLabel(o){ return `${esc(nn(o.meta.plot))} · ${esc(nn(o.meta.variety))} · ${esc(nn(o.meta.farm))}`; }
 
 // mini paired-bar list used inside analytic cards
@@ -557,6 +653,8 @@ function openDrill(dim, key){
     if(dim==='farm') return r.farm===key;
     if(dim==='variety') return (r.variety_en||'(none)')===key;
     if(dim==='plot') return (r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot)===key;
+    if(dim==='plotcode') return (r.plot||'(none)')===key;
+    if(dim==='operation') return (r.operation_norm||'(none)')===key;
     if(dim==='bucketfarm'){const parts=key.split(' · ');return (r.operational_bucket||'(unmapped)')===parts[0] && r.farm===parts.slice(1).join(' · ');}
     return false;
   });
@@ -577,9 +675,10 @@ function openDrill(dim, key){
   // contributing plots (labeled)
   const plots=aggYTD(rows,r=>r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot,cut).sort((x,y)=>Math.abs(y.vYTD)-Math.abs(x.vYTD)).slice(0,8)
     .map(o=>({...o,val:o.vYTD}));
-  const titleMap={bucket:'Bucket',product:'Product',farm:'Farm',variety:'Variety',plot:'Plot',bucketfarm:'Bucket × Farm'};
+  const titleMap={bucket:'Bucket',product:'Product',farm:'Farm',variety:'Variety',plot:'Plot',plotcode:'Plot',operation:'Operation',bucketfarm:'Bucket × Farm'};
   let disp=nn(key);
   if(dim==='plot'){const any=rows[0]||{};disp=`${nn(any.plot)} · ${nn(any.variety_en)} · ${nn(any.farm)}`;}
+  if(dim==='plotcode'){const vs=[...new Set(rows.map(r=>nn(r.variety_en)))].slice(0,3).join(', ');const fs=[...new Set(rows.map(r=>nn(r.farm)))].slice(0,3).join(', ');disp=`${nn(key)} · ${vs} · ${fs}`;}
   document.getElementById('drill-title').innerHTML=`<span style="font-size:11px;color:var(--text3);font-weight:600">${titleMap[dim]}</span><br><span dir="auto">${esc(disp)}</span>`;
   document.getElementById('drill-body').innerHTML=`
     <div class="kgrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
@@ -602,7 +701,6 @@ let OV_SUB='performance';
 function ovSub(s){ OV_SUB=s; renderOverview(); }
 
 function renderOverview(){
-  DRILL_REG=[];
   const rows=filtered();
   if(METRIC!=='value'&&OVM==='cum')OVM='amount';
   const cut=ytdCutoff(rows);
@@ -770,9 +868,17 @@ const DIMS={
 };
 let SORT={col:'b',dir:-1};
 function dimSort(col){SORT=SORT.col===col?{col,dir:-SORT.dir}:{col,dir:-1};renderDim(TAB);}
+const DIM_DRILL={buckets:'bucket',products:'product',farms:'farm',varieties:'variety',plots:'plotcode'};
 function renderDim(name){
   const cfg=DIMS[name];if(!cfg)return;
+  DRILL_REG=DRILL_REG||[];
   const rows=filtered(),data=agg(rows,cfg.key);
+  // attach drill + status tags to every group
+  const ddim=DIM_DRILL[name];
+  for(const o of data){
+    o.drill=drillRef(ddim,String(o.key));
+    o.tags=groupTags(rows,cfg.key,o.key);
+  }
   let tb,ta;
   const RB=data.reduce((s,o)=>s+o.rawB,0),RA=data.reduce((s,o)=>s+o.rawA,0);
   if(METRIC==='cpf'){const BA=data.reduce((s,o)=>s+o.bArea,0),AA=data.reduce((s,o)=>s+o.aArea,0);tb=BA>0?RB/BA:0;ta=AA>0?RA/AA:0;}
@@ -782,14 +888,14 @@ function renderDim(name){
   const get={k:o=>o.key,b:o=>o.b,a:o=>o.a,v:o=>o.v,vp:o=>pct(o.v,o.b)??-1e18,ach:o=>pct(o.a,o.b)??-1e18,sh:o=>pct(o.a,ta)??-1e18}[SORT.col]||(o=>o.b);
   data.sort((x,y)=>{const a=get(x),b=get(y);return (a<b?-1:a>b?1:0)*SORT.dir*(SORT.col==='k'?-1:1);});
   const arrow=c=>SORT.col===c?(SORT.dir<0?' ↓':' ↑'):'';
-  const bars=pairedBars(data.slice(0,16),cfg.sel?`setFilter('${cfg.sel[0]}','%K','${cfg.sel[1]}')`:null);
+  const bars=pairedBars(data.slice(0,16),null);
   document.getElementById('pane-'+name).innerHTML=`
-    <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl}s — Budget vs Actual</div><div class="card-s">Top 16 by budget${cfg.sel?' · click to filter':''}</div></div>${metricNote()}</div>${bars}</div>
-    <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl} detail</div><div class="card-s">Variance in EGP and % · click a header to sort</div></div></div>
+    <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl}s — Budget vs Actual</div><div class="card-s">Top 16 by budget · click for details</div></div>${metricNote()}</div>${bars}</div>
+    <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl} detail</div><div class="card-s">Variance in EGP and % · click a header to sort · click a row for details</div></div></div>
     <div class="tbl-wrap"><table class="dt">
       <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th><th onclick="dimSort('b')">Budget${arrow('b')}</th><th onclick="dimSort('a')">Actual${arrow('a')}</th><th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th><th onclick="dimSort('ach')">Achievement${arrow('ach')}</th><th onclick="dimSort('sh')">Share${arrow('sh')}</th></tr></thead>
-      <tbody>${data.map(o=>{const vp=pct(o.v,o.b),cl=cfg.sel?` style="cursor:pointer" onclick="setFilter('${cfg.sel[0]}','${esc(String(o.key)).replace(/'/g,'&#39;')}','${cfg.sel[1]}')"`:'';
-        return `<tr${cl}><td dir="auto">${esc(o.key)}</td><td>${mvCell(o,'b')}</td><td>${mvCell(o,'a')}</td>
+      <tbody>${data.map(o=>{const vp=pct(o.v,o.b),cl=` style="cursor:pointer" onclick="drillGo(${o.drill})"`;
+        return `<tr${cl}><td dir="auto">${esc(nn(o.key))}${o.tags||''}</td><td>${mvCell(o,'b')}</td><td>${mvCell(o,'a')}</td>
           <td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
           <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td><td>${pctTxt(pct(o.a,o.b))}</td><td>${pctTxt(pct(o.a,ta))}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr><td>Total</td><td>${mv(tb)}</td><td>${mv(ta)}</td><td class="vcell" style="color:${ta-tb>0?'var(--bad)':'var(--good)'}">${signTxt(ta-tb).replace('−','-')}</td><td>${(()=>{const p=pct(ta-tb,tb);return p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()}</td><td>${pctTxt(pct(ta,tb))}</td><td>100%</td></tr></tfoot>
@@ -800,7 +906,7 @@ function renderDim(name){
 function renderOps(){
   const rows=filtered(),m=new Map();
   for(const r of rows){const k=r.operation_norm||'(none)';let o=m.get(k);if(!o){o={key:k,bucket:r.operational_bucket||'(unmapped)',b:0,a:0};m.set(k,o);}o.b+=r.budget_amount||0;o.a+=r.actual_amount||0;}
-  let data=[...m.values()].map(o=>({...o,v:o.a-o.b})).sort((x,y)=>y.a-x.a||y.b-x.b);
+  let data=[...m.values()].map(o=>({...o,v:o.a-o.b,drill:drillRef('operation',o.key)})).sort((x,y)=>y.a-x.a||y.b-x.b);
   document.getElementById('pane-operations').innerHTML=`
     <div class="card"><div class="card-h"><div><div class="card-t">Operations</div><div class="card-s">${data.length} operations · Budget · Actual · Variance (EGP and %)</div></div></div>
     <div class="tbl-wrap"><table class="dt">
@@ -808,7 +914,7 @@ function renderOps(){
       <tbody>${data.map(o=>{const vp=pct(o.v,o.b);
         const badge=o.b===0&&o.a>0?'<span class="badge b-unpl">Unplanned</span>':(o.a===0?'<span class="badge b-nost">Not started</span>':'<span class="badge b-match">Planned</span>');
         const unm=o.bucket==='(unmapped)'?' <span class="badge b-unm">unmapped</span>':'';
-        return `<tr><td dir="auto">${esc(o.key)}</td><td dir="auto" style="text-align:left;color:var(--text2)">${esc(o.bucket)}${unm}</td><td>${badge}</td>
+        return `<tr style="cursor:pointer" onclick="drillGo(${o.drill})"><td dir="auto">${esc(nn(o.key))}</td><td dir="auto" style="text-align:left;color:var(--text2)">${esc(nn(o.bucket))}${unm}</td><td>${badge}</td>
           <td>${fmt(o.b)}</td><td>${fmt(o.a)}</td><td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
           <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td><td>${pctTxt(pct(o.a,o.b))}</td></tr>`;}).join('')}</tbody>
     </table></div></div>`;
@@ -1307,6 +1413,7 @@ function setTab(btn){
   renderAll();
 }
 function renderAll(){
+  DRILL_REG=[];
   const rows=filtered();
   renderKPIs(rows);
   if(TAB==='performance')renderPerf();
