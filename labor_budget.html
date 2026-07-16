@@ -210,12 +210,7 @@ table.mx{border-collapse:collapse;font-size:11px}
       <div class="hero-t"><i class="ti ti-cash-banknote"></i> Orchards Labor Budget</div>
       <div class="hero-sub">Budget vs Actual labor cost — by bucket, product, farm, variety, plot and operation, across the fiscal year. Over-budget shows red, under-budget shows green.</div>
     </div>
-    <div class="hero-metricsel" id="metric-sel">
-      <button class="on" data-m="value" onclick="setMetric(this)">Value<small>EGP</small></button>
-      <button data-m="cpf" onclick="setMetric(this)">Cost / Feddan<small>EGP/fed</small></button>
-      <button data-m="qty" onclick="setMetric(this)">Quantity<small>by unit</small></button>
-      <button data-m="price" onclick="setMetric(this)">Unit Price<small>EGP/unit</small></button>
-    </div>
+
   </div>
 </div>
 
@@ -654,7 +649,8 @@ function plotTag(rows,plotKey){
   if(unm) h+='<span class="tagchip tag-unm">unmapped</span>';
   return h;
 }
-function groupTags(rows,keyFn,key){
+function groupTags(rows,keyFn,key,opts){
+  opts=opts||{};
   if(!OPB) buildOpBudget(rows);
   let unpl=0,act=0,unm=false;
   for(const r of rows){
@@ -665,7 +661,7 @@ function groupTags(rows,keyFn,key){
   }
   let h='';
   // materiality: tag only when unplanned is >=5% of the group's actual spend
-  if(unpl>0 && act>0 && unpl/act>=0.05) h+=`<span class="tagchip tag-unpl" title="${fmt(unpl)} EGP (${(100*unpl/act).toFixed(0)}% of actual) on operations with no budget line">unplanned</span>`;
+  if(!opts.noUnpl && unpl>0 && act>0 && unpl/act>=0.05) h+=`<span class="tagchip tag-unpl" title="${fmt(unpl)} EGP (${(100*unpl/act).toFixed(0)}% of actual) on operations with no budget line">unplanned</span>`;
   if(unm) h+=`<span class="tagchip tag-unm" title="contains operations with no bucket">unmapped</span>`;
   return h;
 }
@@ -704,7 +700,7 @@ function openDrill(dim, key, _fromBack){
     if(dim==='product') return r.product===key;
     if(dim==='farm') return r.farm===key;
     if(dim==='variety') return (r.variety_en||'(none)')===key;
-    if(dim==='plot') return (r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot)===key;
+    if(dim==='plot'){const raw=r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot;const comp=r.product+'|'+r.farm+'|'+(r.variety_en||'(none)')+'|'+(r.plot||'(none)');return raw===key||comp===key;}
     if(dim==='plotcode') return (r.plot||'(none)')===key;
     if(dim==='operation') return (r.operation_norm||'(none)')===key;
     if(dim==='bucketfarm'){const parts=key.split(' · ');return (r.operational_bucket||'(unmapped)')===parts[0] && r.farm===parts.slice(1).join(' · ');}
@@ -923,20 +919,23 @@ const DIMS={
   products:{key:r=>r.product,lbl:'Product',sel:['product','f-product']},
   farms:{key:r=>r.farm,lbl:'Farm',sel:['farm','f-farm']},
   varieties:{key:r=>r.variety_en||'(none)',lbl:'Variety',sel:['variety','f-variety']},
-  plots:{key:r=>r.plot||'(none)',lbl:'Plot',sel:null}
+  plots:{key:r=>r.product+'|'+r.farm+'|'+(r.variety_en||'(none)')+'|'+(r.plot||'(none)'),lbl:'Plot',sel:null,
+    disp:k=>{const p=String(k).split('|');return esc(nn(p[3]))+' · '+esc(nn(p[2]))+' · '+esc(nn(p[1]));}}
 };
 let SORT={col:'b',dir:-1};
 function dimSort(col){SORT=SORT.col===col?{col,dir:-SORT.dir}:{col,dir:-1};renderDim(TAB);}
-const DIM_DRILL={buckets:'bucket',products:'product',farms:'farm',varieties:'variety',plots:'plotcode'};
+const DIM_DRILL={buckets:'bucket',products:'product',farms:'farm',varieties:'variety',plots:'plot'};
 function renderDim(name){
   const cfg=DIMS[name];if(!cfg)return;
   DRILL_REG=DRILL_REG||[];
   const rows=filtered(),data=agg(rows,cfg.key);
   // attach drill + status tags to every group
   const ddim=DIM_DRILL[name];
+  const noUnpl=(name==='products'||name==='farms');
   for(const o of data){
     o.drill=drillRef(ddim,String(o.key));
-    o.tags=groupTags(rows,cfg.key,o.key);
+    o.tags=groupTags(rows,cfg.key,o.key,{noUnpl});
+    o.lbl=cfg.disp?cfg.disp(o.key):esc(nn(o.key));
   }
   let tb,ta;
   const RB=data.reduce((s,o)=>s+o.rawB,0),RA=data.reduce((s,o)=>s+o.rawA,0);
@@ -947,35 +946,37 @@ function renderDim(name){
   const get={k:o=>o.key,b:o=>o.b,a:o=>o.a,v:o=>o.v,vp:o=>pct(o.v,o.b)??-1e18,ach:o=>pct(o.a,o.b)??-1e18,sh:o=>pct(o.a,ta)??-1e18}[SORT.col]||(o=>o.b);
   data.sort((x,y)=>{const a=get(x),b=get(y);return (a<b?-1:a>b?1:0)*SORT.dir*(SORT.col==='k'?-1:1);});
   const arrow=c=>SORT.col===c?(SORT.dir<0?' ↓':' ↑'):'';
-  const bars=pairedBars(data.slice(0,16),null);
+  const bars=SIDE==='both'?pairedBars(data.slice(0,16),null):sideBars(data.slice(0,16),o=>(o.lbl||esc(nn(o.key)))+(o.tags||''));
   document.getElementById('pane-'+name).innerHTML=`
-    <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl}s — Budget vs Actual</div><div class="card-s">Top 16 by budget · click for details</div></div>${metricNote()}</div>${bars}</div>
+    <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl}s — ${SIDE==='both'?'Budget vs Actual':SIDE==='budget'?'Budget':SIDE==='actual'?'Actual':'Variance'}</div><div class="card-s">Top 16 by budget · click for details</div></div><div style="display:flex;gap:10px;align-items:flex-end">${tblControls()}${metricNote()}</div></div>${bars}</div>
     <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl} detail</div><div class="card-s">Variance in EGP and % · click a header to sort · click a row for details</div></div></div>
     <div class="tbl-wrap"><table class="dt">
-      <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th><th onclick="dimSort('b')">Budget${arrow('b')}</th><th onclick="dimSort('a')">Actual${arrow('a')}</th><th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th><th onclick="dimSort('ach')">Achievement${arrow('ach')}</th><th onclick="dimSort('sh')">Share${arrow('sh')}</th></tr></thead>
+      <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th>${SIDE!=='actual'&&SIDE!=='variance'?`<th onclick="dimSort('b')">Budget${arrow('b')}</th>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<th onclick="dimSort('a')">Actual${arrow('a')}</th>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th>`:''}${SIDE==='both'?`<th onclick="dimSort('ach')">Achievement${arrow('ach')}</th>`:''}<th onclick="dimSort('sh')">Share${arrow('sh')}</th></tr></thead>
       <tbody>${data.map(o=>{const vp=pct(o.v,o.b),cl=` style="cursor:pointer" onclick="drillGo(${o.drill})"`;
-        return `<tr${cl}><td dir="auto">${esc(nn(o.key))}${o.tags||''}</td><td>${mvCell(o,'b')}</td><td>${mvCell(o,'a')}</td>
+        const shBase=SIDE==='budget'?tb:ta, shVal=SIDE==='budget'?o.b:o.a;
+        return `<tr${cl}><td dir="auto">${o.lbl||esc(nn(o.key))}${o.tags||''}</td>${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mvCell(o,'b')}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mvCell(o,'a')}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`
           <td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
-          <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td><td>${pctTxt(pct(o.a,o.b))}</td><td>${pctTxt(pct(o.a,ta))}</td></tr>`;}).join('')}</tbody>
-      <tfoot><tr><td>Total</td><td>${mv(tb)}</td><td>${mv(ta)}</td><td class="vcell" style="color:${ta-tb>0?'var(--bad)':'var(--good)'}">${signTxt(ta-tb).replace('−','-')}</td><td>${(()=>{const p=pct(ta-tb,tb);return p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()}</td><td>${pctTxt(pct(ta,tb))}</td><td>100%</td></tr></tfoot>
+          <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(o.a,o.b))}</td>`:''}<td>${pctTxt(pct(shVal,shBase))}</td></tr>`;}).join('')}</tbody>
+      <tfoot><tr><td>Total</td>${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mv(tb)}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mv(ta)}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<td class="vcell" style="color:${ta-tb>0?'var(--bad)':'var(--good)'}">${signTxt(ta-tb).replace('−','-')}</td><td>${(()=>{const p=pct(ta-tb,tb);return p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(ta,tb))}</td>`:''}<td>100%</td></tr></tfoot>
     </table></div></div>`;
 }
 
 /* ============ OPERATIONS ============ */
 function renderOps(){
-  const rows=filtered(),m=new Map();
-  for(const r of rows){const k=r.operation_norm||'(none)';let o=m.get(k);if(!o){o={key:k,bucket:r.operational_bucket||'(unmapped)',b:0,a:0};m.set(k,o);}o.b+=r.budget_amount||0;o.a+=r.actual_amount||0;}
-  let data=[...m.values()].map(o=>({...o,v:o.a-o.b,drill:drillRef('operation',o.key)})).sort((x,y)=>y.a-x.a||y.b-x.b);
+  const rows=filtered();
+  const bmap=new Map();
+  for(const r of rows){const k=r.operation_norm||'(none)';if(!bmap.has(k))bmap.set(k,r.operational_bucket||'(unmapped)');}
+  let data=agg(rows,r=>r.operation_norm||'(none)').map(o=>({...o,bucket:bmap.get(o.key)||'(unmapped)',drill:drillRef('operation',o.key)})).sort((x,y)=>y.a-x.a||y.b-x.b);
   document.getElementById('pane-operations').innerHTML=`
-    <div class="card"><div class="card-h"><div><div class="card-t">Operations</div><div class="card-s">${data.length} operations · Budget · Actual · Variance (EGP and %)</div></div></div>
+    <div class="card"><div class="card-h"><div><div class="card-t">Operations</div><div class="card-s">${data.length} operations · click a row for details</div></div><div style="display:flex;gap:10px;align-items:flex-end">${tblControls()}${metricNote()}</div></div>
     <div class="tbl-wrap"><table class="dt">
-      <thead><tr><th>Operation</th><th style="text-align:left">Bucket</th><th>Status</th><th>Budget</th><th>Actual</th><th>Variance</th><th>Var %</th><th>Achievement</th></tr></thead>
+      <thead><tr><th>Operation</th><th style="text-align:left">Bucket</th><th>Status</th>${SIDE!=='actual'&&SIDE!=='variance'?'<th>Budget</th>':''}${SIDE!=='budget'&&SIDE!=='variance'?'<th>Actual</th>':''}${SIDE!=='budget'&&SIDE!=='actual'?'<th>Variance</th><th>Var %</th>':''}${SIDE==='both'?'<th>Achievement</th>':''}</tr></thead>
       <tbody>${data.map(o=>{const vp=pct(o.v,o.b);
-        const badge=o.b===0&&o.a>0?'<span class="badge b-unpl">Unplanned</span>':(o.a===0?'<span class="badge b-nost">Not started</span>':'<span class="badge b-match">Planned</span>');
+        const badge=o.rawB===0&&o.rawA>0?'<span class="badge b-unpl">Unplanned</span>':(o.rawA===0?'<span class="badge b-nost">Not started</span>':'<span class="badge b-match">Planned</span>');
         const unm=o.bucket==='(unmapped)'?' <span class="badge b-unm">unmapped</span>':'';
         return `<tr style="cursor:pointer" onclick="drillGo(${o.drill})"><td dir="auto">${esc(nn(o.key))}</td><td dir="auto" style="text-align:left;color:var(--text2)">${esc(nn(o.bucket))}${unm}</td><td>${badge}</td>
-          <td>${fmt(o.b)}</td><td>${fmt(o.a)}</td><td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
-          <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td><td>${pctTxt(pct(o.a,o.b))}</td></tr>`;}).join('')}</tbody>
+          ${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mvCell(o,'b')}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mvCell(o,'a')}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
+          <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(o.a,o.b))}</td>`:''}</tr>`;}).join('')}</tbody>
     </table></div></div>`;
 }
 
@@ -1460,10 +1461,31 @@ function renderPerf(){
 }
 
 /* ============ TABS + BOOT ============ */
-function setMetric(btn){
-  if(btn.disabled)return;METRIC=btn.dataset.m;
-  document.querySelectorAll('#metric-sel button').forEach(b=>b.classList.toggle('on',b===btn));
-  renderAll();
+let SIDE='both'; // both | budget | actual | variance
+function setMetricSel(v){METRIC=v;renderAll();}
+function setSideSel(v){SIDE=v;renderAll();}
+function tblControls(){
+  const kpi=[['value','Value (EGP)'],['qty','Quantity'],['cpf','Cost / Feddan'],['price','Unit Price']];
+  const side=[['both','Budget vs Actual'],['budget','Budget only'],['actual','Actual only'],['variance','Variance']];
+  return `<div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div class="fl"><label>KPI</label><select onchange="setMetricSel(this.value)" style="font-family:var(--font);font-size:11.5px;font-weight:600;border:1px solid var(--border);border-radius:8px;padding:6px 9px;background:var(--white);cursor:pointer">${kpi.map(([v,l])=>`<option value="${v}"${METRIC===v?' selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="fl"><label>Show</label><select onchange="setSideSel(this.value)" style="font-family:var(--font);font-size:11.5px;font-weight:600;border:1px solid var(--border);border-radius:8px;padding:6px 9px;background:var(--white);cursor:pointer">${side.map(([v,l])=>`<option value="${v}"${SIDE===v?' selected':''}>${l}</option>`).join('')}</select></div>
+  </div>`;
+}
+// single-side bar list (budget / actual / variance views)
+function sideBars(data,labelFn){
+  const val=o=>SIDE==='budget'?o.b:SIDE==='actual'?o.a:o.v;
+  const items=data.map(o=>({...o,val:val(o)}));
+  const max=Math.max(1,...items.map(o=>Math.abs(o.val)));
+  return items.map(o=>{
+    const col=SIDE==='budget'?'var(--orange)':SIDE==='actual'?'var(--navy)':(o.val>0?'var(--bad)':'var(--good)');
+    const c=(o.drill!==undefined)?`onclick="drillGo(${o.drill})" style="cursor:pointer"`:'';
+    return `<div class="an-row" ${c}>
+      <div class="an-name" dir="auto">${labelFn(o)}</div>
+      <div class="an-bar"><div class="an-fill" style="width:${100*Math.abs(o.val)/max}%;background:${col}"></div></div>
+      <div class="an-val" style="color:${SIDE==='variance'?(o.val>0?'var(--bad)':'var(--good)'):'var(--text)'}">${SIDE==='variance'&&o.val>0?'+':''}${mv(o.val)}</div>
+    </div>`;
+  }).join('');
 }
 function setTab(btn){
   TAB=btn.dataset.tab;
