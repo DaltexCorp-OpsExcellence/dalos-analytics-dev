@@ -1186,7 +1186,7 @@ function renderWeeklyChart(data, s) {
     svg += `<text x="${x+bW/2}" y="${H+14}" font-size="9" fill="var(--text3)" text-anchor="middle">Wk ${w}</text>`;
   });
 
-  document.getElementById('weekly-chart').innerHTML = `<svg width="100%" viewBox="0 0 ${totalW} ${H+20}" preserveAspectRatio="xMidYMid meet" style="overflow:visible">${svg}</svg>`;
+  document.getElementById('weekly-chart').innerHTML = `<svg width="${totalW}" height="${H+20}" viewBox="0 0 ${totalW} ${H+20}" preserveAspectRatio="xMinYMid meet" style="overflow:visible;max-width:100%">${svg}</svg>`;
 
   const fmt = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
   document.getElementById('chart-period').textContent = `${fmt(F.from)} – ${fmt(F.to)} · Loading date · vs 2024/25 (grey)`;
