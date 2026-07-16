@@ -95,7 +95,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .pb-row:hover{background:#fafbfe}
 .pb-name{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pb-bars{display:flex;flex-direction:column;gap:3px}
-.pb-track{height:9px;border-radius:4px;background:var(--bg);position:relative;overflow:hidden}
+.pb-track{height:9px;border-radius:4px;background:var(--bg);position:relative;overflow:hidden;direction:ltr}
 .pb-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
 .pb-nums{font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--text2);text-align:right;line-height:1.5}
 /* TABLES */
@@ -158,7 +158,9 @@ table.mx{border-collapse:collapse;font-size:11px}
 .an-row{display:grid;grid-template-columns:1fr 90px 120px;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--bg);cursor:pointer}
 .an-row:hover{background:#fafbfe}
 .an-name{font-size:11.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.an-bar{height:8px;border-radius:4px;background:var(--bg);position:relative;overflow:hidden}
+.an-bar{height:8px;border-radius:4px;background:var(--bg);position:relative;overflow:hidden;direction:ltr}
+.an-row{direction:ltr}
+.an-name{direction:ltr;text-align:left}
 .an-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
 .an-val{font-size:10.5px;font-variant-numeric:tabular-nums;text-align:right;font-weight:700;line-height:1.4}
 
@@ -491,7 +493,7 @@ function pairedBars(data,onClick){
     const c=onClick?onClick.replace('%K',esc(String(o.key)).replace(/'/g,'&#39;')):'';
     const t=`${esc(o.key)} — Budget ${mv(o.b)} · Actual ${mv(o.a)} ${metricUnit()} · Var ${signTxt(o.v)}${o.b?` (${((o.v/o.b)*100).toFixed(1)}%)`:''}`;
     return `<div class="pb-row" title="${t}" ${c?`onclick="${c}"`:''}>
-      <div class="pb-name" dir="auto" title="${esc(o.key)}">${esc(o.key)}</div>
+      <div class="pb-name" dir="auto" title="${esc(nn(o.key))}">${esc(nn(o.key))}</div>
       <div class="pb-bars"><div class="pb-track"><div class="pb-fill" style="width:${100*o.b/max}%;background:var(--orange)"></div></div>
       <div class="pb-track"><div class="pb-fill" style="width:${100*o.a/max}%;background:var(--navy)"></div></div></div>
       <div class="pb-nums">${METRICS[METRIC].unitAware&&o.mixedUnit?'<span style="color:var(--warn)">⚠ mixed units</span>':('B '+mv(o.b)+' · A '+mv(o.a)+'<br>'+varPill(o.v,o.b))}</div></div>`;
@@ -524,17 +526,22 @@ function aggYTD(rows,keyFn,cut){
   return [...m.values()].map(o=>({...o, vYTD:o.bYTD-o.a, v:o.b-o.a, area:[...o.areaSet.values()].reduce((s,x)=>s+x,0)}));
 }
 // plot label always shows variety + farm
-function plotLabel(o){ return `${esc(o.meta.plot||'—')} · ${esc(o.meta.variety||'—')} · ${esc(o.meta.farm||'')}`; }
+function nn(s){ const x=String(s==null?'':s).trim(); return (!x||x==='#N/A'||x==='(none)')?'Unmentioned':x; }
+function plotLabel(o){ return `${esc(nn(o.meta.plot))} · ${esc(nn(o.meta.variety))} · ${esc(nn(o.meta.farm))}`; }
 
 // mini paired-bar list used inside analytic cards
-function miniList(items, labelFn, onClick){
+// registry so onclick never embeds long/Arabic keys in HTML attributes
+let DRILL_REG=[];
+function drillRef(dim,key){ DRILL_REG.push({dim,key}); return DRILL_REG.length-1; }
+function drillGo(i){ const d=DRILL_REG[i]; if(d) openDrill(d.dim,d.key); }
+function miniList(items, labelFn){
   if(!items.length) return '<div style="color:var(--text3);font-size:11px;padding:8px">No data.</div>';
   const max=Math.max(1,...items.map(o=>Math.abs(o.val)));
   return items.map(o=>{
     const w=100*Math.abs(o.val)/max;
     const col=o.val>0?'var(--good)':o.val<0?'var(--bad)':'var(--text3)';
-    const c=onClick?onClick.replace('%K',esc(String(o.clickKey)).replace(/'/g,'&#39;')):'';
-    return `<div class="an-row" ${c?`onclick="${c}"`:''}>
+    const c=(o.drill!==undefined)?`onclick="drillGo(${o.drill})"`:'';
+    return `<div class="an-row" ${c} ${c?'style="cursor:pointer"':'style="cursor:default"'}>
       <div class="an-name" dir="auto" title="${labelFn(o)}">${labelFn(o)}</div>
       <div class="an-bar"><div class="an-fill" style="width:${w}%;background:${col}"></div></div>
       <div class="an-val" style="color:${col}">${(o.val>0?'+':'')+cmp(o.val)}${o.sub?`<br><span style="color:var(--text3);font-weight:500">${o.sub}</span>`:''}</div>
@@ -550,8 +557,15 @@ function openDrill(dim, key){
     if(dim==='farm') return r.farm===key;
     if(dim==='variety') return (r.variety_en||'(none)')===key;
     if(dim==='plot') return (r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot)===key;
+    if(dim==='bucketfarm'){const parts=key.split(' · ');return (r.operational_bucket||'(unmapped)')===parts[0] && r.farm===parts.slice(1).join(' · ');}
     return false;
   });
+  if(!rows.length){
+    document.getElementById('drill-title').innerHTML='<span dir="auto">'+esc(nn(key))+'</span>';
+    document.getElementById('drill-body').innerHTML='<div style="text-align:center;color:var(--text3);padding:40px">No rows match this selection with the current filters.</div>';
+    document.getElementById('drill-modal').style.display='flex';
+    return;
+  }
   const cut=ytdCutoff(filtered());
   const tb=rows.reduce((s,r)=>s+(r.budget_amount||0),0);
   const ta=rows.reduce((s,r)=>s+(r.actual_amount||0),0);
@@ -559,13 +573,13 @@ function openDrill(dim, key){
   const vY=bYTD-ta, ach=bYTD?100*ta/bYTD:null;
   // top operations within
   const ops=aggYTD(rows,r=>r.operation_norm||'(none)',cut).sort((x,y)=>Math.abs(y.vYTD)-Math.abs(x.vYTD)).slice(0,8)
-    .map(o=>({...o,val:o.vYTD,clickKey:null}));
+    .map(o=>({...o,val:o.vYTD}));
   // contributing plots (labeled)
   const plots=aggYTD(rows,r=>r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot,cut).sort((x,y)=>Math.abs(y.vYTD)-Math.abs(x.vYTD)).slice(0,8)
     .map(o=>({...o,val:o.vYTD}));
-  const titleMap={bucket:'Bucket',product:'Product',farm:'Farm',variety:'Variety',plot:'Plot'};
-  let disp=key;
-  if(dim==='plot'){const any=rows[0]||{};disp=`${any.plot} · ${any.variety_en} · ${any.farm}`;}
+  const titleMap={bucket:'Bucket',product:'Product',farm:'Farm',variety:'Variety',plot:'Plot',bucketfarm:'Bucket × Farm'};
+  let disp=nn(key);
+  if(dim==='plot'){const any=rows[0]||{};disp=`${nn(any.plot)} · ${nn(any.variety_en)} · ${nn(any.farm)}`;}
   document.getElementById('drill-title').innerHTML=`<span style="font-size:11px;color:var(--text3);font-weight:600">${titleMap[dim]}</span><br><span dir="auto">${esc(disp)}</span>`;
   document.getElementById('drill-body').innerHTML=`
     <div class="kgrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
@@ -576,8 +590,8 @@ function openDrill(dim, key){
     </div>
     <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Monthly Budget vs Actual</div></div>${monthlySVG(rows,'amount')}</div>
     <div class="grid2">
-      <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Top operations by |Variance YTD|</div></div>${miniList(ops,o=>esc(o.key),null)}</div>
-      <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Plots driving it</div><div class="card-s">Plot · Variety · Farm</div></div>${miniList(plots,plotLabel,null)}</div>
+      <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Top operations by |Variance YTD|</div></div>${miniList(ops,o=>esc(nn(o.key)))}</div>
+      <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Plots driving it</div><div class="card-s">Plot · Variety · Farm</div></div>${miniList(plots,plotLabel)}</div>
     </div>`;
   document.getElementById('drill-modal').style.display='flex';
 }
@@ -588,6 +602,7 @@ let OV_SUB='performance';
 function ovSub(s){ OV_SUB=s; renderOverview(); }
 
 function renderOverview(){
+  DRILL_REG=[];
   const rows=filtered();
   if(METRIC!=='value'&&OVM==='cum')OVM='amount';
   const cut=ytdCutoff(rows);
@@ -602,11 +617,11 @@ function renderOverview(){
 
   // 1. Best/Worst plots by Variance YTD
   const plotsSorted=[...plots].sort((a,b)=>b.vYTD-a.vYTD);
-  const bestPlots=plotsSorted.filter(p=>p.vYTD>0).slice(0,8).map(o=>({...o,val:o.vYTD}));
-  const worstPlots=plotsSorted.filter(p=>p.vYTD<0).slice(-8).reverse().map(o=>({...o,val:o.vYTD}));
+  const bestPlots=plotsSorted.filter(p=>p.vYTD>0).slice(0,8).map(o=>({...o,val:o.vYTD,drill:drillRef('plot',o.key)}));
+  const worstPlots=plotsSorted.filter(p=>p.vYTD<0).slice(-8).reverse().map(o=>({...o,val:o.vYTD,drill:drillRef('plot',o.key)}));
 
   // 2. Biggest variance contributors bucket×farm (absolute)
-  const contrib=[...bucketFarm].sort((a,b)=>Math.abs(b.vYTD)-Math.abs(a.vYTD)).slice(0,10).map(o=>({...o,val:o.vYTD}));
+  const contrib=[...bucketFarm].sort((a,b)=>Math.abs(b.vYTD)-Math.abs(a.vYTD)).slice(0,10).map(o=>({...o,val:o.vYTD,drill:drillRef('bucketfarm',o.key)}));
 
   // 3. Unplanned spend spotlight (actual, no budget line for that product+op)
   const opb=new Map(); for(const r of rows){const k=r.product+'|'+(r.operation_norm||'');opb.set(k,(opb.get(k)||0)+(r.budget_amount||0));}
@@ -616,7 +631,7 @@ function renderOverview(){
     let o=unplByPlot.get(k); if(!o){o={amt:0,meta:{plot:r.plot,variety:r.variety_en,farm:r.farm}};unplByPlot.set(k,o);}
     o.amt+=r.actual_amount||0;
   }}
-  const unplanned=[...unplByPlot.values()].sort((a,b)=>b.amt-a.amt).slice(0,8).map(o=>({val:o.amt,meta:o.meta}));
+  const unplanned=[...unplByPlot.entries()].sort((a,b)=>b[1].amt-a[1].amt).slice(0,8).map(([k,o])=>({val:o.amt,meta:o.meta,drill:drillRef('plot',k)}));
 
   // 4. Burn/pace: % season elapsed vs % budget consumed
   const monthsElapsed=cut, seasonMonths=12;
@@ -625,40 +640,32 @@ function renderOverview(){
   const pctConsumed=tb?100*ta/tb:0;
 
   // 5. Variety performance ranking
-  const varSorted=[...varieties].sort((a,b)=>a.vYTD-b.vYTD).map(o=>({...o,val:o.vYTD}));
+  const varSorted=[...varieties].sort((a,b)=>a.vYTD-b.vYTD).map(o=>({...o,val:o.vYTD,drill:drillRef('variety',o.key)}));
 
   // 6. Month-over-month momentum (last two actual months, actual change per bucket)
   const monthsWithA=MONTHS.filter(m=>rows.some(r=>r.month===m&&(r.actual_amount||0)>0));
   const cur=monthsWithA[monthsWithA.length-1], prev=monthsWithA[monthsWithA.length-2];
   const mom=new Map();
   for(const r of rows){ if(r.month===cur||r.month===prev){const k=r.operational_bucket||'(unmapped)';let o=mom.get(k)||{cur:0,prev:0};if(r.month===cur)o.cur+=r.actual_amount||0;else o.prev+=r.actual_amount||0;mom.set(k,o);}}
-  const momentum=[...mom.entries()].map(([k,o])=>({key:k,val:o.cur-o.prev,sub:prev?`${cur} vs ${prev}`:''})).sort((a,b)=>Math.abs(b.val)-Math.abs(a.val)).slice(0,8);
+  const momentum=[...mom.entries()].map(([k,o])=>({key:k,val:o.cur-o.prev,sub:prev?`${cur} vs ${prev}`:'',drill:drillRef('bucket',k)})).sort((a,b)=>Math.abs(b.val)-Math.abs(a.val)).slice(0,8);
 
   // 7. YTD pace projection: projected full-season actual = actual / (elapsed/12)
   const projActual = monthsElapsed? ta/(monthsElapsed/seasonMonths) : 0;
   const projVar = tb-projActual;
 
-  // 8. Volatility: plots with highest stddev of monthly variance
-  const volMap=new Map();
-  for(const r of rows){ const k=r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot;
-    let o=volMap.get(k); if(!o){o={m:{},meta:{plot:r.plot,variety:r.variety_en,farm:r.farm}};volMap.set(k,o);}
-    o.m[r.month]=(o.m[r.month]||0)+((r.budget_amount||0)-(r.actual_amount||0));
-  }
-  const vol=[...volMap.values()].map(o=>{const vals=MONTHS.map(m=>o.m[m]||0);const mean=vals.reduce((s,x)=>s+x,0)/vals.length;const sd=Math.sqrt(vals.reduce((s,x)=>s+(x-mean)**2,0)/vals.length);return{val:sd,meta:o.meta};}).sort((a,b)=>b.val-a.val).slice(0,8);
-
   // 9. Pareto: cumulative share of |variance| by plot
-  const paretoAll=[...plots].map(p=>({abs:Math.abs(p.vYTD),meta:p.meta})).sort((a,b)=>b.abs-a.abs);
+  const paretoAll=[...plots].map(p=>({abs:Math.abs(p.vYTD),meta:p.meta,key:p.key})).sort((a,b)=>b.abs-a.abs);
   const totalAbs=paretoAll.reduce((s,x)=>s+x.abs,0)||1; let cum=0,n80=0;
   for(const p of paretoAll){cum+=p.abs;n80++;if(cum/totalAbs>=0.8)break;}
-  const paretoTop=paretoAll.slice(0,8).map(o=>({val:o.abs,meta:o.meta}));
+  const paretoTop=paretoAll.slice(0,8).map(o=>({val:o.abs,meta:o.meta,drill:drillRef('plot',o.key)}));
 
   // 10. Cost/feddan outliers: plot actual cpf vs variety average
   const varCpf=new Map();
   for(const p of plots){ if(p.area>0){const k=p.meta.variety;let o=varCpf.get(k)||{sum:0,area:0};o.sum+=p.a;o.area+=p.area;varCpf.set(k,o);}}
-  const outliers=plots.filter(p=>p.area>0).map(p=>{const va=varCpf.get(p.meta.variety);const varAvg=va&&va.area?va.sum/va.area:0;const cpf=p.a/p.area;return{val:cpf-varAvg,cpf,varAvg,meta:p.meta};}).filter(x=>x.varAvg>0).sort((a,b)=>b.val-a.val).slice(0,8);
+  const outliers=plots.filter(p=>p.area>0).map(p=>{const va=varCpf.get(p.meta.variety);const varAvg=va&&va.area?va.sum/va.area:0;const cpf=p.a/p.area;return{val:cpf-varAvg,cpf,varAvg,meta:p.meta,drill:drillRef('plot',p.key)};}).filter(x=>x.varAvg>0).sort((a,b)=>b.val-a.val).slice(0,8);
 
   // 11. Not-started watchlist: budget>0, actual=0, late in season
-  const notStarted=plots.filter(p=>p.b>0&&p.a===0).map(o=>({val:o.b,meta:o.meta})).sort((a,b)=>b.val-a.val).slice(0,8);
+  const notStarted=plots.filter(p=>p.b>0&&p.a===0).map(o=>({val:o.b,meta:o.meta,drill:drillRef('plot',o.key)})).sort((a,b)=>b.val-a.val).slice(0,8);
 
   const card=(title,sub,body)=>`<div class="card"><div class="card-h"><div><div class="card-t">${title}</div>${sub?`<div class="card-s">${sub}</div>`:''}</div></div>${body}</div>`;
 
@@ -684,22 +691,19 @@ function renderOverview(){
   if(OV_SUB==='performance'){
     panels=`
       <div class="grid2">
-        ${card('✅ Best plots — under budget','Variance YTD (Budget−Actual) · Plot · Variety · Farm', miniList(bestPlots,plotLabel,"openDrill('plot','%K')".replace('%K','%K')))}
-        ${card('🔴 Worst plots — over budget','Variance YTD · Plot · Variety · Farm', miniList(worstPlots,plotLabel,null))}
+        ${card('✅ Best plots — under budget','Variance YTD (Budget−Actual) · Plot · Variety · Farm · click for details', miniList(bestPlots,plotLabel))}
+        ${card('🔴 Worst plots — over budget','Variance YTD · Plot · Variety · Farm · click for details', miniList(worstPlots,plotLabel))}
       </div>
-      ${card('Biggest variance contributors','Bucket × Farm · absolute Variance YTD',miniList(contrib,o=>esc(o.key),null))}
-      ${card('Variety performance','Ranked by Variance YTD (worst first)',miniList(varSorted.slice(0,12),o=>esc(o.key),"openDrill('variety','%K')"))}`;
+      ${card('Biggest variance contributors','Bucket × Farm · absolute Variance YTD · click for details',miniList(contrib,o=>esc(nn(o.key))))}
+      ${card('Variety performance','Ranked by Variance YTD (worst first) · click for details',miniList(varSorted.slice(0,12),o=>esc(nn(o.key))))}`;
   } else if(OV_SUB==='risk'){
     panels=`
-      ${card('⚠ Unplanned spend spotlight','Actual cost with no budget line · Plot · Variety · Farm',miniList(unplanned,plotLabel,null))}
+      ${card('⚠ Unplanned spend spotlight','Actual cost with no budget line · Plot · Variety · Farm · click for details',miniList(unplanned,plotLabel))}
       <div class="grid2">
-        ${card('Volatility — unpredictable plots','Std-dev of monthly variance · Plot · Variety · Farm',miniList(vol,plotLabel,null))}
-        ${card('Cost/Feddan outliers','Plot actual cost/fed vs its variety average',miniList(outliers.map(o=>({val:o.val,meta:o.meta,sub:`${fmt(o.cpf)} vs ${fmt(o.varAvg)} avg`})),plotLabel,null))}
+        ${card('Cost/Feddan outliers','Plot actual cost/fed vs its variety average · click for details',miniList(outliers.map(o=>({val:o.val,meta:o.meta,sub:`${fmt(o.cpf)} vs ${fmt(o.varAvg)} avg`,drill:o.drill})),plotLabel))}
+        ${card('Pareto — variance concentration',`${n80} plots drive 80% of total variance · click for details`,miniList(paretoTop,plotLabel))}
       </div>
-      <div class="grid2">
-        ${card('Pareto — variance concentration',`${n80} plots drive 80% of total variance · top contributors`,miniList(paretoTop,plotLabel,null))}
-        ${card('Not-started watchlist','Budgeted but zero actuals · risk of unspent/missed work',miniList(notStarted,plotLabel,null))}
-      </div>`;
+      ${card('Not-started watchlist','Budgeted but zero actuals · risk of unspent/missed work · click for details',miniList(notStarted,plotLabel))}`;
   } else {
     const paceCol = pctConsumed>pctElapsed?'var(--bad)':'var(--good)';
     panels=`
@@ -722,7 +726,7 @@ function renderOverview(){
           <div><div style="font-size:11px;color:var(--text3)">Full-season budget</div><div style="font-size:22px;font-weight:800">${cmp(tb)}</div></div>
           <div><div style="font-size:11px;color:var(--text3)">Projected variance</div><div style="font-size:22px;font-weight:800;color:${projVar<0?'var(--bad)':'var(--good)'}">${(projVar>0?'+':'')+cmp(projVar)}</div><div style="font-size:10px;color:var(--text3)">${projVar<0?'on pace to overspend':'on pace to underspend'}</div></div>
         </div>`)}
-      ${card('Month-over-month momentum',`Actual change ${prev?`${cur} vs ${prev}`:''} by bucket`,miniList(momentum,o=>esc(o.key),null))}`;
+      ${card('Month-over-month momentum',`Actual change ${prev?`${cur} vs ${prev}`:''} by bucket · click for details`,miniList(momentum,o=>esc(nn(o.key))))}`;
   }
 
   document.getElementById('pane-overview').innerHTML=top+subbar+panels;
