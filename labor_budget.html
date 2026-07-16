@@ -1016,5 +1016,34 @@ function renderAll(){
   }
 })();
 </script>
+<script>
+/* Avatar-initials fallback from localStorage session (in case __DALOS_SB isn't ready) */
+(function(){
+  var SKEY='sb-sfyjvgjwvtwkrnqrvqyc-auth-token';
+  function getInitials(){
+    try{
+      var raw=localStorage.getItem(SKEY);
+      if(!raw) return null;
+      var s=JSON.parse(raw);
+      var sess=(s&&s.access_token)?s:((s&&s.currentSession)?s.currentSession:null);
+      var meta=(sess&&sess.user&&sess.user.user_metadata)||{};
+      var name=(meta.full_name||meta.name||'').trim();
+      if(!name){
+        var email=(sess&&sess.user&&sess.user.email)||'';
+        name=email.split('@')[0].replace(/[._-]/g,' ');
+      }
+      var parts=name.trim().split(/\s+/).filter(Boolean);
+      if(parts.length>=2) return (parts[0][0]+parts[1][0]).toUpperCase();
+      if(parts.length===1) return parts[0].slice(0,2).toUpperCase();
+    }catch(e){}
+    return null;
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    var av=document.getElementById('dalos-avatar');
+    var ini=getInitials();
+    if(av && ini){ av.textContent=ini; }
+  });
+})();
+</script>
 </body>
 </html>

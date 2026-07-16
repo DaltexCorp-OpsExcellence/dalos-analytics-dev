@@ -318,5 +318,33 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
 </div>
 
+<script>
+/* Populate avatar initials from the active session (matches main dashboards) */
+(function(){
+  var SKEY='sb-sfyjvgjwvtwkrnqrvqyc-auth-token';
+  function getInitials(){
+    try{
+      var raw=localStorage.getItem(SKEY);
+      if(!raw) return '?';
+      var s=JSON.parse(raw);
+      var sess=(s&&s.access_token)?s:((s&&s.currentSession)?s.currentSession:null);
+      var meta=(sess&&sess.user&&sess.user.user_metadata)||{};
+      var name=(meta.full_name||meta.name||'').trim();
+      if(!name){
+        var email=(sess&&sess.user&&sess.user.email)||'';
+        name=email.split('@')[0].replace(/[._-]/g,' ');
+      }
+      var parts=name.trim().split(/\s+/).filter(Boolean);
+      if(parts.length>=2) return (parts[0][0]+parts[1][0]).toUpperCase();
+      if(parts.length===1) return parts[0].slice(0,2).toUpperCase();
+    }catch(e){}
+    return '?';
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    var av=document.getElementById('dalos-avatar');
+    if(av){ av.textContent=getInitials(); }
+  });
+})();
+</script>
 </body>
 </html>
