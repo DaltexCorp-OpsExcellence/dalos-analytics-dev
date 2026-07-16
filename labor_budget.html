@@ -636,32 +636,27 @@ function opTag(rows,opKey){
 }
 // tag for a composite plot key (product|farm|variety|plot) within a row subset
 function plotTag(rows,plotKey){
-  if(!OPB) buildOpBudget(RAW);
-  let unpl=0,act=0,unm=false;
+  let b=0,a=0,unm=false;
   for(const r of rows){
     if((r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot)!==plotKey) continue;
-    act+=r.actual_amount||0;
-    if(isTrulyUnplanned(r)) unpl+=r.actual_amount||0;
+    b+=r.budget_amount||0; a+=r.actual_amount||0;
     if(r.bucket_status==='unmapped'||!r.operational_bucket) unm=true;
   }
   let h='';
-  if(unpl>0&&act>0&&unpl/act>=0.05) h+='<span class="tagchip tag-unpl" title="'+fmt(unpl)+' EGP unplanned ('+(100*unpl/act).toFixed(0)+'%)">unplanned</span>';
+  if(!(b>0)&&a>0) h+='<span class="tagchip tag-unpl" title="'+fmt(a)+' EGP actual · plot has no budget at all">unplanned</span>';
   if(unm) h+='<span class="tagchip tag-unm">unmapped</span>';
   return h;
 }
-function groupTags(rows,keyFn,key,opts){
-  opts=opts||{};
-  if(!OPB) buildOpBudget(rows);
-  let unpl=0,act=0,unm=false;
+function groupTags(rows,keyFn,key){
+  // TOTALLY unplanned: the whole group has zero budget and real spend — same rule as operations
+  let b=0,a=0,unm=false;
   for(const r of rows){
     if(keyFn(r)!==key) continue;
-    act+=r.actual_amount||0;
-    if(isTrulyUnplanned(r)) unpl+=r.actual_amount||0;
+    b+=r.budget_amount||0; a+=r.actual_amount||0;
     if(r.bucket_status==='unmapped'||!r.operational_bucket) unm=true;
   }
   let h='';
-  // materiality: tag only when unplanned is >=5% of the group's actual spend
-  if(!opts.noUnpl && unpl>0 && act>0 && unpl/act>=0.05) h+=`<span class="tagchip tag-unpl" title="${fmt(unpl)} EGP (${(100*unpl/act).toFixed(0)}% of actual) on operations with no budget line">unplanned</span>`;
+  if(!(b>0) && a>0) h+=`<span class="tagchip tag-unpl" title="${fmt(a)} EGP actual · no budget at all">unplanned</span>`;
   if(unm) h+=`<span class="tagchip tag-unm" title="contains operations with no bucket">unmapped</span>`;
   return h;
 }
@@ -931,10 +926,9 @@ function renderDim(name){
   const rows=filtered(),data=agg(rows,cfg.key);
   // attach drill + status tags to every group
   const ddim=DIM_DRILL[name];
-  const noUnpl=(name==='products'||name==='farms');
   for(const o of data){
     o.drill=drillRef(ddim,String(o.key));
-    o.tags=groupTags(rows,cfg.key,o.key,{noUnpl});
+    o.tags=groupTags(rows,cfg.key,o.key);
     o.lbl=cfg.disp?cfg.disp(o.key):esc(nn(o.key));
   }
   let tb,ta;
