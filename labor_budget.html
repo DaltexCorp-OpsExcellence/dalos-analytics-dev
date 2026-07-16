@@ -93,7 +93,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 /* paired bars */
 .pb-row{display:grid;grid-template-columns:170px 1fr 220px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--bg);cursor:pointer}
 .pb-row:hover{background:#fafbfe}
-.pb-name{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pb-name{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.pb-row{direction:ltr}
+.mx td:first-child,.dt td:first-child{text-align:left!important}
 .pb-bars{display:flex;flex-direction:column;gap:3px}
 .pb-track{height:9px;border-radius:4px;background:var(--bg);position:relative;overflow:hidden;direction:ltr}
 .pb-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
@@ -610,16 +612,60 @@ function aggYTD(rows,keyFn,cut){
 }
 // plot label always shows variety + farm
 function nn(s){ const x=String(s==null?'':s).trim(); return (!x||x==='#N/A'||x==='(none)')?'Unmentioned':x; }
-// group-level status tags: does this group contain unplanned spend / unmapped operations?
-function groupTags(rows,keyFn,key){
-  let unpl=0,unm=false;
+// group-level status tags.
+// UNPLANNED = spend on an operation that has NO budget anywhere in the season
+// (product+operation budget total is zero) — NOT mere month/row-key mismatch,
+// which is just planned work shifted in time.
+let OPB=null; // (product|operation) -> season budget total, built once per render
+function buildOpBudget(rows){
+  OPB=new Map();
+  for(const r of rows){const k=r.product+'|'+(r.operation_norm||'');OPB.set(k,(OPB.get(k)||0)+(r.budget_amount||0));}
+}
+function isTrulyUnplanned(r){
+  return (r.actual_amount||0)>0 && (OPB.get(r.product+'|'+(r.operation_norm||''))||0)===0;
+}
+// tag for one operation key within a row subset (drill modal / lists)
+function opTag(rows,opKey){
+  if(!OPB) buildOpBudget(RAW);
+  let unpl=false,unm=false;
   for(const r of rows){
-    if(keyFn(r)!==key) continue;
-    if(r.join_status==='actual_only'&&(r.actual_amount||0)>0) unpl+=r.actual_amount||0;
+    if((r.operation_norm||'(none)')!==opKey) continue;
+    if((r.actual_amount||0)>0 && (OPB.get(r.product+'|'+(r.operation_norm||''))||0)===0) unpl=true;
+    if(r.bucket_status==='unmapped'||!r.operational_bucket) unm=true;
+    if(unpl&&unm) break;
+  }
+  let h='';
+  if(unpl) h+='<span class="tagchip tag-unpl">unplanned</span>';
+  if(unm) h+='<span class="tagchip tag-unm">unmapped</span>';
+  return h;
+}
+// tag for a composite plot key (product|farm|variety|plot) within a row subset
+function plotTag(rows,plotKey){
+  if(!OPB) buildOpBudget(RAW);
+  let unpl=0,act=0,unm=false;
+  for(const r of rows){
+    if((r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot)!==plotKey) continue;
+    act+=r.actual_amount||0;
+    if(isTrulyUnplanned(r)) unpl+=r.actual_amount||0;
     if(r.bucket_status==='unmapped'||!r.operational_bucket) unm=true;
   }
   let h='';
-  if(unpl>0) h+=`<span class="tagchip tag-unpl" title="${fmt(unpl)} EGP actual with no budget line">unplanned</span>`;
+  if(unpl>0&&act>0&&unpl/act>=0.05) h+='<span class="tagchip tag-unpl" title="'+fmt(unpl)+' EGP unplanned ('+(100*unpl/act).toFixed(0)+'%)">unplanned</span>';
+  if(unm) h+='<span class="tagchip tag-unm">unmapped</span>';
+  return h;
+}
+function groupTags(rows,keyFn,key){
+  if(!OPB) buildOpBudget(rows);
+  let unpl=0,act=0,unm=false;
+  for(const r of rows){
+    if(keyFn(r)!==key) continue;
+    act+=r.actual_amount||0;
+    if(isTrulyUnplanned(r)) unpl+=r.actual_amount||0;
+    if(r.bucket_status==='unmapped'||!r.operational_bucket) unm=true;
+  }
+  let h='';
+  // materiality: tag only when unplanned is >=5% of the group's actual spend
+  if(unpl>0 && act>0 && unpl/act>=0.05) h+=`<span class="tagchip tag-unpl" title="${fmt(unpl)} EGP (${(100*unpl/act).toFixed(0)}% of actual) on operations with no budget line">unplanned</span>`;
   if(unm) h+=`<span class="tagchip tag-unm" title="contains operations with no bucket">unmapped</span>`;
   return h;
 }
@@ -646,7 +692,13 @@ function miniList(items, labelFn){
 }
 
 /* ---- DRILL-THROUGH MODAL ---- */
-function openDrill(dim, key){
+let DRILL_STACK=[];
+function openDrill(dim, key, _fromBack){
+  if(!_fromBack){
+    const cur=document.getElementById('drill-modal').style.display==='flex' ? DRILL_STACK[DRILL_STACK.length-1] : null;
+    if(document.getElementById('drill-modal').style.display!=='flex') DRILL_STACK=[];
+    DRILL_STACK.push({dim,key});
+  }
   const rows=filtered().filter(r=>{
     if(dim==='bucket') return (r.operational_bucket||'(unmapped)')===key;
     if(dim==='product') return r.product===key;
@@ -671,15 +723,16 @@ function openDrill(dim, key){
   const vY=bYTD-ta, ach=bYTD?100*ta/bYTD:null;
   // top operations within
   const ops=aggYTD(rows,r=>r.operation_norm||'(none)',cut).sort((x,y)=>Math.abs(y.vYTD)-Math.abs(x.vYTD)).slice(0,8)
-    .map(o=>({...o,val:o.vYTD}));
+    .map(o=>({...o,val:o.vYTD,drill:dim==='operation'?undefined:drillRef('operation',o.key)}));
   // contributing plots (labeled)
   const plots=aggYTD(rows,r=>r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot,cut).sort((x,y)=>Math.abs(y.vYTD)-Math.abs(x.vYTD)).slice(0,8)
-    .map(o=>({...o,val:o.vYTD}));
+    .map(o=>({...o,val:o.vYTD,drill:dim==='plot'?undefined:drillRef('plot',o.key)}));
   const titleMap={bucket:'Bucket',product:'Product',farm:'Farm',variety:'Variety',plot:'Plot',plotcode:'Plot',operation:'Operation',bucketfarm:'Bucket × Farm'};
   let disp=nn(key);
   if(dim==='plot'){const any=rows[0]||{};disp=`${nn(any.plot)} · ${nn(any.variety_en)} · ${nn(any.farm)}`;}
   if(dim==='plotcode'){const vs=[...new Set(rows.map(r=>nn(r.variety_en)))].slice(0,3).join(', ');const fs=[...new Set(rows.map(r=>nn(r.farm)))].slice(0,3).join(', ');disp=`${nn(key)} · ${vs} · ${fs}`;}
-  document.getElementById('drill-title').innerHTML=`<span style="font-size:11px;color:var(--text3);font-weight:600">${titleMap[dim]}</span><br><span dir="auto">${esc(disp)}</span>`;
+  const backBtn=DRILL_STACK.length>1?`<button onclick="drillBack()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;margin-right:10px"><i class="ti ti-arrow-left" style="font-size:11px"></i> Back</button>`:'';
+  document.getElementById('drill-title').innerHTML=`${backBtn}<span style="font-size:11px;color:var(--text3);font-weight:600">${titleMap[dim]}</span><br><span dir="auto">${esc(disp)}</span>`;
   document.getElementById('drill-body').innerHTML=`
     <div class="kgrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
       <div class="kcard"><div class="k-lbl">Budget (season)</div><div class="k-val">${cmp(tb)}</div><div class="k-sub">${fmt(tb)} EGP</div></div>
@@ -689,12 +742,18 @@ function openDrill(dim, key){
     </div>
     <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Monthly Budget vs Actual</div></div>${monthlySVG(rows,'amount')}</div>
     <div class="grid2">
-      <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Top operations by |Variance YTD|</div></div>${miniList(ops,o=>esc(nn(o.key)))}</div>
-      <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Plots driving it</div><div class="card-s">Plot · Variety · Farm</div></div>${miniList(plots,plotLabel)}</div>
+      <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div><div class="card-t">Top operations by |Variance YTD|</div><div class="card-s">click to drill into an operation</div></div></div>${miniList(ops,o=>esc(nn(o.key))+opTag(rows,o.key))}</div>
+      <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div><div class="card-t">Plots driving it</div><div class="card-s">Plot · Variety · Farm · click to drill into a plot</div></div></div>${miniList(plots,o=>plotLabel(o)+plotTag(rows,o.key))}</div>
     </div>`;
   document.getElementById('drill-modal').style.display='flex';
 }
-function closeDrill(){document.getElementById('drill-modal').style.display='none';}
+function closeDrill(){document.getElementById('drill-modal').style.display='none';DRILL_STACK=[];}
+function drillBack(){
+  if(DRILL_STACK.length<2){closeDrill();return;}
+  DRILL_STACK.pop();
+  const prev=DRILL_STACK[DRILL_STACK.length-1];
+  openDrill(prev.dim,prev.key,true);
+}
 
 /* ---- THE 11 ANALYSES + sub-tabbed Overview ---- */
 let OV_SUB='performance';
@@ -760,7 +819,7 @@ function renderOverview(){
   // 10. Cost/feddan outliers: plot actual cpf vs variety average
   const varCpf=new Map();
   for(const p of plots){ if(p.area>0){const k=p.meta.variety;let o=varCpf.get(k)||{sum:0,area:0};o.sum+=p.a;o.area+=p.area;varCpf.set(k,o);}}
-  const outliers=plots.filter(p=>p.area>0).map(p=>{const va=varCpf.get(p.meta.variety);const varAvg=va&&va.area?va.sum/va.area:0;const cpf=p.a/p.area;return{val:cpf-varAvg,cpf,varAvg,meta:p.meta,drill:drillRef('plot',p.key)};}).filter(x=>x.varAvg>0).sort((a,b)=>b.val-a.val).slice(0,8);
+  const outliers=plots.filter(p=>p.area>0).map(p=>{const va=varCpf.get(p.meta.variety);const varAvg=va&&va.area?va.sum/va.area:0;const cpf=p.a/p.area;return{val:cpf-varAvg,cpf,varAvg,meta:p.meta,key:p.key,drill:drillRef('plot',p.key)};}).filter(x=>x.varAvg>0).sort((a,b)=>b.val-a.val).slice(0,8);
 
   // 11. Not-started watchlist: budget>0, actual=0, late in season
   const notStarted=plots.filter(p=>p.b>0&&p.a===0).map(o=>({val:o.b,meta:o.meta,drill:drillRef('plot',o.key)})).sort((a,b)=>b.val-a.val).slice(0,8);
@@ -789,8 +848,8 @@ function renderOverview(){
   if(OV_SUB==='performance'){
     panels=`
       <div class="grid2">
-        ${card('✅ Best plots — under budget','Variance YTD (Budget−Actual) · Plot · Variety · Farm · click for details', miniList(bestPlots,plotLabel))}
-        ${card('🔴 Worst plots — over budget','Variance YTD · Plot · Variety · Farm · click for details', miniList(worstPlots,plotLabel))}
+        ${card('✅ Best plots — under budget','Variance YTD (Budget−Actual) · Plot · Variety · Farm · click for details', miniList(bestPlots,o=>plotLabel(o)+plotTag(rows,o.key)))}
+        ${card('🔴 Worst plots — over budget','Variance YTD · Plot · Variety · Farm · click for details', miniList(worstPlots,o=>plotLabel(o)+plotTag(rows,o.key)))}
       </div>
       ${card('Biggest variance contributors','Bucket × Farm · absolute Variance YTD · click for details',miniList(contrib,o=>esc(nn(o.key))))}
       ${card('Variety performance','Ranked by Variance YTD (worst first) · click for details',miniList(varSorted.slice(0,12),o=>esc(nn(o.key))))}`;
@@ -798,10 +857,10 @@ function renderOverview(){
     panels=`
       ${card('⚠ Unplanned spend spotlight','Actual cost with no budget line · Plot · Variety · Farm · click for details',miniList(unplanned,plotLabel))}
       <div class="grid2">
-        ${card('Cost/Feddan outliers','Plot actual cost/fed vs its variety average · click for details',miniList(outliers.map(o=>({val:o.val,meta:o.meta,sub:`${fmt(o.cpf)} vs ${fmt(o.varAvg)} avg`,drill:o.drill})),plotLabel))}
-        ${card('Pareto — variance concentration',`${n80} plots drive 80% of total variance · click for details`,miniList(paretoTop,plotLabel))}
+        ${card('Cost/Feddan outliers','Plot actual cost/fed vs its variety average · click for details',miniList(outliers.map(o=>({val:o.val,meta:o.meta,key:o.key,sub:`${fmt(o.cpf)} vs ${fmt(o.varAvg)} avg`,drill:o.drill})),o=>plotLabel(o)+(o.key?plotTag(rows,o.key):'')))}
+        ${card('Pareto — variance concentration',`${n80} plots drive 80% of total variance · click for details`,miniList(paretoTop,o=>plotLabel(o)+(o.key?plotTag(rows,o.key):'')))}
       </div>
-      ${card('Not-started watchlist','Budgeted but zero actuals · risk of unspent/missed work · click for details',miniList(notStarted,plotLabel))}`;
+      ${card('Not-started watchlist','Budgeted but zero actuals · risk of unspent/missed work · click for details',miniList(notStarted,o=>plotLabel(o)+plotTag(rows,o.key)))}`;
   } else {
     const paceCol = pctConsumed>pctElapsed?'var(--bad)':'var(--good)';
     panels=`
@@ -1414,6 +1473,7 @@ function setTab(btn){
 }
 function renderAll(){
   DRILL_REG=[];
+  OPB=null;
   const rows=filtered();
   renderKPIs(rows);
   if(TAB==='performance')renderPerf();
