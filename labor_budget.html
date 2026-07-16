@@ -658,6 +658,63 @@ function downloadCSV(){
 /* ============ UNMAPPED RESOLVER ============ */
 let CAN_MAP=false;           // set true if caller is admin or whitelisted email
 const ALLOWED_EMAIL='ramy.ahmed@daltexcorp.com';
+let MATCH_MIN=60;                 // similarity % threshold for suggestions (adjustable)
+let MAPPED_OPS=null;              // [{op,bucket,product}] from labor_bucket_map (once/session)
+const INFLIGHT=new Set();         // guard: product|op currently being saved (no double-submit)
+
+function fuzzyNorm(s){
+  if(!s) return '';
+  let x=String(s).trim();
+  x=x.replace(/[\u0640]/g,'').replace(/[\u064B-\u0652\u0670]/g,'')
+     .replace(/[\u0623\u0625\u0622\u0671]/g,'\u0627').replace(/\u0649/g,'\u064A')
+     .replace(/\u0629/g,'\u0647').replace(/[\-\u2013\u2014_()\[\]{}]/g,' ')
+     .replace(/\s+/g,' ').trim().toLowerCase();
+  return x;
+}
+function simPct(a,b){
+  a=fuzzyNorm(a); b=fuzzyNorm(b);
+  if(!a||!b) return 0; if(a===b) return 100;
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){const c=a[i-1]===b[j-1]?0:1;dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+c);}
+  return Math.round((1-dp[m][n]/Math.max(m,n))*100);
+}
+async function loadMappedOps(){
+  if(MAPPED_OPS) return MAPPED_OPS;
+  MAPPED_OPS=[];
+  const seen=new Set();
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/labor_bucket_map?select=product,operation_norm,operational_bucket',
+      {headers:{apikey:SB_ANON,Authorization:'Bearer '+(window.__DALOS_TOKEN||SB_ANON)}});
+    const d=await r.json().catch(()=>[]);
+    if(Array.isArray(d)) for(const m of d){
+      if(m.operation_norm&&m.operational_bucket&&!(m.operational_bucket||'').includes('\uFFFD')){
+        const k=m.product+'|'+m.operation_norm; if(!seen.has(k)){seen.add(k);MAPPED_OPS.push({op:m.operation_norm,bucket:m.operational_bucket,product:m.product});}
+      }
+    }
+  }catch(e){}
+  for(const r of RAW){ if(r.operational_bucket && r.bucket_status!=='unmapped' && !(r.operational_bucket||'').includes('\uFFFD')){
+    const k=r.product+'|'+(r.operation_norm||''); if(!seen.has(k)){seen.add(k);MAPPED_OPS.push({op:r.operation_norm||'',bucket:r.operational_bucket,product:r.product});}
+  }}
+  return MAPPED_OPS;
+}
+// duplicate guard: is this exact (product, op) already mapped?
+function alreadyMapped(product,op){
+  if(RAW.some(r=>r.product===product && (r.operation_norm||'')===op && r.operational_bucket && r.bucket_status!=='unmapped')) return true;
+  if(MAPPED_OPS && MAPPED_OPS.some(m=>m.product===product && m.op===op)) return true;
+  return false;
+}
+function bestSuggestion(product,op){
+  if(!MAPPED_OPS) return null;
+  let best=null;
+  for(const m of MAPPED_OPS){
+    if(m.product===product && m.op===op) continue;      // don't suggest itself
+    const s=simPct(op,m.op); const score=s+(m.product===product?3:0);
+    if(!best||score>best.score) best={op:m.op,bucket:m.bucket,product:m.product,sim:s,score};
+  }
+  return (best && best.sim>=MATCH_MIN) ? best : null;
+}
 
 // clean bucket list for the dropdown (exclude corrupted UTF-8 values)
 function bucketOptions(){
@@ -700,41 +757,76 @@ async function detectMapPermission(){
     CAN_MAP = role.toLowerCase()==='admin';
   }catch(e){}
 }
-function openUnmapped(){
+async function openUnmapped(){
+  document.getElementById('unmapped-modal').style.display='flex';
+  const list=document.getElementById('unmapped-list');
+  list.innerHTML='<div style="text-align:center;color:var(--text3);padding:24px"><div class="spin" style="margin:0 auto"></div><div style="margin-top:8px">Finding suggestions…</div></div>';
+  await loadMappedOps();
+  renderUnmappedList();
+}
+function renderUnmappedList(){
   const groups=unmappedGroups();
   const opts=bucketOptions();
   const list=document.getElementById('unmapped-list');
-  if(!groups.length){list.innerHTML='<div style="text-align:center;color:var(--good);padding:24px"><i class="ti ti-circle-check" style="font-size:26px"></i><div style="margin-top:8px;font-weight:600">All operations are mapped.</div></div>';}
-  else{
-    list.innerHTML=groups.map((g,i)=>`
+  if(!groups.length){list.innerHTML='<div style="text-align:center;color:var(--good);padding:24px"><i class="ti ti-circle-check" style="font-size:26px"></i><div style="margin-top:8px;font-weight:600">All operations are mapped.</div></div>';window.__UMGROUPS=[];return;}
+  const thresh=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:11.5px;color:var(--text2)">
+    <i class="ti ti-adjustments" style="color:var(--orange)"></i>Suggest matches at or above
+    <input type="range" min="40" max="95" step="5" value="${MATCH_MIN}" oninput="MATCH_MIN=+this.value;document.getElementById('mm-val').textContent=this.value+'%';renderUnmappedList()" style="flex:0 0 140px">
+    <b id="mm-val">${MATCH_MIN}%</b> similarity</div>`;
+  list.innerHTML=thresh+groups.map((g,i)=>{
+    const sug=CAN_MAP?bestSuggestion(g.product,g.op):null;
+    const sugHtml=sug?`
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 12px;margin:0 0 10px">
+        <div style="font-size:11px;color:var(--text2)">Looks like an operation you already mapped:</div>
+        <div style="font-size:12.5px;font-weight:700;margin:3px 0" dir="auto">${esc(sug.op)} <span style="color:var(--good)">→ ${esc(sug.bucket)}</span>
+          <span class="kpill p-good" style="margin-left:6px">${sug.sim}% match</span></div>
+        <button class="dl-btn um-act" style="background:var(--good);margin-top:4px" onclick="acceptSuggestion(${i},'${esc(g.product).replace(/'/g,"&#39;")}','${esc(g.op).replace(/'/g,"&#39;")}','${esc(sug.bucket).replace(/'/g,"&#39;")}')"><i class="ti ti-check" style="font-size:14px"></i>Accept &amp; map to ${esc(sug.bucket)}</button>
+      </div>`:'';
+    return `
       <div class="umrow" id="umrow-${i}" style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">
         <div style="font-size:13px;font-weight:700" dir="auto">${esc(g.op)}</div>
         <div style="font-size:11.5px;color:var(--text2);margin:4px 0 12px">Product <b>${esc(g.product)}</b> · ${g.rows} row${g.rows>1?'s':''} · ${fmt(g.amt)} EGP unassigned</div>
-        ${CAN_MAP?`
+        ${CAN_MAP?`${sugHtml}
+        <div style="font-size:10.5px;color:var(--text3);margin-bottom:6px">${sug?'…or choose manually:':'Choose a bucket:'}</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <select id="umsel-${i}" class="umsel" style="font-family:var(--font);font-size:12.5px;font-weight:600;border:1px solid var(--border);border-radius:8px;padding:8px 10px;flex:1;min-width:200px" dir="auto">
             <option value="">Choose an operational bucket…</option>
             ${opts.map(b=>`<option value="${esc(b)}" dir="auto">${esc(b)}</option>`).join('')}
           </select>
-          <button class="dl-btn" onclick="saveMapping(${i},'${esc(g.product).replace(/'/g,"&#39;")}','${esc(g.op).replace(/'/g,"&#39;")}')"><i class="ti ti-device-floppy" style="font-size:14px"></i>Save</button>
+          <button class="dl-btn um-act" onclick="saveMapping(${i},'${esc(g.product).replace(/'/g,"&#39;")}','${esc(g.op).replace(/'/g,"&#39;")}')"><i class="ti ti-device-floppy" style="font-size:14px"></i>Save</button>
         </div>
         <div id="umstatus-${i}" style="font-size:11px;margin-top:8px"></div>`
         :`<div style="font-size:11.5px;color:var(--warn)"><i class="ti ti-lock"></i> You don't have permission to assign buckets — ask an admin.</div>`}
-      </div>`).join('');
-    // stash the group list so save handlers can read the chosen value
-    window.__UMGROUPS=groups;
-  }
-  document.getElementById('unmapped-modal').style.display='flex';
+      </div>`;}).join('');
+  window.__UMGROUPS=groups;
 }
+function acceptSuggestion(i,product,op,bucket){ applyMapping(i,product,op,bucket); }
 function closeUnmapped(){document.getElementById('unmapped-modal').style.display='none';}
 
-async function saveMapping(i,product,op){
+function saveMapping(i,product,op){
   const sel=document.getElementById('umsel-'+i);
+  const bucket=sel?sel.value:'';
   const status=document.getElementById('umstatus-'+i);
-  const bucket=sel.value;
-  if(!bucket){status.innerHTML='<span style="color:var(--bad)">Choose a bucket first.</span>';return;}
-  const btn=document.querySelector('#umrow-'+i+' .dl-btn'); if(btn){btn.disabled=true;btn.style.opacity=.6;}
-  status.innerHTML='<span style="color:var(--text3)">Saving…</span>';
+  if(!bucket){ if(status)status.innerHTML='<span style="color:var(--bad)">Choose a bucket first.</span>'; return; }
+  applyMapping(i,product,op,bucket);
+}
+async function applyMapping(i,product,op,bucket){
+  const status=document.getElementById('umstatus-'+i);
+  const row=document.getElementById('umrow-'+i);
+  const key=product+'\u0001'+op;
+  // GUARD 1: block double-submit while a save for this op is in flight
+  if(INFLIGHT.has(key)){ return; }
+  // GUARD 2: block if this exact (product, op) is already mapped (no duplicate input)
+  if(alreadyMapped(product,op)){
+    if(status) status.innerHTML='<span style="color:var(--warn)"><i class="ti ti-alert-triangle"></i> Already mapped — refreshing…</span>';
+    setTimeout(()=>{refreshUnmappedBadge();renderAll();renderUnmappedList();},600);
+    return;
+  }
+  // GUARD 3: require a real bucket value
+  if(!bucket){ if(status)status.innerHTML='<span style="color:var(--bad)">Choose a bucket first.</span>'; return; }
+  INFLIGHT.add(key);
+  if(row) row.querySelectorAll('button').forEach(b=>{b.disabled=true;b.style.opacity=.6;});
+  if(status) status.innerHTML='<span style="color:var(--text3)">Saving…</span>';
   try{
     const r=await fetch(SB_URL+'/rest/v1/rpc/assign_operation_bucket',{
       method:'POST',
@@ -743,20 +835,19 @@ async function saveMapping(i,product,op){
     });
     const d=await r.json();
     if(!r.ok || (d && d.code)){throw new Error((d&&(d.message||d.hint))||('HTTP '+r.status));}
-    // update local RAW so dashboard + badge refresh without a full reload
     let applied=0;
-    for(const row of RAW){
-      if(row.product===product && (row.operation_norm||'')===op){
-        row.operational_bucket=bucket; row.bucket_status='mapped'; applied++;
-      }
+    for(const rw of RAW){
+      if(rw.product===product && (rw.operation_norm||'')===op){ rw.operational_bucket=bucket; rw.bucket_status='mapped'; applied++; }
     }
-    status.innerHTML=`<span style="color:var(--good)"><i class="ti ti-check"></i> Saved — ${applied} row(s) now in "${esc(bucket)}".</span>`;
-    const row=document.getElementById('umrow-'+i);
-    setTimeout(()=>{ if(row) row.style.display='none'; refreshUnmappedBadge(); renderAll();
-      if(!unmappedGroups().length){ setTimeout(closeUnmapped,600); } },700);
+    if(MAPPED_OPS && !MAPPED_OPS.some(m=>m.product===product&&m.op===op)) MAPPED_OPS.push({op,bucket,product});
+    if(status) status.innerHTML=`<span style="color:var(--good)"><i class="ti ti-check"></i> Saved — ${applied} row(s) now in "${esc(bucket)}".</span>`;
+    setTimeout(()=>{ refreshUnmappedBadge(); renderAll();
+      if(!unmappedGroups().length){ setTimeout(closeUnmapped,500); } else { renderUnmappedList(); } },700);
   }catch(e){
-    status.innerHTML='<span style="color:var(--bad)"><i class="ti ti-alert-circle"></i> '+esc(e.message)+'</span>';
-    if(btn){btn.disabled=false;btn.style.opacity=1;}
+    if(status) status.innerHTML='<span style="color:var(--bad)"><i class="ti ti-alert-circle"></i> '+esc(e.message)+'</span>';
+    if(row) row.querySelectorAll('button').forEach(b=>{b.disabled=false;b.style.opacity=1;});
+  }finally{
+    INFLIGHT.delete(key);
   }
 }
 
