@@ -229,6 +229,7 @@ table.mx{border-collapse:collapse;font-size:11px}
     <div class="chips">
       <span class="chip"><i class="ti ti-calendar-stats" style="color:var(--orange)"></i>Latest actuals <b id="chip-lastm">—</b></span>
       <span class="chip"><i class="ti ti-alert-triangle" style="color:var(--warn)"></i>Unplanned <b id="chip-unpl">—</b></span>
+      <button class="chip" id="unmapped-badge" onclick="openUnmapped()" style="display:none;cursor:pointer;background:var(--badbg);border-color:#fecaca;color:var(--bad);font-weight:700"><i class="ti ti-tag-off"></i><span id="unmapped-count">0</span> unmapped</button>
     </div>
   </div>
 
@@ -264,6 +265,21 @@ table.mx{border-collapse:collapse;font-size:11px}
   </div>
 
 </div>
+
+<!-- UNMAPPED RESOLVER MODAL -->
+<div id="unmapped-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(14,31,61,.5);align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto">
+  <div style="background:var(--white);border-radius:16px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(20,40,80,.3)">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px 22px;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px"><i class="ti ti-tag-off" style="color:var(--bad)"></i>Unmapped operations</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px">These operations have no operational bucket. Pick a bucket for each — it's saved to the database and applied immediately.</div>
+      </div>
+      <button onclick="closeUnmapped()" style="background:none;border:none;font-size:22px;color:var(--text3);cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <div id="unmapped-list" style="padding:14px 22px 22px;max-height:60vh;overflow:auto"></div>
+  </div>
+</div>
+
 <script>
 /* ============ DATA ============ */
 const SB_URL='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
@@ -604,6 +620,111 @@ function downloadCSV(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='labor_budget_vs_actual.csv';a.click();URL.revokeObjectURL(a.href);
 }
 
+
+/* ============ UNMAPPED RESOLVER ============ */
+let CAN_MAP=false;           // set true if caller is admin or whitelisted email
+const ALLOWED_EMAIL='ramy.ahmed@daltexcorp.com';
+
+// clean bucket list for the dropdown (exclude corrupted UTF-8 values)
+function bucketOptions(){
+  const set=new Set();
+  for(const r of RAW){const b=r.operational_bucket;if(b && !b.includes('\uFFFD')) set.add(b);}
+  return [...set].sort();
+}
+// distinct (product, operation) groups still unmapped, from the LIVE data
+function unmappedGroups(){
+  const g=new Map();
+  for(const r of RAW){
+    const isUnm = r.bucket_status==='unmapped' || !r.operational_bucket;
+    if(!isUnm) continue;
+    const k=r.product+'\u0001'+(r.operation_norm||'');
+    let o=g.get(k); if(!o){o={product:r.product,op:r.operation_norm||'',rows:0,amt:0};g.set(k,o);}
+    o.rows++; o.amt+=(r.actual_amount||0)+(r.budget_amount||0);
+  }
+  return [...g.values()].sort((a,b)=>b.amt-a.amt);
+}
+function refreshUnmappedBadge(){
+  const n=unmappedGroups().length;
+  const badge=document.getElementById('unmapped-badge');
+  if(n>0){badge.style.display='';document.getElementById('unmapped-count').textContent=n;}
+  else{badge.style.display='none';}
+}
+async function detectMapPermission(){
+  try{
+    const sess=JSON.parse(localStorage.getItem('sb-sfyjvgjwvtwkrnqrvqyc-auth-token')||'{}');
+    const s=sess.access_token?sess:(sess.currentSession||{});
+    const email=(s.user&&s.user.email)||'';
+    if(email && email.toLowerCase()===ALLOWED_EMAIL.toLowerCase()){CAN_MAP=true;return;}
+    const uid=s.user&&s.user.id;
+    if(!uid) return;
+    const r=await fetch(SB_URL+'/rest/v1/users?id=eq.'+uid+'&select=role&limit=1',
+      {headers:{apikey:SB_ANON,Authorization:'Bearer '+(window.__DALOS_TOKEN||SB_ANON)}});
+    const d=await r.json().catch(()=>[]);
+    let role=(d&&d[0]&&d[0].role)||'';
+    if(!role){const m=(s.user&&s.user.user_metadata)||{};role=m.role||m.user_role||'';}
+    CAN_MAP = role.toLowerCase()==='admin';
+  }catch(e){}
+}
+function openUnmapped(){
+  const groups=unmappedGroups();
+  const opts=bucketOptions();
+  const list=document.getElementById('unmapped-list');
+  if(!groups.length){list.innerHTML='<div style="text-align:center;color:var(--good);padding:24px"><i class="ti ti-circle-check" style="font-size:26px"></i><div style="margin-top:8px;font-weight:600">All operations are mapped.</div></div>';}
+  else{
+    list.innerHTML=groups.map((g,i)=>`
+      <div class="umrow" id="umrow-${i}" style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700" dir="auto">${esc(g.op)}</div>
+        <div style="font-size:11.5px;color:var(--text2);margin:4px 0 12px">Product <b>${esc(g.product)}</b> · ${g.rows} row${g.rows>1?'s':''} · ${fmt(g.amt)} EGP unassigned</div>
+        ${CAN_MAP?`
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="umsel-${i}" class="umsel" style="font-family:var(--font);font-size:12.5px;font-weight:600;border:1px solid var(--border);border-radius:8px;padding:8px 10px;flex:1;min-width:200px" dir="auto">
+            <option value="">Choose an operational bucket…</option>
+            ${opts.map(b=>`<option value="${esc(b)}" dir="auto">${esc(b)}</option>`).join('')}
+          </select>
+          <button class="dl-btn" onclick="saveMapping(${i},'${esc(g.product).replace(/'/g,"&#39;")}','${esc(g.op).replace(/'/g,"&#39;")}')"><i class="ti ti-device-floppy" style="font-size:14px"></i>Save</button>
+        </div>
+        <div id="umstatus-${i}" style="font-size:11px;margin-top:8px"></div>`
+        :`<div style="font-size:11.5px;color:var(--warn)"><i class="ti ti-lock"></i> You don't have permission to assign buckets — ask an admin.</div>`}
+      </div>`).join('');
+    // stash the group list so save handlers can read the chosen value
+    window.__UMGROUPS=groups;
+  }
+  document.getElementById('unmapped-modal').style.display='flex';
+}
+function closeUnmapped(){document.getElementById('unmapped-modal').style.display='none';}
+
+async function saveMapping(i,product,op){
+  const sel=document.getElementById('umsel-'+i);
+  const status=document.getElementById('umstatus-'+i);
+  const bucket=sel.value;
+  if(!bucket){status.innerHTML='<span style="color:var(--bad)">Choose a bucket first.</span>';return;}
+  const btn=document.querySelector('#umrow-'+i+' .dl-btn'); if(btn){btn.disabled=true;btn.style.opacity=.6;}
+  status.innerHTML='<span style="color:var(--text3)">Saving…</span>';
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/rpc/assign_operation_bucket',{
+      method:'POST',
+      headers:{apikey:SB_ANON,Authorization:'Bearer '+(window.__DALOS_TOKEN||SB_ANON),'Content-Type':'application/json'},
+      body:JSON.stringify({p_product:product,p_operation_norm:op,p_bucket:bucket})
+    });
+    const d=await r.json();
+    if(!r.ok || (d && d.code)){throw new Error((d&&(d.message||d.hint))||('HTTP '+r.status));}
+    // update local RAW so dashboard + badge refresh without a full reload
+    let applied=0;
+    for(const row of RAW){
+      if(row.product===product && (row.operation_norm||'')===op){
+        row.operational_bucket=bucket; row.bucket_status='mapped'; applied++;
+      }
+    }
+    status.innerHTML=`<span style="color:var(--good)"><i class="ti ti-check"></i> Saved — ${applied} row(s) now in "${esc(bucket)}".</span>`;
+    const row=document.getElementById('umrow-'+i);
+    setTimeout(()=>{ if(row) row.style.display='none'; refreshUnmappedBadge(); renderAll();
+      if(!unmappedGroups().length){ setTimeout(closeUnmapped,600); } },700);
+  }catch(e){
+    status.innerHTML='<span style="color:var(--bad)"><i class="ti ti-alert-circle"></i> '+esc(e.message)+'</span>';
+    if(btn){btn.disabled=false;btn.style.opacity=1;}
+  }
+}
+
 /* ============ TABS + BOOT ============ */
 function setMetric(btn){
   if(btn.disabled)return;METRIC=btn.dataset.m;
@@ -634,6 +755,8 @@ function renderAll(){
       return;
     }
     buildFilters();
+    await detectMapPermission();
+    refreshUnmappedBadge();
     document.getElementById('loading').style.display='none';
     document.getElementById('content').style.display='block';
     renderAll();
