@@ -497,7 +497,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   <div class="section-header">
     <div>
       <div class="section-title">Departments</div>
-      <div class="section-sub">Cross-product operational dashboards — coming soon</div>
+      <div class="section-sub">Cross-product operational dashboards</div>
     </div>
   </div>
 
@@ -507,10 +507,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       <div><div class="dept-name">Logistics</div><div class="dept-sub">Shipping & containers</div></div>
       <span class="dept-badge">Soon</span>
     </div>
-    <div class="dept-card">
+    <div class="dept-card" onclick="window.location='finance_hub.html'" style="cursor:pointer" onmouseover="this.style.boxShadow='var(--shadow2)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
       <div class="dept-icon" style="background:#f0fdf4"><i class="ti ti-currency-dollar" style="color:#16a34a;font-size:20px"></i></div>
-      <div><div class="dept-name">Finance</div><div class="dept-sub">Revenue & budgets</div></div>
-      <span class="dept-badge">Soon</span>
+      <div><div class="dept-name">Finance</div><div class="dept-sub">Budget vs actual · Labor</div></div>
+      <span class="dept-badge" style="background:#f0fdf4;color:#16a34a;border-color:#bbf7d0">Live</span>
     </div>
     <div class="dept-card">
       <div class="dept-icon" style="background:#fff7ed"><i class="ti ti-users" style="color:#c2410c;font-size:20px"></i></div>
@@ -1240,10 +1240,10 @@ const smTabs=['overview','markets','farms','varieties','clients','extract'];
 const smTabSt={};smTabs.forEach(t=>smTabSt[t]=true);
 const smDbs=['shipments','qc','harvest','budget'];
 const smDbSt={};smDbs.forEach(d=>smDbSt[d]=true);
-const smProds=['grapes','citrus','mango','pomegranate','potatoes'];
+const smProds=['grapes','citrus','mango','pomegranate','potatoes','finance'];
 // ── per-product-per-dashboard access state ──
 // smAccess[product] = {shipments:bool, qc:bool, harvest:bool, budget:bool}
-const smProdLabels={grapes:'Grapes',citrus:'Citrus',mango:'Mango',pomegranate:'Pomegranate',potatoes:'Potatoes'};
+const smProdLabels={grapes:'Grapes',citrus:'Citrus',mango:'Mango',pomegranate:'Pomegranate',potatoes:'Potatoes',finance:'Finance (Dept)'};
 let smAccess={};
 function smBlankAccess(){var o={};smProds.forEach(function(p){o[p]={shipments:false,qc:false,harvest:false,budget:false};});return o;}
 function smProdOn(p){var a=smAccess[p];return !!(a&&(a.shipments||a.qc||a.harvest||a.budget));}
@@ -1256,7 +1256,7 @@ function smRenderMatrix(){
     var pchk='<div class="sm-chk'+(on?' on':'')+'" >'+(on?'<i class=\'ti ti-check\' style=\'font-size:10px\'></i>':'')+'</div>';
     return '<div class="sm-mxrow'+(on?' on':'')+'" data-prod="'+p+'">'+
       '<div class="sm-mx-pcell" onclick="smMxTogProd(\''+p+'\')">'+pchk+'<span class="sm-pname">'+smProdLabels[p]+'</span></div>'+
-      '<div class="sm-mx-dcells">'+cell('shipments')+cell('qc')+cell('harvest')+cell('budget')+'</div>'+
+      '<div class="sm-mx-dcells">'+(p==='finance'?'<div style="visibility:hidden" class="sm-mx-dchk"></div><div style="visibility:hidden" class="sm-mx-dchk"></div><div style="visibility:hidden" class="sm-mx-dchk"></div>'+cell('budget'):cell('shipments')+cell('qc')+cell('harvest')+cell('budget'))+'</div>'+
     '</div>';
   }).join('');
 }
