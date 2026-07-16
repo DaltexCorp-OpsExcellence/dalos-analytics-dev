@@ -136,6 +136,23 @@ table.mx{border-collapse:collapse;font-size:11px}
   .pb-row{grid-template-columns:100px 1fr 120px}.fl select{max-width:120px}
   .hero-in{align-items:flex-start}
 }
+
+/* Performance matrix */
+.pf-dimbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pf-dimsel{font-family:var(--font);font-size:11.5px;font-weight:600;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 9px;background:var(--white);cursor:pointer}
+.pf-arrow{color:var(--text3);font-weight:700}
+.pf-mtogs{display:flex;flex-wrap:wrap;gap:8px 16px;padding:10px 4px 2px}
+.pf-mtog{font-size:11.5px;color:var(--text2);display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.pf-tbl td{min-width:62px}
+.pf-tbl .pf-grp td{background:var(--bg);border-top:1px solid var(--border)}
+.pf-tbl .pf-grp.pf-d0 td{background:var(--navy2);color:#fff}
+.pf-tbl .pf-grp.pf-d1 td:first-child{background:#eef2fb}
+.pf-tog{display:inline-block;width:14px;cursor:pointer;color:var(--orange);font-weight:800;user-select:none}
+.pf-meas td:first-child{background:var(--white)}
+.pf-meas .pf-mlbl{font-weight:500;color:var(--text2);font-size:11px}
+.pf-all .pf-mlbl{color:var(--text)}
+.pf-tbl tbody tr:hover td{filter:brightness(.98)}
+
 </style>
 </head>
 <body>
@@ -150,7 +167,11 @@ table.mx{border-collapse:collapse;font-size:11px}
     <span class="tb-sep">/</span>
     <span class="tb-here">Budget · Orchards · Labor</span>
   </div>
-  <div class="tb-badge" id="tb-season"><i class="ti ti-circle-dot" style="font-size:10px"></i> FY —</div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="tb-badge" id="tb-season"><i class="ti ti-circle-dot" style="font-size:10px"></i> FY —</div>
+    <div id="dalos-avatar" style="width:32px;height:32px;border-radius:50%;background:#DC6428;border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;cursor:default;font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px;flex-shrink:0" title="Profile">··</div>
+    <button onclick="dalSignOut()" style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;background:rgba(255,100,100,.12);border:1px solid rgba(255,100,100,.3);color:#ffb3b3;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s" onmouseover="this.style.background='rgba(255,100,100,.22)'" onmouseout="this.style.background='rgba(255,100,100,.12)'"><i class="ti ti-logout" style="font-size:12px"></i> Sign out</button>
+  </div>
 </div>
 
 <div class="hero">
@@ -161,9 +182,9 @@ table.mx{border-collapse:collapse;font-size:11px}
     </div>
     <div class="hero-metricsel" id="metric-sel">
       <button class="on" data-m="value" onclick="setMetric(this)">Value<small>EGP</small></button>
-      <button data-m="cpf" onclick="setMetric(this)" title="Actual quantity/area not yet synced">Cost / Feddan<small>budget only</small></button>
-      <button data-m="qty" onclick="setMetric(this)" title="Actual quantity not yet synced">Quantity<small>budget only</small></button>
-      <button data-m="price" onclick="setMetric(this)" title="Actual quantity not yet synced">Unit Price<small>budget only</small></button>
+      <button data-m="cpf" onclick="setMetric(this)">Cost / Feddan<small>EGP/fed</small></button>
+      <button data-m="qty" onclick="setMetric(this)">Quantity<small>by unit</small></button>
+      <button data-m="price" onclick="setMetric(this)">Unit Price<small>EGP/unit</small></button>
     </div>
   </div>
 </div>
@@ -195,7 +216,8 @@ table.mx{border-collapse:collapse;font-size:11px}
 
   <!-- TABS -->
   <div class="tabs">
-    <button class="tab-btn active" data-tab="overview" onclick="setTab(this)"><i class="ti ti-layout-dashboard" style="font-size:14px"></i>Overview</button>
+    <button class="tab-btn active" data-tab="performance" onclick="setTab(this)"><i class="ti ti-table-options" style="font-size:14px"></i>Performance</button>
+    <button class="tab-btn" data-tab="overview" onclick="setTab(this)"><i class="ti ti-layout-dashboard" style="font-size:14px"></i>Overview</button>
     <button class="tab-btn" data-tab="monthly" onclick="setTab(this)"><i class="ti ti-calendar-month" style="font-size:14px"></i>Monthly</button>
     <button class="tab-btn" data-tab="buckets" onclick="setTab(this)"><i class="ti ti-category" style="font-size:14px"></i>Buckets</button>
     <button class="tab-btn" data-tab="products" onclick="setTab(this)"><i class="ti ti-plant-2" style="font-size:14px"></i>Products</button>
@@ -212,7 +234,8 @@ table.mx{border-collapse:collapse;font-size:11px}
   <div id="content" style="display:none">
     <div class="kgrid" id="kpi-grid"></div>
 
-    <div class="pane active" id="pane-overview"></div>
+    <div class="pane active" id="pane-performance"></div>
+    <div class="pane" id="pane-overview"></div>
     <div class="pane" id="pane-monthly"></div>
     <div class="pane" id="pane-buckets"></div>
     <div class="pane" id="pane-products"></div>
@@ -244,10 +267,10 @@ table.mx{border-collapse:collapse;font-size:11px}
 /* ============ DATA ============ */
 const SB_URL='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmeWp2Z2p3dnR3a3JucXJ2cXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzIxNjYsImV4cCI6MjA5MDQ0ODE2Nn0.FjA75XZsp0Kx5Xam_rrnYoAHX4JHKey6vEFCH_zlMuQ';
-const COLS='budget_season,product,category,farm,variety_en,year,plot,operational_bucket,operation_norm,unit,month,net_area,budget_amount,actual_amount,variance,join_status,bucket_status';
+const COLS='budget_season,product,category,farm,variety_en,year,plot,operational_bucket,operation_norm,unit,month,net_area,actual_net_area,effective_area,budget_qty,actual_qty,budget_amount,actual_amount,budget_cpf,actual_cpf,budget_unit_price,actual_unit_price,variance,join_status,bucket_status';
 const ORDER='order=product,farm,variety_en,year,plot,operational_bucket,operation_norm,month,unit,budget_amount,actual_amount';
 
-let RAW=[], METRIC='value', TAB='overview', OVM='amount';
+let RAW=[], METRIC='value', TAB='performance', OVM='amount';
 let F={season:'',product:'',farm:'',bucket:'',variety:'',month:'',status:'',q:''};
 
 const MONTHS=["Oct'25","Nov'25","Dec'25","Jan'26","Feb'26","Mar'26","Apr'26","May'26","Jun'26","Jul'26","Aug'26","Sep'26"];
@@ -259,7 +282,7 @@ async function fetchAll(){
   const rows=[]; let off=0;
   for(;;){
     const r=await fetch(`${SB_URL}/rest/v1/labor_bva?select=${COLS}&${ORDER}&limit=1000&offset=${off}`,
-      {headers:{apikey:SB_ANON,Authorization:'Bearer '+window.__DALOS_TOKEN}});
+      {headers:{apikey:SB_ANON,Authorization:'Bearer '+(window.__DALOS_TOKEN||SB_ANON)}});
     if(!r.ok) throw new Error('labor_bva '+r.status);
     const b=await r.json(); rows.push(...b);
     if(b.length<1000) break; off+=1000;
@@ -268,19 +291,18 @@ async function fetchAll(){
 }
 
 /* ============ METRIC MODEL ============
-   value: budget_amount / actual_amount (both real)
-   cpf  : cost per feddan = amount / net_area  (actual net_area missing -> budget only)
-   qty/price: need actual qty (missing) -> budget only for now
-   Each returns {b, a, hasA}  hasA=false means actual side unavailable for this metric */
+   value: sum(budget_amount) vs sum(actual_amount)          — both real
+   cpf  : cost per feddan = sum(amount) / sum(effective_area) — both real now
+          budget area  = budget net_area (planned)
+          actual area  = effective_area = budget net_area, else actual_net_area (unplanned)
+   qty/price: need actual qty (not yet synced) -> budget only
+   Metric is applied AFTER aggregation in agg() so ratios are computed on
+   the summed totals, never by averaging per-row ratios. */
 const METRICS={
-  value:{lbl:'Value',unit:'EGP',hasActual:true,
-    b:r=>r.budget_amount||0, a:r=>r.actual_amount||0},
-  cpf:{lbl:'Cost / Feddan',unit:'EGP/fed',hasActual:false,
-    b:r=>r.budget_amount||0, a:r=>r.actual_amount||0, area:r=>r.net_area||0},
-  qty:{lbl:'Quantity',unit:'units',hasActual:false,
-    b:r=>r.budget_amount||0, a:r=>r.actual_amount||0},
-  price:{lbl:'Unit Price',unit:'EGP/unit',hasActual:false,
-    b:r=>r.budget_amount||0, a:r=>r.actual_amount||0}
+  value:{lbl:'Value',unit:'EGP',hasActual:true,compact:true,unitAware:false},
+  cpf:{lbl:'Cost / Feddan',unit:'EGP/fed',hasActual:true,compact:false,unitAware:false},
+  qty:{lbl:'Quantity',unit:'',hasActual:true,compact:true,unitAware:true},
+  price:{lbl:'Unit Price',unit:'EGP/unit',hasActual:true,compact:false,unitAware:true}
 };
 function metricHasActual(){ return METRICS[METRIC].hasActual; }
 
@@ -288,9 +310,21 @@ function metricHasActual(){ return METRICS[METRIC].hasActual; }
 const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
 const fmt=n=>nf0.format(Math.round(n||0));
 function cmp(n){const a=Math.abs(n);if(a>=1e9)return(n/1e9).toFixed(2)+'B';if(a>=1e6)return(n/1e6).toFixed(1)+'M';if(a>=1e3)return(n/1e3).toFixed(0)+'K';return fmt(n);}
+// metric-aware display of a metric value (compact money vs plain rate)
+function mv(n){ return METRICS[METRIC].compact ? cmp(n) : fmt(n); }
+// cell value for a metric aware of unit mixing: qty/price across mixed units = not comparable
+function mvCell(o,side){
+  if(METRICS[METRIC].unitAware && o.mixedUnit){
+    return `<span title="Mixed units: ${esc(o.units.join(', '))}" style="color:var(--warn)">⚠ mixed</span>`;
+  }
+  const val = side==='b'?o.b:o.a;
+  const u = METRICS[METRIC].unitAware && o.units.length===1 ? ' <span style="color:var(--text3);font-size:9px">'+esc(o.units[0])+'</span>' : '';
+  return mv(val)+u;
+}
+function metricUnit(){ return METRICS[METRIC].unit; }
 const pct=(n,d)=>d?100*n/d:null;
 const pctTxt=p=>p===null||!isFinite(p)?'—':p.toFixed(1)+'%';
-const signTxt=n=>(n>0?'+':n<0?'−':'')+cmp(Math.abs(n));
+const signTxt=n=>(n>0?'+':n<0?'−':'')+mv(Math.abs(n));
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 /* variance pill: variance = actual − budget (over budget = red/bad) */
 function varPill(v,b){
@@ -346,12 +380,42 @@ function resetFilters(){F={season:'',product:'',farm:'',bucket:'',variety:'',mon
   document.getElementById('g-search').value='';renderAll();}
 function setFilter(key,val,selId){F[key]=val;const el=document.getElementById(selId);if(el)el.value=val;renderAll();}
 
-/* ============ AGG ============ */
+/* ============ AGG (metric-aware) ============
+   Sums raw money + areas per key, then derives the ACTIVE metric's b/a.
+   Ratios (Cost/Feddan) are computed on the summed totals — never by
+   averaging per-row ratios. rawB/rawA/bArea/aArea kept for tooltips/CSV. */
+function sumAreaBudget(rows,keyFn){ // unique budget area per (product,farm,variety,year,plot)
+  return null; // placeholder (kept simple: we sum distinct areas below)
+}
 function agg(rows,keyFn){
   const m=new Map();
-  for(const r of rows){const k=keyFn(r);if(k==null)continue;let o=m.get(k);if(!o){o={key:k,b:0,a:0,area:0};m.set(k,o);}
-    o.b+=r.budget_amount||0;o.a+=r.actual_amount||0;o.area+=r.net_area||0;}
-  return [...m.values()].map(o=>({...o,v:o.a-o.b}));
+  for(const r of rows){
+    const k=keyFn(r);if(k==null)continue;
+    let o=m.get(k);
+    if(!o){o={key:k,rawB:0,rawA:0,bQty:0,aQty:0,bAreaSet:new Map(),aAreaSet:new Map(),units:new Set()};m.set(k,o);}
+    o.rawB+=r.budget_amount||0;
+    o.rawA+=r.actual_amount||0;
+    o.bQty+=r.budget_qty||0;
+    o.aQty+=r.actual_qty||0;
+    if(r.unit) o.units.add(r.unit);
+    // area is per physical plot-key; dedupe so we don't multiply it across months/operations
+    const pk=r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.year+'|'+r.plot;
+    if((r.net_area||0)>0) o.bAreaSet.set(pk,r.net_area);
+    const ea=r.effective_area||r.net_area||r.actual_net_area||0;
+    if(ea>0) o.aAreaSet.set(pk,ea);
+  }
+  return [...m.values()].map(o=>{
+    const bArea=[...o.bAreaSet.values()].reduce((s,x)=>s+x,0);
+    const aArea=[...o.aAreaSet.values()].reduce((s,x)=>s+x,0);
+    const units=[...o.units];
+    const mixedUnit=units.length>1;
+    let b,a;
+    if(METRIC==='cpf'){ b=bArea>0?o.rawB/bArea:0; a=aArea>0?o.rawA/aArea:0; }
+    else if(METRIC==='qty'){ b=o.bQty; a=o.aQty; }
+    else if(METRIC==='price'){ b=o.bQty>0?o.rawB/o.bQty:0; a=o.aQty>0?o.rawA/o.aQty:0; }
+    else { b=o.rawB; a=o.rawA; }
+    return {key:o.key,b,a,v:a-b,rawB:o.rawB,rawA:o.rawA,bArea,aArea,bQty:o.bQty,aQty:o.aQty,units,mixedUnit};
+  });
 }
 function lastActualMonth(rows){let best=null,bo=-1;for(const r of rows){if((r.actual_amount||0)>0){const o=mOrd(r.month);if(o>bo){bo=o;best=r.month;}}}return best;}
 
@@ -389,10 +453,10 @@ function monthlySVG(rows,mode){
   const bw=26,gap=5,grp=bw*2+gap,step=(W-P.l-P.r)/Math.max(1,data.length);
   const y=v=>P.t+(H-P.t-P.b)*(1-v/max);
   let s=`<div style="overflow-x:auto"><svg width="${W}" height="${H}" style="display:block">`;
-  [0,.25,.5,.75,1].forEach(f=>{const yy=y(max*f);s+=`<line x1="${P.l}" x2="${W-P.r}" y1="${yy}" y2="${yy}" stroke="#eef1f8"/><text x="${P.l+2}" y="${yy-3}" font-size="9" fill="#8a95b0">${cmp(max*f)}</text>`;});
+  [0,.25,.5,.75,1].forEach(f=>{const yy=y(max*f);s+=`<line x1="${P.l}" x2="${W-P.r}" y1="${yy}" y2="${yy}" stroke="#eef1f8"/><text x="${P.l+2}" y="${yy-3}" font-size="9" fill="#8a95b0">${mv(max*f)}</text>`;});
   data.forEach((o,i)=>{
     const cx=P.l+step*i+step/2,bx=cx-grp/2,ax=bx+bw+gap,vp=pct(o.v,o.b);
-    const tip=`${o.key} — Budget ${fmt(o.b)} · Actual ${fmt(o.a)} · Var ${signTxt(o.v)} (${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'})`;
+    const tip=`${o.key} — Budget ${mv(o.b)} · Actual ${mv(o.a)} ${metricUnit()} · Var ${signTxt(o.v)} (${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'})`;
     s+=`<g><title>${esc(tip)}</title>`;
     s+=`<rect x="${bx}" y="${y(o.b)}" width="${bw}" height="${Math.max(1,H-P.b-y(o.b))}" rx="3" fill="var(--orange)"/>`;
     s+=`<rect x="${ax}" y="${y(o.a)}" width="${bw}" height="${Math.max(1,H-P.b-y(o.a))}" rx="3" fill="var(--navy)"/>`;
@@ -405,21 +469,25 @@ function pairedBars(data,onClick){
   const max=Math.max(1,...data.map(o=>Math.max(o.b,o.a)));
   return data.map(o=>{
     const c=onClick?onClick.replace('%K',esc(String(o.key)).replace(/'/g,'&#39;')):'';
-    return `<div class="pb-row" ${c?`onclick="${c}"`:''}>
+    const t=`${esc(o.key)} — Budget ${mv(o.b)} · Actual ${mv(o.a)} ${metricUnit()} · Var ${signTxt(o.v)}${o.b?` (${((o.v/o.b)*100).toFixed(1)}%)`:''}`;
+    return `<div class="pb-row" title="${t}" ${c?`onclick="${c}"`:''}>
       <div class="pb-name" dir="auto" title="${esc(o.key)}">${esc(o.key)}</div>
       <div class="pb-bars"><div class="pb-track"><div class="pb-fill" style="width:${100*o.b/max}%;background:var(--orange)"></div></div>
       <div class="pb-track"><div class="pb-fill" style="width:${100*o.a/max}%;background:var(--navy)"></div></div></div>
-      <div class="pb-nums">B ${fmt(o.b)} · A ${fmt(o.a)}<br>${varPill(o.v,o.b)}</div></div>`;
+      <div class="pb-nums">${METRICS[METRIC].unitAware&&o.mixedUnit?'<span style="color:var(--warn)">⚠ mixed units</span>':('B '+mv(o.b)+' · A '+mv(o.a)+'<br>'+varPill(o.v,o.b))}</div></div>`;
   }).join('');
 }
 function metricNote(){
-  return metricHasActual()?'':`<div class="chip" style="background:var(--warnbg);border-color:#fde68a;color:var(--warn)"><i class="ti ti-info-circle"></i>${METRICS[METRIC].lbl}: actual side not yet synced — showing budget only</div>`;
+  if(!metricHasActual()) return `<div class="chip" style="background:var(--warnbg);border-color:#fde68a;color:var(--warn)"><i class="ti ti-info-circle"></i>${METRICS[METRIC].lbl}: actual side not yet synced — showing budget only</div>`;
+  if(METRICS[METRIC].unitAware) return `<div class="chip" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8"><i class="ti ti-ruler-2"></i>${METRICS[METRIC].lbl} is per unit — rows mixing units are marked ⚠ and not blended</div>`;
+  return '';
 }
 
 /* ============ OVERVIEW ============ */
 function ovMode(btn){OVM=btn.dataset.m;document.querySelectorAll('#ov-mode button').forEach(b=>b.classList.toggle('on',b===btn));renderOverview();}
 function renderOverview(){
   const rows=filtered();
+  if(METRIC!=='value'&&OVM==='cum')OVM='amount';
   const bk=agg(rows,r=>r.operational_bucket||'(unmapped)').sort((x,y)=>y.b-x.b);
   const pr=agg(rows,r=>r.product).sort((x,y)=>y.b-x.b);
   document.getElementById('pane-overview').innerHTML=`
@@ -475,7 +543,13 @@ let SORT={col:'b',dir:-1};
 function dimSort(col){SORT=SORT.col===col?{col,dir:-SORT.dir}:{col,dir:-1};renderDim(TAB);}
 function renderDim(name){
   const cfg=DIMS[name];if(!cfg)return;
-  const rows=filtered(),data=agg(rows,cfg.key),ta=data.reduce((s,o)=>s+o.a,0),tb=data.reduce((s,o)=>s+o.b,0);
+  const rows=filtered(),data=agg(rows,cfg.key);
+  let tb,ta;
+  const RB=data.reduce((s,o)=>s+o.rawB,0),RA=data.reduce((s,o)=>s+o.rawA,0);
+  if(METRIC==='cpf'){const BA=data.reduce((s,o)=>s+o.bArea,0),AA=data.reduce((s,o)=>s+o.aArea,0);tb=BA>0?RB/BA:0;ta=AA>0?RA/AA:0;}
+  else if(METRIC==='qty'){tb=data.reduce((s,o)=>s+o.bQty,0);ta=data.reduce((s,o)=>s+o.aQty,0);}
+  else if(METRIC==='price'){const BQ=data.reduce((s,o)=>s+o.bQty,0),AQ=data.reduce((s,o)=>s+o.aQty,0);tb=BQ>0?RB/BQ:0;ta=AQ>0?RA/AQ:0;}
+  else{ta=data.reduce((s,o)=>s+o.a,0);tb=data.reduce((s,o)=>s+o.b,0);}
   const get={k:o=>o.key,b:o=>o.b,a:o=>o.a,v:o=>o.v,vp:o=>pct(o.v,o.b)??-1e18,ach:o=>pct(o.a,o.b)??-1e18,sh:o=>pct(o.a,ta)??-1e18}[SORT.col]||(o=>o.b);
   data.sort((x,y)=>{const a=get(x),b=get(y);return (a<b?-1:a>b?1:0)*SORT.dir*(SORT.col==='k'?-1:1);});
   const arrow=c=>SORT.col===c?(SORT.dir<0?' ↓':' ↑'):'';
@@ -486,10 +560,10 @@ function renderDim(name){
     <div class="tbl-wrap"><table class="dt">
       <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th><th onclick="dimSort('b')">Budget${arrow('b')}</th><th onclick="dimSort('a')">Actual${arrow('a')}</th><th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th><th onclick="dimSort('ach')">Achievement${arrow('ach')}</th><th onclick="dimSort('sh')">Share${arrow('sh')}</th></tr></thead>
       <tbody>${data.map(o=>{const vp=pct(o.v,o.b),cl=cfg.sel?` style="cursor:pointer" onclick="setFilter('${cfg.sel[0]}','${esc(String(o.key)).replace(/'/g,'&#39;')}','${cfg.sel[1]}')"`:'';
-        return `<tr${cl}><td dir="auto">${esc(o.key)}</td><td>${fmt(o.b)}</td><td>${fmt(o.a)}</td>
+        return `<tr${cl}><td dir="auto">${esc(o.key)}</td><td>${mvCell(o,'b')}</td><td>${mvCell(o,'a')}</td>
           <td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
           <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td><td>${pctTxt(pct(o.a,o.b))}</td><td>${pctTxt(pct(o.a,ta))}</td></tr>`;}).join('')}</tbody>
-      <tfoot><tr><td>Total</td><td>${fmt(tb)}</td><td>${fmt(ta)}</td><td class="vcell" style="color:${ta-tb>0?'var(--bad)':'var(--good)'}">${signTxt(ta-tb).replace('−','-')}</td><td>${(()=>{const p=pct(ta-tb,tb);return p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()}</td><td>${pctTxt(pct(ta,tb))}</td><td>100%</td></tr></tfoot>
+      <tfoot><tr><td>Total</td><td>${mv(tb)}</td><td>${mv(ta)}</td><td class="vcell" style="color:${ta-tb>0?'var(--bad)':'var(--good)'}">${signTxt(ta-tb).replace('−','-')}</td><td>${(()=>{const p=pct(ta-tb,tb);return p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()}</td><td>${pctTxt(pct(ta,tb))}</td><td>100%</td></tr></tfoot>
     </table></div></div>`;
 }
 
@@ -611,17 +685,18 @@ function refreshUnmappedBadge(){
 }
 async function detectMapPermission(){
   try{
-    const sess=JSON.parse(localStorage.getItem('sb-sfyjvgjwvtwkrnqrvqyc-auth-token')||'{}');
-    const s=sess.access_token?sess:(sess.currentSession||{});
-    const email=(s.user&&s.user.email)||'';
+    const sb=window.__DALOS_SB;
+    let user=null;
+    if(sb){ const {data}=await sb.auth.getUser(); user=data&&data.user; }
+    const email=(user&&user.email)||'';
     if(email && email.toLowerCase()===ALLOWED_EMAIL.toLowerCase()){CAN_MAP=true;return;}
-    const uid=s.user&&s.user.id;
+    const uid=user&&user.id;
     if(!uid) return;
     const r=await fetch(SB_URL+'/rest/v1/users?id=eq.'+uid+'&select=role&limit=1',
-      {headers:{apikey:SB_ANON,Authorization:'Bearer '+window.__DALOS_TOKEN}});
+      {headers:{apikey:SB_ANON,Authorization:'Bearer '+(window.__DALOS_TOKEN||SB_ANON)}});
     const d=await r.json().catch(()=>[]);
     let role=(d&&d[0]&&d[0].role)||'';
-    if(!role){const m=(s.user&&s.user.user_metadata)||{};role=m.role||m.user_role||'';}
+    if(!role){const m=(user&&user.user_metadata)||{};role=m.role||m.user_role||'';}
     CAN_MAP = role.toLowerCase()==='admin';
   }catch(e){}
 }
@@ -663,7 +738,7 @@ async function saveMapping(i,product,op){
   try{
     const r=await fetch(SB_URL+'/rest/v1/rpc/assign_operation_bucket',{
       method:'POST',
-      headers:{apikey:SB_ANON,Authorization:'Bearer '+window.__DALOS_TOKEN,'Content-Type':'application/json'},
+      headers:{apikey:SB_ANON,Authorization:'Bearer '+(window.__DALOS_TOKEN||SB_ANON),'Content-Type':'application/json'},
       body:JSON.stringify({p_product:product,p_operation_norm:op,p_bucket:bucket})
     });
     const d=await r.json();
@@ -685,6 +760,220 @@ async function saveMapping(i,product,op){
   }
 }
 
+
+/* ============ ACCOUNT (avatar + sign out) ============ */
+async function setAvatarInitials(){
+  try{
+    var sb=window.__DALOS_SB; if(!sb) return;
+    var {data}=await sb.auth.getUser(); var user=data&&data.user; if(!user) return;
+    var meta=user.user_metadata||{};
+    var name=(meta.full_name||meta.name||'').trim();
+    if(!name){var email=user.email||'';name=email.split('@')[0].replace(/[._-]/g,' ');}
+    var parts=name.trim().split(/\s+/).filter(Boolean);
+    var ini='·';
+    if(parts.length>=2) ini=(parts[0][0]+parts[1][0]).toUpperCase();
+    else if(parts.length===1) ini=parts[0].slice(0,2).toUpperCase();
+    var av=document.getElementById('dalos-avatar'); if(av) av.textContent=ini;
+  }catch(e){}
+}
+function dalSignOut(){
+  if(!confirm('Are you sure you want to sign out?')) return;
+  try{
+    var sb=window.__DALOS_SB||(window.supabase&&window.supabase.createClient(SB_URL,SB_ANON));
+    if(sb){ sb.auth.signOut().then(function(){window.location.href='daltex_login.html';}); return; }
+  }catch(e){}
+  localStorage.clear();
+  window.location.href='daltex_login.html';
+}
+window.dalSignOut=dalSignOut;
+
+
+/* ============ PERFORMANCE MATRIX (nested drill pivot, Tableau-style) ============ */
+/* Measures: Tableau sign convention → Variance = Budget − Actual (positive = under budget = green) */
+const PERF_DIMS={
+  operational_bucket:{lbl:'Bucket',f:r=>r.operational_bucket||'(unmapped)'},
+  category:{lbl:'Category',f:r=>r.category||'(none)'},
+  product:{lbl:'Product',f:r=>r.product},
+  farm:{lbl:'Farm',f:r=>r.farm},
+  variety_en:{lbl:'Variety',f:r=>r.variety_en||'(none)'},
+  plot:{lbl:'Plot',f:r=>r.plot||'(none)'},
+  operation_norm:{lbl:'Operation',f:r=>r.operation_norm||'(none)'},
+  year:{lbl:'Year',f:r=>r.year==null?'(none)':String(r.year)}
+};
+const PERF_MEASURES=[
+  {id:'bv', lbl:'Budget Value',        kind:'money'},
+  {id:'ac', lbl:'Actual Cost',         kind:'money'},
+  {id:'vv', lbl:'Value Variance',      kind:'money', variance:true},
+  {id:'vvp',lbl:'Value Variance %',    kind:'pct',   variance:true},
+  {id:'bq', lbl:'Total Budget Qty',    kind:'num'},
+  {id:'aq', lbl:'Total Actual Qty',    kind:'num'},
+  {id:'qv', lbl:'Qty Variance',        kind:'num',   variance:true},
+  {id:'qvp',lbl:'Qty Variance %',      kind:'pct',   variance:true},
+  {id:'bcf',lbl:'Budget Cost/Fed',     kind:'rate'},
+  {id:'acf',lbl:'Actual Cost/Fed',     kind:'rate'}
+];
+let PERF_ACTIVE_DIMS=['farm','operational_bucket'];   // default nesting
+let PERF_SHOWN=new Set(PERF_MEASURES.map(m=>m.id));   // all on by default
+let PERF_EXPANDED=new Set();                          // expanded row paths
+
+// accumulator for one group at one month (and grand)
+function perfBlank(){return {b:0,a:0,bq:0,aq:0,bAreaSet:new Map(),aAreaSet:new Map()};}
+function perfAdd(acc,r){
+  acc.b+=r.budget_amount||0; acc.a+=r.actual_amount||0;
+  acc.bq+=r.budget_qty||0;   acc.aq+=r.actual_qty||0;
+  const pk=r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.year+'|'+r.plot;
+  if((r.net_area||0)>0) acc.bAreaSet.set(pk,r.net_area);
+  const ea=r.effective_area||r.net_area||r.actual_net_area||0;
+  if(ea>0) acc.aAreaSet.set(pk,ea);
+}
+function perfMeasure(id,acc){
+  const bArea=[...acc.bAreaSet.values()].reduce((s,x)=>s+x,0);
+  const aArea=[...acc.aAreaSet.values()].reduce((s,x)=>s+x,0);
+  switch(id){
+    case 'bv': return acc.b;
+    case 'ac': return acc.a;
+    case 'vv': return acc.b-acc.a;                       // Budget − Actual
+    case 'vvp':return acc.b?100*(acc.b-acc.a)/acc.b:null;
+    case 'bq': return acc.bq;
+    case 'aq': return acc.aq;
+    case 'qv': return acc.bq-acc.aq;
+    case 'qvp':return acc.bq?100*(acc.bq-acc.aq)/acc.bq:null;
+    case 'bcf':return bArea>0?acc.b/bArea:null;
+    case 'acf':return aArea>0?acc.a/aArea:null;
+  }
+  return null;
+}
+// build a nested tree keyed by the active dims; each node holds per-month + grand accumulators
+function perfBuildTree(rows,dims){
+  const root={key:'__root',lbl:'All',children:new Map(),month:{},grand:perfBlank(),depth:0};
+  MONTHS.forEach(m=>root.month[m]=perfBlank());
+  for(const r of rows){
+    perfAdd(root.grand,r); if(root.month[r.month]) perfAdd(root.month[r.month],r);
+    let node=root, path='';
+    for(let i=0;i<dims.length;i++){
+      const kv=PERF_DIMS[dims[i]].f(r); path+= '\u0001'+kv;
+      if(!node.children.has(kv)){
+        const child={key:kv,lbl:kv,children:new Map(),month:{},grand:perfBlank(),depth:i+1,path:path};
+        MONTHS.forEach(m=>child.month[m]=perfBlank());
+        node.children.set(kv,child);
+      }
+      node=node.children.get(kv);
+      perfAdd(node.grand,r); if(node.month[r.month]) perfAdd(node.month[r.month],r);
+    }
+  }
+  return root;
+}
+function perfFmt(meas,val){
+  if(val===null||val===undefined||!isFinite(val)) return '·';
+  if(meas.kind==='pct') return (val>0?'+':'')+val.toFixed(1)+'%';
+  if(meas.kind==='money'||meas.kind==='num') return cmp(val);
+  if(meas.kind==='rate') return fmt(val);
+  return fmt(val);
+}
+// variance heat for money/num variance (positive=under=green in Tableau sign)
+function perfHeat(meas,acc){
+  if(!meas.variance) return '';
+  const b=meas.id==='qv'||meas.id==='qvp'?acc.bq:acc.b;
+  const raw = (meas.id==='vv')?(acc.b-acc.a):(meas.id==='qv')?(acc.bq-acc.aq):
+              (meas.id==='vvp')?(acc.b?100*(acc.b-acc.a)/acc.b:null):
+              (acc.bq?100*(acc.bq-acc.aq)/acc.bq:null);
+  if(raw===null||!isFinite(raw)) return '';
+  // Tableau sign: positive=under budget=GOOD. Our heat() maps negative→green, so invert.
+  const vpForHeat = meas.kind==='pct' ? -raw : -(b? 100*raw/Math.abs(b):0);
+  return `background:${heat(vpForHeat)};color:${txtOn(vpForHeat)}`;
+}
+
+function perfRenderRows(node,dims,out,ancestorPath){
+  // for each child group, render a header row then the measure sub-rows; recurse if expanded
+  const kids=[...node.children.values()].sort((x,y)=>perfMeasure('bv',y.grand)-perfMeasure('bv',x.grand));
+  for(const k of kids){
+    const isLeaf = k.depth>=dims.length;
+    const expandable=!isLeaf;
+    const expanded=PERF_EXPANDED.has(k.path);
+    const pad=8+(k.depth-1)*16;
+    // group header row
+    out.push(`<tr class="pf-grp pf-d${k.depth}">
+      <td style="padding-left:${pad}px;font-weight:700" colspan="1">
+        ${expandable?`<span class="pf-tog" onclick="perfToggle('${esc(k.path).replace(/'/g,"&#39;")}')">${expanded?'▾':'▸'}</span>`:'<span class="pf-tog" style="visibility:hidden">▸</span>'}
+        <span dir="auto">${esc(k.lbl)}</span>
+        <span style="color:var(--text3);font-size:9px;font-weight:600">${PERF_DIMS[dims[k.depth-1]].lbl}</span>
+      </td>
+      ${MONTHS.map(m=>`<td></td>`).join('')}<td></td>
+    </tr>`);
+    // measure sub-rows
+    for(const meas of PERF_MEASURES){
+      if(!PERF_SHOWN.has(meas.id)) continue;
+      let cells='';
+      for(const m of MONTHS){
+        const acc=k.month[m];
+        const v=perfMeasure(meas.id,acc);
+        const style=perfHeat(meas,acc);
+        const tip=`${esc(k.lbl)} · ${m} · ${meas.lbl}\nBudget ${fmt(acc.b)} · Actual ${fmt(acc.a)}${meas.id.startsWith('q')||meas.id==='bq'||meas.id==='aq'?` · Bqty ${fmt(acc.bq)} · Aqty ${fmt(acc.aq)}`:''}`;
+        cells+=`<td style="${style}" title="${tip}">${perfFmt(meas,v)}</td>`;
+      }
+      const gv=perfMeasure(meas.id,k.grand);
+      const gstyle=perfHeat(meas,k.grand);
+      cells+=`<td style="${gstyle};font-weight:800" title="Grand total">${perfFmt(meas,gv)}</td>`;
+      out.push(`<tr class="pf-meas"><td style="padding-left:${pad+18}px" class="pf-mlbl">${meas.lbl}</td>${cells}</tr>`);
+    }
+    if(expandable && expanded) perfRenderRows(k,dims,out,k.path);
+  }
+}
+function perfToggle(path){ if(PERF_EXPANDED.has(path))PERF_EXPANDED.delete(path); else PERF_EXPANDED.add(path); renderPerf(); }
+function perfSetDim(i,val){
+  if(val==='') PERF_ACTIVE_DIMS.splice(i);
+  else PERF_ACTIVE_DIMS[i]=val;
+  // dedupe & trim trailing
+  PERF_ACTIVE_DIMS=PERF_ACTIVE_DIMS.filter((d,ix,a)=>d&&a.indexOf(d)===ix);
+  PERF_EXPANDED.clear();
+  renderPerf();
+}
+function perfToggleMeasure(id){ if(PERF_SHOWN.has(id))PERF_SHOWN.delete(id); else PERF_SHOWN.add(id); renderPerf(); }
+
+function renderPerf(){
+  const rows=filtered();
+  const dims=PERF_ACTIVE_DIMS.length?PERF_ACTIVE_DIMS:['farm'];
+  const tree=perfBuildTree(rows,dims);
+  const dimPickers=dims.concat(['']).map((d,i)=>{
+    const opts=Object.keys(PERF_DIMS).map(k=>`<option value="${k}"${d===k?' selected':''}>${PERF_DIMS[k].lbl}</option>`).join('');
+    return `<select class="pf-dimsel" onchange="perfSetDim(${i},this.value)"><option value="">${i===0?'Choose…':'+ add level'}</option>${opts}</select>`;
+  }).join('<span class="pf-arrow">›</span>');
+  const measToggles=PERF_MEASURES.map(m=>`<label class="pf-mtog"><input type="checkbox" ${PERF_SHOWN.has(m.id)?'checked':''} onchange="perfToggleMeasure('${m.id}')">${m.lbl}</label>`).join('');
+  const out=[];
+  perfRenderRows(tree,dims,out,'');
+  // top-level "All" grand row
+  const allRows=[];
+  for(const meas of PERF_MEASURES){
+    if(!PERF_SHOWN.has(meas.id)) continue;
+    let cells='';
+    for(const m of MONTHS){const acc=tree.month[m];cells+=`<td style="${perfHeat(meas,acc)}" title="All · ${m} · ${meas.lbl}">${perfFmt(meas,perfMeasure(meas.id,acc))}</td>`;}
+    cells+=`<td style="${perfHeat(meas,tree.grand)};font-weight:800">${perfFmt(meas,perfMeasure(meas.id,tree.grand))}</td>`;
+    allRows.push(`<tr class="pf-meas pf-all"><td class="pf-mlbl" style="padding-left:8px;font-weight:700">${meas.lbl}</td>${cells}</tr>`);
+  }
+  document.getElementById('pane-performance').innerHTML=`
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-t">Performance Matrix</div><div class="card-s">All measures × months · pick nesting and drill in · Variance = Budget − Actual (green = under budget)</div></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <div class="pf-dimbar"><span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Group by</span> ${dimPickers}</div>
+      </div>
+      <details style="margin-bottom:10px"><summary style="cursor:pointer;font-size:11.5px;font-weight:600;color:var(--text2)">Measures shown (${PERF_SHOWN.size}/${PERF_MEASURES.length})</summary>
+        <div class="pf-mtogs">${measToggles}</div></details>
+      <div class="mx-wrap" style="max-height:70vh">
+        <table class="mx pf-tbl">
+          <thead><tr><th style="text-align:left">Group / Measure</th>${MONTHS.map(m=>`<th>${m}</th>`).join('')}<th>Grand Total</th></tr></thead>
+          <tbody>
+            <tr class="pf-grp pf-d0"><td style="font-weight:800">All${dims.length?' · grand total':''}</td>${MONTHS.map(()=>'<td></td>').join('')}<td></td></tr>
+            ${allRows.join('')}
+            ${out.join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="mx-legend"><span>Under budget</span><span class="mx-ramp"></span><span>Over budget</span> · <span style="color:var(--text3)">hover any cell for the figures behind it</span></div>
+    </div>`;
+}
+
 /* ============ TABS + BOOT ============ */
 function setMetric(btn){
   if(btn.disabled)return;METRIC=btn.dataset.m;
@@ -700,7 +989,8 @@ function setTab(btn){
 function renderAll(){
   const rows=filtered();
   renderKPIs(rows);
-  if(TAB==='overview')renderOverview();
+  if(TAB==='performance')renderPerf();
+  else if(TAB==='overview')renderOverview();
   else if(TAB==='monthly')renderMonthly();
   else if(DIMS[TAB])renderDim(TAB);
   else if(TAB==='operations')renderOps();
@@ -719,6 +1009,7 @@ function renderAll(){
     refreshUnmappedBadge();
     document.getElementById('loading').style.display='none';
     document.getElementById('content').style.display='block';
+    setAvatarInitials();
     renderAll();
   }catch(e){
     document.getElementById('loading').innerHTML='<i class="ti ti-alert-circle" style="font-size:26px;color:var(--bad)"></i><span>Failed to load: '+esc(e.message)+'</span>';
