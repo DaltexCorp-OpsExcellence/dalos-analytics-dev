@@ -883,23 +883,54 @@ function render(){
     const nwTxt=vTotal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     sub.textContent='Season '+seasonYr+' · '+nv+' '+(nv===1?'variety':'varieties')+' · '+nc+' '+(nc===1?'color':'colors')+' · '+nwTxt+' T net weight';
   })();
-  renderKPIs(vars,cols,vTotal,cTotal);
-  renderVarietyCards(vars,vTotal);
-  renderColorCards(cols,cTotal);
-  renderBarVariety(vars);
-  renderBarColor(cols);
-  renderDonutVariety(vars,vTotal);
-  renderDonutColor(cols,cTotal);
+  // Each chart is rendered in isolation so one failing chart can't blank the others.
+  __safe('KPIs',()=>renderKPIs(vars,cols,vTotal,cTotal));
+  __safe('VarietyCards',()=>renderVarietyCards(vars,vTotal));
+  __safe('ColorCards',()=>renderColorCards(cols,cTotal));
+  __safe('BarVariety',()=>renderBarVariety(vars));
+  __safe('BarColor',()=>renderBarColor(cols));
+  __safe('DonutVariety',()=>renderDonutVariety(vars,vTotal));
+  __safe('DonutColor',()=>renderDonutColor(cols,cTotal));
   (function(){const fmt=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});const cs=document.getElementById('col-share-sub');if(cs)cs.textContent='% of '+fmt(cTotal)+' T total';const vs=document.getElementById('var-share-sub');if(vs)vs.textContent='% of '+fmt(vTotal)+' T total';})();
-  renderWeeklyVariety(vars);
-  renderWeeklyColor(cols);
-  renderHeatVarMkt(vars);
-  renderHeatColMkt(cols);
-  renderVarFarmBars(vars);
-  renderColFarmBars(cols);
-  renderVarTable(vars,vTotal);
-  renderColTable(cols,cTotal);
-  renderInsights(vars,cols,vTotal,cTotal);
+  __safe('WeeklyVariety',()=>renderWeeklyVariety(vars));
+  __safe('WeeklyColor',()=>renderWeeklyColor(cols));
+  __safe('HeatVarMkt',()=>renderHeatVarMkt(vars));
+  __safe('HeatColMkt',()=>renderHeatColMkt(cols));
+  __safe('VarFarmBars',()=>renderVarFarmBars(vars));
+  __safe('ColFarmBars',()=>renderColFarmBars(cols));
+  __safe('VarTable',()=>renderVarTable(vars,vTotal));
+  __safe('ColTable',()=>renderColTable(cols,cTotal));
+  __safe('Insights',()=>renderInsights(vars,cols,vTotal,cTotal));
+}
+
+// Run a render step in isolation; log (not throw) on failure so remaining charts still render.
+function __safe(name,fn){
+  try{ fn(); }
+  catch(err){ console.warn('mango_varieties: render step "'+name+'" failed:',err); }
+}
+
+// Show a gentle "not enough data" note in a chart canvas's container when there's nothing to plot.
+// Returns true when empty (so the caller can bail out before building a chart).
+function __emptyChart(canvasId,isEmpty){
+  var cv=document.getElementById(canvasId);
+  if(!cv) return isEmpty;
+  var box=cv.parentElement; if(!box) return isEmpty;
+  var note=box.querySelector('.__nodata');
+  if(isEmpty){
+    cv.style.visibility='hidden';
+    if(!note){
+      note=document.createElement('div');
+      note.className='__nodata';
+      note.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;color:#8a95b0;font-family:\'Plus Jakarta Sans\',sans-serif;padding:8px';
+      note.textContent='Not enough data to display yet';
+      if(getComputedStyle(box).position==='static') box.style.position='relative';
+      box.appendChild(note);
+    }
+    return true;
+  }
+  cv.style.visibility='';
+  if(note) note.remove();
+  return false;
 }
 
 function yoyBadge(pct){
@@ -975,6 +1006,7 @@ function renderColorCards(cols,total){
 }
 
 function renderBarVariety(vars){
+  if(__emptyChart('bar-variety',!vars||vars.length===0)) return;
   const labels=vars.map(r=>r.v);
   const curr=vars.map(r=>+r.nw.toFixed(2));
   const prior=vars.map(r=>+(PRIOR_VAR[r.v]||0).toFixed(2));
@@ -1043,6 +1075,7 @@ function renderBarColor(cols){
 }
 
 function renderDonutVariety(vars,total){
+  if(__emptyChart('donut-variety',!vars||vars.length===0||!(total>0))) return;
   if(donutVarChart) donutVarChart.destroy();
   donutVarChart=new Chart(document.getElementById('donut-variety'),{
     type:'doughnut',
@@ -1090,6 +1123,7 @@ function renderDonutColor(cols,total){
 
 function renderWeeklyVariety(vars){
   const weeks=__weekList();const shown=vars.map(r=>r.v);
+  if(__emptyChart('bar-var-weekly',!shown.length||!weeks.length)) return;
   {const _s=document.getElementById('vwk-sub');if(_s){const _r=weeks.length?(weeks.length>1?'Wk '+weeks[0]+'\u2013'+weeks[weeks.length-1]:'Wk '+weeks[0]):'';_s.textContent=(_r?_r+' \u00b7 ':'')+'ghost = 2024/25 prior';}}
   const curDs=shown.map(v=>({
     label:v,data:weeks.map(w=>{const r=VAR_WEEK.find(x=>x.v===v&&x.wk===w);return r?+r.nw.toFixed(2):0;}),
@@ -1196,6 +1230,11 @@ function setHeatMode(which,mode){
 }
 function renderHeat(containerId,rowData,rows,cols,colKey,rowKey,colLabel,rowLabel,palette,mode){
   mode=mode||'t';
+  const __box=document.getElementById(containerId);
+  if(__box && (!rows||!rows.length||!cols||!cols.length||!rowData||!rowData.length)){
+    __box.innerHTML='<div style="font-size:12px;color:#8a95b0;padding:12px 4px">Not enough data to display yet</div>';
+    return;
+  }
   const maxVal=Math.max(...rowData.map(r=>r.nw),1);
   const lw=rowLabel==='variety'?80:50;
   const rowTotals={},colTotals={};
@@ -1244,6 +1283,8 @@ function renderHeatColMkt(cols){
 function renderVarFarmBars(vars){
   const vSet=new Set(vars.map(r=>r.v));
   const src=VAR_FARM.filter(r=>vSet.has(r.v));
+  const box=document.getElementById('var-farm-bars');
+  if(box && (!src.length)){ box.innerHTML='<div style="font-size:12px;color:#8a95b0;padding:12px 4px">Not enough data to display yet</div>'; return; }
   const vTotals={};src.forEach(r=>{vTotals[r.v]=(vTotals[r.v]||0)+r.nw;});
   document.getElementById('var-farm-bars').innerHTML=vars.map(v=>{
     const farms=src.filter(r=>r.v===v.v).sort((a,b)=>b.nw-a.nw);
