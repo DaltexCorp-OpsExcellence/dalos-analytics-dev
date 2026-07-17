@@ -701,6 +701,7 @@ function openDrill(dim, key, _fromBack){
     if(dim==='plotcode') return (r.plot||'(none)')===key;
     if(dim==='operation') return (r.operation_norm||'(none)')===key;
     if(dim==='bucketfarm'){const parts=key.split(' · ');return (r.operational_bucket||'(unmapped)')===parts[0] && r.farm===parts.slice(1).join(' · ');}
+    if(dim==='bucketproduct'){const parts=key.split(' · ');return (r.operational_bucket||'(unmapped)')===parts[0] && r.product===parts.slice(1).join(' · ');}
     return false;
   });
   if(!rows.length){
@@ -720,7 +721,7 @@ function openDrill(dim, key, _fromBack){
   // contributing plots (labeled)
   const plots=aggYTD(rows,r=>r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot,cut).sort((x,y)=>Math.abs(y.vYTD)-Math.abs(x.vYTD)).slice(0,8)
     .map(o=>({...o,val:o.vYTD,drill:dim==='plot'?undefined:drillRef('plot',o.key)}));
-  const titleMap={bucket:'Bucket',product:'Product',farm:'Farm',variety:'Variety',plot:'Plot',plotcode:'Plot',operation:'Operation',bucketfarm:'Bucket × Farm'};
+  const titleMap={bucket:'Bucket',product:'Product',farm:'Farm',variety:'Variety',plot:'Plot',plotcode:'Plot',operation:'Operation',bucketfarm:'Bucket × Farm',bucketproduct:'Bucket × Category'};
   let disp=nn(key);
   if(dim==='plot'){const any=rows[0]||{};disp=`${nn(any.plot)} · ${nn(any.variety_en)} · ${nn(any.farm)}`;}
   if(dim==='plotcode'){const vs=[...new Set(rows.map(r=>nn(r.variety_en)))].slice(0,3).join(', ');const fs=[...new Set(rows.map(r=>nn(r.farm)))].slice(0,3).join(', ');disp=`${nn(key)} · ${vs} · ${fs}`;}
@@ -954,7 +955,61 @@ function renderDim(name){
           <td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
           <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(o.a,o.b))}</td>`:''}<td>${pctTxt(pct(shVal,shBase))}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr><td>Total</td>${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mv(tb)}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mv(ta)}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<td class="vcell" style="color:${ta-tb>0?'var(--bad)':'var(--good)'}">${signTxt(ta-tb).replace('−','-')}</td><td>${(()=>{const p=pct(ta-tb,tb);return p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(ta,tb))}</td>`:''}<td>100%</td></tr></tfoot>
-    </table></div></div>`;
+    </table></div></div>${name==='buckets'?bucketExtras(rows):''}`;
+}
+
+/* ============ BUCKETS TAB EXTRAS: months matrix + category matrix ============ */
+function mxVal(o,part){ // metric-aware cell text
+  if(!o) return null;
+  const x=part==='b'?o.b:part==='a'?o.a:o.v;
+  return x;
+}
+function mxCellHtml(o,drillIdx){
+  const click=drillIdx!==undefined?` onclick="event.stopPropagation();drillGo(${drillIdx})" style="cursor:pointer"`:'';
+  if(!o||((o.rawB||0)===0&&(o.rawA||0)===0)) return `<td${click}><span class="cellin" style="background:var(--bg);color:var(--text3)">·</span></td>`;
+  const v=o.v,vp=pct(v,o.b);
+  if(SIDE==='variance') return `<td${click}><span class="cellin" style="background:${heat(vp)};color:${txtOn(vp)}" title="Budget ${fmt(o.rawB)} · Actual ${fmt(o.rawA)}">${(v>0?'+':'')+mv(v)}<small>${vp===null||!isFinite(vp)?'':(vp>0?'+':'')+vp.toFixed(0)+'%'}</small></span></td>`;
+  if(SIDE==='budget') return `<td${click}><span class="cellin" style="background:#fdf3ec;color:var(--text)">${o.b?mv(o.b):'·'}</span></td>`;
+  if(SIDE==='actual') return `<td${click}><span class="cellin" style="background:#eef2f9;color:var(--text)">${o.a?mv(o.a):'·'}</span></td>`;
+  return `<td${click}><span class="cellin" style="background:var(--bg)" title="Budget ${fmt(o.rawB)} · Actual ${fmt(o.rawA)}"><span style="color:var(--orange);font-weight:700">${o.b?mv(o.b):'·'}</span><small style="color:var(--navy);font-weight:700">${o.a?mv(o.a):'·'}</small></span></td>`;
+}
+function bucketExtras(rows){
+  const bkey=r=>r.operational_bucket||'(unmapped)';
+  const totalsArr=agg(rows,bkey).sort((x,y)=>y.b-x.b||y.a-x.a);
+  const buckets=totalsArr.map(o=>o.key);
+  const totals=new Map(totalsArr.map(o=>[o.key,o]));
+  const monthsPresent=MONTHS.filter(m=>rows.some(r=>r.month===m));
+  const byMonth=new Map();
+  for(const m of monthsPresent) byMonth.set(m,new Map(agg(rows.filter(r=>r.month===m),bkey).map(o=>[o.key,o])));
+  const sideLbl=SIDE==='both'?'Budget vs Actual':SIDE==='budget'?'Budget':SIDE==='actual'?'Actual':'Variance';
+  let m1=`<div class="card"><div class="card-h"><div><div class="card-t">Buckets × Months</div><div class="card-s">${sideLbl} per month · follows the KPI &amp; Show selectors above · click a bucket to drill</div></div></div>
+    <div class="mx-wrap"><table class="mx"><thead><tr><th>Bucket</th>${monthsPresent.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+  for(const b of buckets){
+    const rd=drillRef('bucket',b);
+    m1+=`<tr style="cursor:pointer" onclick="drillGo(${rd})"><td dir="auto">${esc(nn(b))}</td>`;
+    for(const m of monthsPresent) m1+=mxCellHtml(byMonth.get(m).get(b));
+    m1+=mxCellHtml(totals.get(b));
+    m1+=`</tr>`;
+  }
+  m1+=`</tbody></table></div>${SIDE==='variance'?'<div class="mx-legend"><span>Under budget</span><span class="mx-ramp"></span><span>Over budget</span></div>':''}</div>`;
+
+  const products=[...new Set(rows.map(r=>r.product))].sort();
+  const byProd=new Map();
+  for(const p of products) byProd.set(p,new Map(agg(rows.filter(r=>r.product===p),bkey).map(o=>[o.key,o])));
+  let m2=`<div class="card"><div class="card-h"><div><div class="card-t">Buckets × Category</div><div class="card-s">${sideLbl} per category · click a cell to drill into bucket × category</div></div></div>
+    <div class="mx-wrap"><table class="mx"><thead><tr><th>Bucket</th>${products.map(p=>`<th dir="auto">${esc(nn(p))}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+  for(const b of buckets){
+    const rd=drillRef('bucket',b);
+    m2+=`<tr><td dir="auto" style="cursor:pointer" onclick="drillGo(${rd})">${esc(nn(b))}</td>`;
+    for(const p of products){
+      const o=byProd.get(p).get(b);
+      m2+=mxCellHtml(o,o?drillRef('bucketproduct',b+' · '+p):undefined);
+    }
+    m2+=mxCellHtml(totals.get(b));
+    m2+=`</tr>`;
+  }
+  m2+=`</tbody></table></div>${SIDE==='variance'?'<div class="mx-legend"><span>Under budget</span><span class="mx-ramp"></span><span>Over budget</span></div>':''}</div>`;
+  return m1+m2;
 }
 
 /* ============ OPERATIONS ============ */
