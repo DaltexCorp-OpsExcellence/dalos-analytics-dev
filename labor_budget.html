@@ -237,8 +237,8 @@ table.mx{border-collapse:collapse;font-size:11px}
 
   <!-- TABS -->
   <div class="tabs">
-    <button class="tab-btn active" data-tab="performance" onclick="setTab(this)"><i class="ti ti-table-options" style="font-size:14px"></i>Performance</button>
-    <button class="tab-btn" data-tab="overview" onclick="setTab(this)"><i class="ti ti-layout-dashboard" style="font-size:14px"></i>Overview</button>
+    <button class="tab-btn active" data-tab="overview" onclick="setTab(this)"><i class="ti ti-layout-dashboard" style="font-size:14px"></i>Overview</button>
+    <button class="tab-btn" data-tab="performance" onclick="setTab(this)"><i class="ti ti-table-options" style="font-size:14px"></i>Performance</button>
     <button class="tab-btn" data-tab="monthly" onclick="setTab(this)"><i class="ti ti-calendar-month" style="font-size:14px"></i>Monthly</button>
     <button class="tab-btn" data-tab="buckets" onclick="setTab(this)"><i class="ti ti-category" style="font-size:14px"></i>Buckets</button>
     <button class="tab-btn" data-tab="products" onclick="setTab(this)"><i class="ti ti-plant-2" style="font-size:14px"></i>Products</button>
@@ -302,7 +302,7 @@ const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 const COLS='budget_season,product,category,farm,variety_en,year,plot,operational_bucket,operation_norm,unit,month,net_area,actual_net_area,effective_area,budget_qty,actual_qty,budget_amount,actual_amount,budget_cpf,actual_cpf,budget_unit_price,actual_unit_price,variance,join_status,bucket_status';
 const ORDER='order=product,farm,variety_en,year,plot,operational_bucket,operation_norm,month,unit,budget_amount,actual_amount';
 
-let RAW=[], METRIC='value', TAB='performance', OVM='amount';
+let RAW=[], METRIC='value', TAB='overview', OVM='amount';
 let F={q:''};
 const MSF=['budget_season','product','farm','_bucket','_variety','_plot','month','join_status'];
 const S={budget_season:[],product:[],farm:[],_bucket:[],_variety:[],_plot:[],month:[],join_status:[]};
@@ -636,28 +636,30 @@ function opTag(rows,opKey){
 }
 // tag for a composite plot key (product|farm|variety|plot) within a row subset
 function plotTag(rows,plotKey){
-  let b=0,a=0,unm=false;
+  let b=0,a=0,any=false,anyMapped=false;
   for(const r of rows){
     if((r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot)!==plotKey) continue;
+    any=true;
     b+=r.budget_amount||0; a+=r.actual_amount||0;
-    if(r.bucket_status==='unmapped'||!r.operational_bucket) unm=true;
+    if(!(r.bucket_status==='unmapped'||!r.operational_bucket||r.operational_bucket==='(unmapped)')) anyMapped=true;
   }
   let h='';
   if(!(b>0)&&a>0) h+='<span class="tagchip tag-unpl" title="'+fmt(a)+' EGP actual · plot has no budget at all">unplanned</span>';
-  if(unm) h+='<span class="tagchip tag-unm">unmapped</span>';
+  if(any&&!anyMapped) h+='<span class="tagchip tag-unm" title="no operational bucket assigned at all">unmapped</span>';
   return h;
 }
 function groupTags(rows,keyFn,key){
-  // TOTALLY unplanned: the whole group has zero budget and real spend — same rule as operations
-  let b=0,a=0,unm=false;
+  // TOTALLY unplanned/unmapped: the tag describes the whole group, same rule as operations
+  let b=0,a=0,any=false,anyMapped=false;
   for(const r of rows){
     if(keyFn(r)!==key) continue;
+    any=true;
     b+=r.budget_amount||0; a+=r.actual_amount||0;
-    if(r.bucket_status==='unmapped'||!r.operational_bucket) unm=true;
+    if(!(r.bucket_status==='unmapped'||!r.operational_bucket||r.operational_bucket==='(unmapped)')) anyMapped=true;
   }
   let h='';
   if(!(b>0) && a>0) h+=`<span class="tagchip tag-unpl" title="${fmt(a)} EGP actual · no budget at all">unplanned</span>`;
-  if(unm) h+=`<span class="tagchip tag-unm" title="contains operations with no bucket">unmapped</span>`;
+  if(any && !anyMapped) h+=`<span class="tagchip tag-unm" title="no operational bucket assigned at all">unmapped</span>`;
   return h;
 }
 function plotLabel(o){ return `${esc(nn(o.meta.plot))} · ${esc(nn(o.meta.variety))} · ${esc(nn(o.meta.farm))}`; }
@@ -675,7 +677,7 @@ function miniList(items, labelFn){
     const col=o.val>0?'var(--good)':o.val<0?'var(--bad)':'var(--text3)';
     const c=(o.drill!==undefined)?`onclick="drillGo(${o.drill})"`:'';
     return `<div class="an-row" ${c} ${c?'style="cursor:pointer"':'style="cursor:default"'}>
-      <div class="an-name" dir="auto" title="${labelFn(o)}">${labelFn(o)}</div>
+      <div class="an-name" dir="auto" title="${labelFn(o).split('<')[0].replace(/"/g,'&quot;')}">${labelFn(o)}</div>
       <div class="an-bar"><div class="an-fill" style="width:${w}%;background:${col}"></div></div>
       <div class="an-val" style="color:${col}">${(o.val>0?'+':'')+cmp(o.val)}${o.sub?`<br><span style="color:var(--text3);font-weight:500">${o.sub}</span>`:''}</div>
     </div>`;
