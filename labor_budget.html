@@ -689,7 +689,7 @@ function miniList(items, labelFn){
     return `<div class="an-row" ${c} ${c?'style="cursor:pointer"':'style="cursor:default"'}>
       <div class="an-name" dir="auto" title="${labelFn(o).split('<')[0].replace(/"/g,'&quot;')}">${labelFn(o)}</div>
       <div class="an-bar"><div class="an-fill" style="width:${w}%;background:${col}"></div></div>
-      <div class="an-val" style="color:${col}">${o.txt!==undefined?o.txt:((o.val>0?'+':'')+cmp(o.val))}${o.sub?`<br><span style="color:var(--text3);font-weight:500">${o.sub}</span>`:''}</div>
+      <div class="an-val" style="color:${col}">${o.txt!==undefined?o.txt:((o.val>0?'+':'')+cmp(o.val))}${o.varPct!==undefined&&o.varPct!==null?'<br><span style="font-size:10px;opacity:.75">'+( o.varPct>0?'+':'')+o.varPct.toFixed(1)+'%</span>':''} ${o.sub?'<br><span style="color:var(--text3);font-weight:500">'+o.sub+'</span>':''}</div>
     </div>`;
   }).join('');
 }
@@ -773,7 +773,7 @@ function openDrill(dim, key, _fromBack){
       const sv=100*o.a/shTot;
       return {...o,val:sv,txt:sv.toFixed(1)+'%',col:'var(--navy)',sub:cmp(o.a)+' actual',sortv:sv};
     }
-    return {...o,val:o.vYTD,sortv:Math.abs(o.vYTD)};
+    const vPct=o.bYTD>0?o.vYTD/o.bYTD*100:null;return {...o,val:o.vYTD,sortv:Math.abs(o.vYTD),varPct:vPct};
   });
   items.sort(bd.isMonth?((x,y)=>mOrd(x.key)-mOrd(y.key)):((x,y)=>y.sortv-x.sortv));
   items=items.slice(0,14);
