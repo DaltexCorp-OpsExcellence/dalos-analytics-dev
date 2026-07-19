@@ -1602,8 +1602,9 @@ function renderPerf(){
       <div class="card-h">
         <div><div class="card-t">Performance Matrix</div><div class="card-s">All measures × months · pick nesting and drill in · Variance = Budget − Actual (green = under budget)</div></div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+      <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="pf-dimbar"><span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Group by</span> ${dimPickers}</div>
+        <div class="mx-legend" style="margin-top:0"><span>Under budget</span><span class="mx-ramp"></span><span>Over budget</span> · <span style="color:var(--text3)">hover any cell for the figures behind it</span></div>
       </div>
       <details style="margin-bottom:10px"><summary style="cursor:pointer;font-size:11.5px;font-weight:600;color:var(--text2)">Measures shown (${PERF_SHOWN.size}/${PERF_MEASURES.length})</summary>
         <div class="pf-mtogs">${measToggles}</div></details>
@@ -1617,7 +1618,6 @@ function renderPerf(){
           </tbody>
         </table>
       </div>
-      <div class="mx-legend"><span>Under budget</span><span class="mx-ramp"></span><span>Over budget</span> · <span style="color:var(--text3)">hover any cell for the figures behind it</span></div>
     </div>`;
 }
 
