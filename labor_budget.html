@@ -183,6 +183,14 @@ table.mx{border-collapse:collapse;font-size:11px}
 .tag-unpl{background:var(--warnbg);color:var(--warn);border:1px solid #fde68a}
 .tag-unm{background:var(--badbg);color:var(--bad);border:1px solid #fecaca}
 
+
+/* clean monthly matrix */
+.mx.clean td{border:none;border-bottom:1px solid var(--bg)}
+.mx.clean .cellin{min-width:72px;padding:9px 10px;font-weight:600;background:transparent;border-radius:6px;margin:2px}
+.mx.clean tbody tr:hover td{background:#fafbfe}
+.mx.clean .mx-grand td{border-bottom:2px solid var(--border);background:#fafbfe}
+.mx.clean .mx-grand td:first-child{font-weight:800}
+
 </style>
 </head>
 <body>
@@ -225,6 +233,7 @@ table.mx{border-collapse:collapse;font-size:11px}
     <div class="fl"><label>Bucket</label><div class="ms" data-f="_bucket"></div></div>
     <div class="fl"><label>Variety</label><div class="ms" data-f="_variety"></div></div>
     <div class="fl"><label>Plot</label><div class="ms" data-f="_plot"></div></div>
+    <div class="fl"><label>Unit</label><div class="ms" data-f="unit"></div></div>
     <div class="fl"><label>Month</label><div class="ms" data-f="month"></div></div>
     <div class="fl"><label>Status</label><div class="ms" data-f="join_status"></div></div>
     <button class="f-reset" onclick="resetFilters()"><i class="ti ti-filter-off" style="font-size:13px"></i>Reset</button>
@@ -304,8 +313,8 @@ const ORDER='order=product,farm,variety_en,year,plot,operational_bucket,operatio
 
 let RAW=[], METRIC='value', TAB='overview', OVM='amount';
 let F={q:''};
-const MSF=['budget_season','product','farm','_bucket','_variety','_plot','month','join_status'];
-const S={budget_season:[],product:[],farm:[],_bucket:[],_variety:[],_plot:[],month:[],join_status:[]};
+const MSF=['budget_season','product','farm','_bucket','_variety','_plot','unit','month','join_status'];
+const S={budget_season:[],product:[],farm:[],_bucket:[],_variety:[],_plot:[],unit:[],month:[],join_status:[]};
 // field accessors (virtual fields prefixed _)
 function fval(r,f){
   if(f==='_bucket') return r.operational_bucket||'(unmapped)';
@@ -562,7 +571,10 @@ function monthlySVG(rows,mode){
     s+=`<g><title>${esc(tip)}</title>`;
     s+=`<rect x="${bx}" y="${y(o.b)}" width="${bw}" height="${Math.max(1,H-P.b-y(o.b))}" rx="3" fill="var(--orange)"/>`;
     s+=`<rect x="${ax}" y="${y(o.a)}" width="${bw}" height="${Math.max(1,H-P.b-y(o.a))}" rx="3" fill="var(--navy)"/>`;
-    if(o.a>0){const cy=Math.min(y(o.b),y(o.a))-8;s+=`<text x="${cx}" y="${cy}" font-size="9" font-weight="700" text-anchor="middle" fill="${o.v>0?'#dc2626':'#16a34a'}">${signTxt(o.v)}</text>`;}
+    if(LBL==='ba'){
+      if(o.b>0)s+=`<text x="${bx+bw/2}" y="${y(o.b)-4}" font-size="8.5" font-weight="700" text-anchor="middle" fill="var(--orange)">${mv(o.b)}</text>`;
+      if(o.a>0)s+=`<text x="${ax+bw/2}" y="${y(o.a)-4}" font-size="8.5" font-weight="700" text-anchor="middle" fill="var(--navy)">${mv(o.a)}</text>`;
+    } else if(o.a>0){const cy=Math.min(y(o.b),y(o.a))-8;s+=`<text x="${cx}" y="${cy}" font-size="9" font-weight="700" text-anchor="middle" fill="${o.v>0?'#dc2626':'#16a34a'}">${signTxt(o.v)}</text>`;}
     s+=`<text x="${cx}" y="${H-P.b+14}" font-size="10" font-weight="600" text-anchor="middle" fill="#4a5778">${esc(o.key)}</text></g>`;
   });
   s+='</svg></div>';return s;
@@ -573,10 +585,10 @@ function pairedBars(data,onClick,tagFn){
     const c=(o.drill!==undefined)?`drillGo(${o.drill})`:(onClick?onClick.replace('%K',esc(String(o.key)).replace(/'/g,'&#39;')):'');
     const t=`${esc(o.key)} — Budget ${mv(o.b)} · Actual ${mv(o.a)} ${metricUnit()} · Var ${signTxt(o.v)}${o.b?` (${((o.v/o.b)*100).toFixed(1)}%)`:''}`;
     return `<div class="pb-row" title="${t}" ${c?`onclick="${c}"`:''}>
-      <div class="pb-name" dir="auto" title="${esc(nn(o.key))}">${esc(nn(o.key))}${tagFn?tagFn(o):(o.tags||'')}</div>
+      <div class="pb-name" dir="auto" title="${esc(String(nn(o.key)))}">${o.lbl||esc(nn(o.key))}${tagFn?tagFn(o):(o.tags||'')}</div>
       <div class="pb-bars"><div class="pb-track"><div class="pb-fill" style="width:${100*o.b/max}%;background:var(--orange)"></div></div>
       <div class="pb-track"><div class="pb-fill" style="width:${100*o.a/max}%;background:var(--navy)"></div></div></div>
-      <div class="pb-nums">${METRICS[METRIC].unitAware&&o.mixedUnit?'<span style="color:var(--warn)">⚠ mixed units</span>':('B '+mv(o.b)+' · A '+mv(o.a)+'<br>'+varPill(o.v,o.b))}</div></div>`;
+      <div class="pb-nums">${METRICS[METRIC].unitAware&&o.mixedUnit?'<span style="color:var(--warn)">⚠ mixed units</span>':(LBL==='ba'?('B '+mv(o.b)+'<br>A '+mv(o.a)):('<span style="font-weight:700;color:'+(o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)')+'">'+signTxt(o.v)+'</span><br>'+varPill(o.v,o.b)))}</div></div>`;
   }).join('');
 }
 function metricNote(){
@@ -696,14 +708,16 @@ function matchDim(r,dim,key){
   if(dim==='plotcode') return (r.plot||'(none)')===key;
   if(dim==='operation') return (r.operation_norm||'(none)')===key;
   if(dim==='month') return r.month===key;
+  if(dim==='unit') return (r.unit||'(none)')===key;
   if(dim==='bucketfarm'){const p=String(key).split(' · ');return (r.operational_bucket||'(unmapped)')===p[0]&&r.farm===p.slice(1).join(' · ');}
   if(dim==='bucketproduct'){const p=String(key).split(' · ');return (r.operational_bucket||'(unmapped)')===p[0]&&r.product===p.slice(1).join(' · ');}
   if(dim==='combo') return key.every(part=>matchDim(r,part.dim,part.key));
   return false;
 }
-const DIM_TITLE={bucket:'Bucket',product:'Category',farm:'Farm',variety:'Variety',plot:'Plot',plotcode:'Plot',operation:'Operation',month:'Month',bucketfarm:'Bucket × Farm',bucketproduct:'Bucket × Category',combo:'Combined view'};
+const DIM_TITLE={bucket:'Bucket',product:'Product',farm:'Farm',variety:'Variety',plot:'Plot',plotcode:'Plot',operation:'Operation',month:'Month',unit:'Unit',bucketfarm:'Bucket × Farm',bucketproduct:'Bucket × Product',combo:'Combined view'};
 function dimDisp(dim,key,rows){
   if(dim==='plot'){const any=(rows&&rows.find(r=>matchDim(r,'plot',key)))||{};return `${nn(any.plot)} · ${nn(any.variety_en)} · ${nn(any.farm)}`;}
+  if(dim==='variety'){const c=VCAT.get(key);return nn(key)+(c?' · '+c:'');}
   if(dim==='combo') return key.map(p=>dimDisp(p.dim,p.key,rows)).join('  ×  ');
   return nn(key);
 }
@@ -744,8 +758,9 @@ function openDrill(dim, key, _fromBack){
     bucket:{lbl:'Buckets',key:r=>r.operational_bucket||'(unmapped)',dsp:(o)=>esc(nn(o.key))},
     product:{lbl:'Categories',key:r=>r.product,dsp:(o)=>esc(nn(o.key))},
     farm:{lbl:'Farms',key:r=>r.farm,dsp:(o)=>esc(nn(o.key))},
-    variety:{lbl:'Varieties',key:r=>r.variety_en||'(none)',dsp:(o)=>esc(nn(o.key))},
-    month:{lbl:'Months',key:r=>r.month,dsp:(o)=>esc(nn(o.key)),isMonth:true}
+    variety:{lbl:'Varieties',key:r=>r.variety_en||'(none)',dsp:(o)=>esc(nn(o.key))+vcatSuffix(o.key)},
+    month:{lbl:'Months',key:r=>r.month,dsp:(o)=>esc(nn(o.key)),isMonth:true},
+    unit:{lbl:'Units',key:r=>r.unit||'(none)',dsp:(o)=>esc(nn(o.key))}
   };
   if(curDims.includes(MODAL_DIM)) MODAL_DIM = curDims.includes('operation') ? 'plot' : 'operation';
   const bd=BD[MODAL_DIM]||BD.operation;
@@ -776,7 +791,7 @@ function openDrill(dim, key, _fromBack){
       <div class="kcard"><div class="k-lbl">Variance YTD</div><div class="k-val" style="color:${vY<0?'var(--bad)':'var(--good)'}">${(vY>0?'+':'')+cmp(vY)}</div><div class="k-sub">Budget−Actual to ${lastActualMonth(base)||'—'}</div></div>
       <div class="kcard"><div class="k-lbl">Achievement YTD</div><div class="k-val">${ach===null?'—':ach.toFixed(0)+'%'}</div><div class="k-sub">${ach===null?'':(ach>100?'over plan':'within plan')}</div></div>
     </div>
-    <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Monthly Budget vs Actual</div></div>${monthlySVG(rows,'amount')}</div>
+    <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Monthly Budget vs Actual</div>${lblSeg()}</div>${monthlySVG(rows,'amount')}</div>
     <div class="card" style="box-shadow:none;border:1px solid var(--border)">
       <div class="card-h"><div><div class="card-t">Breakdown</div><div class="card-s">click any row to drill one level deeper (context accumulates)</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -873,7 +888,7 @@ function renderOverview(){
   const top=`
     <div class="card">
       <div class="card-h"><div><div class="card-t">Monthly Budget vs Actual</div><div class="card-s">Fiscal year Oct → Sep · label = Actual − Budget · click a bar's bucket below to drill</div></div>
-      <div class="seg" id="ov-mode"><button class="on" data-m="amount" onclick="ovMode(this)">Monthly</button><button data-m="cum" onclick="ovMode(this)">Cumulative</button></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${lblSeg()}<div class="seg" id="ov-mode"><button class="on" data-m="amount" onclick="ovMode(this)">Monthly</button><button data-m="cum" onclick="ovMode(this)">Cumulative</button></div></div></div>
       ${monthlySVG(rows,OVM)}
       <div class="legend"><span class="lg"><span class="lg-dot" style="background:var(--orange)"></span>Budget</span><span class="lg"><span class="lg-dot" style="background:var(--navy)"></span>Actual</span></div>
     </div>
@@ -933,32 +948,50 @@ function renderOverview(){
 }
 
 /* ============ MONTHLY TAB (matrix of dimension × month) ============ */
+let MON_DIM='operational_bucket';
+function setMonDim(v){MON_DIM=v;renderMonthly();}
 function renderMonthly(){
   const rows=filtered();
-  const dimSel=(document.getElementById('mon-dim')&&document.getElementById('mon-dim').value)||'operational_bucket';
-  const keyFn={operational_bucket:r=>r.operational_bucket||'(unmapped)',product:r=>r.product,farm:r=>r.farm}[dimSel];
-  const dims=[...new Set(rows.map(keyFn))].sort();
+  const keyFn={operational_bucket:r=>r.operational_bucket||'(unmapped)',product:r=>r.product,farm:r=>r.farm}[MON_DIM];
+  const mdrill={operational_bucket:'bucket',product:'product',farm:'farm'}[MON_DIM];
+  const dimLbl={operational_bucket:'Bucket',product:'Category',farm:'Farm'}[MON_DIM];
   const cell=new Map();
-  for(const r of rows){const k=keyFn(r)+'|'+r.month;let o=cell.get(k);if(!o){o={b:0,a:0};cell.set(k,o);}o.b+=r.budget_amount||0;o.a+=r.actual_amount||0;}
+  for(const r of rows){const k=keyFn(r)+'\u0001'+r.month;let o=cell.get(k);if(!o){o={b:0,a:0};cell.set(k,o);}o.b+=r.budget_amount||0;o.a+=r.actual_amount||0;}
+  const totals=new Map();
+  for(const r of rows){const k=keyFn(r);let o=totals.get(k);if(!o){o={b:0,a:0};totals.set(k,o);}o.b+=r.budget_amount||0;o.a+=r.actual_amount||0;}
+  const dims=[...totals.entries()].sort((x,y)=>y[1].b-x[1].b||y[1].a-x[1].a).map(([k])=>k);
   const monthsPresent=MONTHS.filter(m=>rows.some(r=>r.month===m));
+  const seg=`<div class="seg">${[['operational_bucket','Buckets'],['product','Categories'],['farm','Farms']].map(([v,l])=>`<button class="${MON_DIM===v?'on':''}" onclick="setMonDim('${v}')">${l}</button>`).join('')}</div>`;
+  const vCell=(o,drillAttr,strong)=>{
+    if(!o||(!o.b&&!o.a)) return `<td${drillAttr||''}><span class="cellin" style="color:var(--text3)">·</span></td>`;
+    const v=o.a-o.b, vp=pct(v,o.b);
+    const col=v>0?'var(--bad)':v<0?'var(--good)':'var(--text2)';
+    const tint=(vp!==null&&isFinite(vp)&&Math.abs(vp)>=15)?(v>0?'background:rgba(220,38,38,.06)':'background:rgba(22,163,74,.06)'):'';
+    return `<td${drillAttr||''}><span class="cellin" style="color:${col};${tint}${strong?'font-weight:800':''}" title="B ${fmt(o.b)} · A ${fmt(o.a)} · Var ${signTxt(v)} (${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'})">${signTxt(v)}</span></td>`;
+  };
+  // grand row (all dims) per month
+  const grand=new Map();
+  for(const r of rows){let o=grand.get(r.month);if(!o){o={b:0,a:0};grand.set(r.month,o);}o.b+=r.budget_amount||0;o.a+=r.actual_amount||0;}
+  const grandTot=rows.reduce((s,r)=>({b:s.b+(r.budget_amount||0),a:s.a+(r.actual_amount||0)}),{b:0,a:0});
   let html=`<div class="card"><div class="card-h">
-    <div><div class="card-t">Monthly variance heatmap</div><div class="card-s">Cell = variance % (Actual−Budget)/Budget · <span dir="auto">by ${dimSel==='operational_bucket'?'bucket':dimSel}</span> × month</div></div>
-    <div class="fl"><label>Break down by</label><select id="mon-dim" onchange="renderMonthly()">
-      <option value="operational_bucket"${dimSel==='operational_bucket'?' selected':''}>Bucket</option>
-      <option value="product"${dimSel==='product'?' selected':''}>Product</option>
-      <option value="farm"${dimSel==='farm'?' selected':''}>Farm</option></select></div></div>
-    <div class="mx-wrap"><table class="mx"><thead><tr><th>${dimSel==='operational_bucket'?'Bucket':dimSel}</th>${monthsPresent.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
-  const mdrill={operational_bucket:'bucket',product:'product',farm:'farm'}[dimSel];
-  for(const d of dims){
-    let rb=0,ra=0;
-    html+=`<tr><td dir="auto" style="cursor:pointer" onclick="drillGo(${drillRef(mdrill,d)})">${esc(nn(d))}</td>`;
-    for(const m of monthsPresent){const o=cell.get(d+'|'+m)||{b:0,a:0};rb+=o.b;ra+=o.a;const v=o.a-o.b,vp=pct(v,o.b);
-      const cdr=(o.b||o.a)?` style="cursor:pointer" onclick="event.stopPropagation();drillGo(${drillRef('combo',[{dim:mdrill,key:d},{dim:'month',key:m}])})"`:'';
-      html+=`<td${cdr}><span class="cellin" style="background:${heat(vp)};color:${txtOn(vp)}" title="B ${fmt(o.b)} · A ${fmt(o.a)}">${o.b||o.a?cmp(v):'·'}<small>${vp===null||!isFinite(vp)?'':(vp>0?'+':'')+vp.toFixed(0)+'%'}</small></span></td>`;}
-    const tv=ra-rb,tvp=pct(tv,rb);
-    html+=`<td><span class="cellin" style="background:${heat(tvp)};color:${txtOn(tvp)};font-weight:800">${cmp(tv)}<small>${tvp===null||!isFinite(tvp)?'':(tvp>0?'+':'')+tvp.toFixed(0)+'%'}</small></span></td></tr>`;
-  }
-  html+=`</tbody></table></div><div class="mx-legend"><span>Under budget</span><span class="mx-ramp"></span><span>Over budget</span></div></div>`;
+    <div><div class="card-t">Monthly Budget vs Actual</div><div class="card-s">Season trend · toggle the data labels between Variance and B &amp; A</div></div>${lblSeg()}</div>
+    ${monthlySVG(rows,'amount')}
+    <div class="legend"><span class="lg"><span class="lg-dot" style="background:var(--orange)"></span>Budget</span><span class="lg"><span class="lg-dot" style="background:var(--navy)"></span>Actual</span></div>
+  </div>
+  <div class="card"><div class="card-h">
+    <div><div class="card-t">Variance by month</div><div class="card-s">Green = under budget · Red = over budget · click a name or cell to drill</div></div>${seg}</div>
+    <div class="mx-wrap"><table class="mx clean"><thead><tr><th>${dimLbl}</th>${monthsPresent.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>
+    <tr class="mx-grand"><td>All ${dimLbl.toLowerCase()}s</td>${monthsPresent.map(m=>vCell(grand.get(m),'',true)).join('')}${vCell(grandTot,'',true)}</tr>
+    ${dims.map(d=>{
+      const rowDrill=` style="cursor:pointer" onclick="drillGo(${drillRef(mdrill,d)})"`;
+      return `<tr><td dir="auto"${rowDrill}>${esc(nn(d))}</td>${monthsPresent.map(m=>{
+        const o=cell.get(d+'\u0001'+m);
+        const cdr=(o&&(o.b||o.a))?` style="cursor:pointer" onclick="event.stopPropagation();drillGo(${drillRef('combo',[{dim:mdrill,key:d},{dim:'month',key:m}])})"`:'';
+        return vCell(o,cdr);
+      }).join('')}${vCell(totals.get(d),'',true)}</tr>`;
+    }).join('')}
+    </tbody></table></div>
+  </div>`;
   document.getElementById('pane-monthly').innerHTML=html;
 }
 
@@ -967,7 +1000,7 @@ const DIMS={
   buckets:{key:r=>r.operational_bucket||'(unmapped)',lbl:'Bucket',sel:['bucket','f-bucket']},
   products:{key:r=>r.product,lbl:'Product',sel:['product','f-product']},
   farms:{key:r=>r.farm,lbl:'Farm',sel:['farm','f-farm']},
-  varieties:{key:r=>r.variety_en||'(none)',lbl:'Variety',sel:['variety','f-variety']},
+  varieties:{key:r=>r.variety_en||'(none)',lbl:'Variety',sel:['variety','f-variety'],disp:k=>esc(nn(k))+vcatSuffix(k)},
   plots:{key:r=>r.product+'|'+r.farm+'|'+(r.variety_en||'(none)')+'|'+(r.plot||'(none)'),lbl:'Plot',sel:null,
     disp:k=>{const p=String(k).split('|');return esc(nn(p[3]))+' · '+esc(nn(p[2]))+' · '+esc(nn(p[1]));}}
 };
@@ -998,16 +1031,16 @@ function renderDim(name){
   if(vw!=='summary'){document.getElementById('pane-'+name).innerHTML=dimMatrix(rows,name,cfg,vw);return;}
   const bars=SIDE==='both'?pairedBars(data.slice(0,16),null):sideBars(data.slice(0,16),o=>(o.lbl||esc(nn(o.key)))+(o.tags||''));
   document.getElementById('pane-'+name).innerHTML=`
-    <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl}s — ${SIDE==='both'?'Budget vs Actual':SIDE==='budget'?'Budget':SIDE==='actual'?'Actual':'Variance'}</div><div class="card-s">Top 16 by budget · click for details</div></div><div style="display:flex;gap:10px;align-items:flex-end">${tblControls()}${metricNote()}</div></div>${bars}</div>
+    <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl}s — ${SIDE==='both'?'Budget vs Actual':SIDE==='budget'?'Budget':SIDE==='actual'?'Actual':'Variance'}</div><div class="card-s">Top 16 by budget · click for details</div></div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">${lblSeg()}${tblControls()}${metricNote()}</div></div>${bars}</div>
     <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl} detail</div><div class="card-s">Variance in EGP and % · click a header to sort · click a row for details</div></div></div>
     <div class="tbl-wrap"><table class="dt">
-      <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th>${SIDE!=='actual'&&SIDE!=='variance'?`<th onclick="dimSort('b')">Budget${arrow('b')}</th>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<th onclick="dimSort('a')">Actual${arrow('a')}</th>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th>`:''}${SIDE==='both'?`<th onclick="dimSort('ach')">Achievement${arrow('ach')}</th>`:''}<th onclick="dimSort('sh')">Share${arrow('sh')}</th></tr></thead>
+      <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th>${name==='varieties'?'<th>Category</th>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<th onclick="dimSort('b')">Budget${arrow('b')}</th>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<th onclick="dimSort('a')">Actual${arrow('a')}</th>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th>`:''}${SIDE==='both'?`<th onclick="dimSort('ach')">Achievement${arrow('ach')}</th>`:''}<th onclick="dimSort('sh')">Share${arrow('sh')}</th></tr></thead>
       <tbody>${data.map(o=>{const vp=pct(o.v,o.b),cl=` style="cursor:pointer" onclick="drillGo(${o.drill})"`;
         const shBase=SIDE==='budget'?tb:ta, shVal=SIDE==='budget'?o.b:o.a;
-        return `<tr${cl}><td dir="auto">${o.lbl||esc(nn(o.key))}${o.tags||''}</td>${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mvCell(o,'b')}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mvCell(o,'a')}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`
+        return `<tr${cl}><td dir="auto">${name==='varieties'?esc(nn(o.key)):(o.lbl||esc(nn(o.key)))}${o.tags||''}</td>${name==='varieties'?`<td dir="auto" style="color:var(--text2)">${esc(VCAT.get(o.key)||'—')}</td>`:''}${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mvCell(o,'b')}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mvCell(o,'a')}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`
           <td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
           <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(o.a,o.b))}</td>`:''}<td>${pctTxt(pct(shVal,shBase))}</td></tr>`;}).join('')}</tbody>
-      <tfoot><tr><td>Total</td>${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mv(tb)}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mv(ta)}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<td class="vcell" style="color:${ta-tb>0?'var(--bad)':'var(--good)'}">${signTxt(ta-tb).replace('−','-')}</td><td>${(()=>{const p=pct(ta-tb,tb);return p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(ta,tb))}</td>`:''}<td>100%</td></tr></tfoot>
+      <tfoot><tr><td>Total</td>${name==='varieties'?'<td></td>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mv(tb)}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mv(ta)}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<td class="vcell" style="color:${ta-tb>0?'var(--bad)':'var(--good)'}">${signTxt(ta-tb).replace('−','-')}</td><td>${(()=>{const p=pct(ta-tb,tb);return p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(ta,tb))}</td>`:''}<td>100%</td></tr></tfoot>
     </table></div></div>`;
 }
 
@@ -1100,17 +1133,17 @@ function bucketExtras(rows){
 function renderOps(){
   const rows=filtered();
   if(VIEW!=='summary'){document.getElementById('pane-operations').innerHTML=dimMatrix(rows,'operations',{key:r=>r.operation_norm||'(none)',lbl:'Operation'},VIEW);return;}
-  const bmap=new Map();
-  for(const r of rows){const k=r.operation_norm||'(none)';if(!bmap.has(k))bmap.set(k,r.operational_bucket||'(unmapped)');}
-  let data=agg(rows,r=>r.operation_norm||'(none)').map(o=>({...o,bucket:bmap.get(o.key)||'(unmapped)',drill:drillRef('operation',o.key)})).sort((x,y)=>y.a-x.a||y.b-x.b);
+  const bmap=new Map(),umap=new Map();
+  for(const r of rows){const k=r.operation_norm||'(none)';if(!bmap.has(k))bmap.set(k,r.operational_bucket||'(unmapped)');if(r.unit){if(!umap.has(k))umap.set(k,new Set());umap.get(k).add(r.unit);}}
+  let data=agg(rows,r=>r.operation_norm||'(none)').map(o=>({...o,bucket:bmap.get(o.key)||'(unmapped)',units:umap.has(o.key)?[...umap.get(o.key)].join(' / '):'—',drill:drillRef('operation',o.key)})).sort((x,y)=>y.a-x.a||y.b-x.b);
   document.getElementById('pane-operations').innerHTML=`
     <div class="card"><div class="card-h"><div><div class="card-t">Operations</div><div class="card-s">${data.length} operations · click a row for details</div></div><div style="display:flex;gap:10px;align-items:flex-end">${tblControls()}${metricNote()}</div></div>
     <div class="tbl-wrap"><table class="dt">
-      <thead><tr><th>Operation</th><th style="text-align:left">Bucket</th><th>Status</th>${SIDE!=='actual'&&SIDE!=='variance'?'<th>Budget</th>':''}${SIDE!=='budget'&&SIDE!=='variance'?'<th>Actual</th>':''}${SIDE!=='budget'&&SIDE!=='actual'?'<th>Variance</th><th>Var %</th>':''}${SIDE==='both'?'<th>Achievement</th>':''}</tr></thead>
+      <thead><tr><th>Operation</th><th style="text-align:left">Bucket</th><th>Unit</th><th>Status</th>${SIDE!=='actual'&&SIDE!=='variance'?'<th>Budget</th>':''}${SIDE!=='budget'&&SIDE!=='variance'?'<th>Actual</th>':''}${SIDE!=='budget'&&SIDE!=='actual'?'<th>Variance</th><th>Var %</th>':''}${SIDE==='both'?'<th>Achievement</th>':''}</tr></thead>
       <tbody>${data.map(o=>{const vp=pct(o.v,o.b);
         const badge=o.rawB===0&&o.rawA>0?'<span class="badge b-unpl">Unplanned</span>':(o.rawA===0?'<span class="badge b-nost">Not started</span>':'<span class="badge b-match">Planned</span>');
         const unm=o.bucket==='(unmapped)'?' <span class="badge b-unm">unmapped</span>':'';
-        return `<tr style="cursor:pointer" onclick="drillGo(${o.drill})"><td dir="auto">${esc(nn(o.key))}</td><td dir="auto" style="text-align:left;color:var(--text2)">${esc(nn(o.bucket))}${unm}</td><td>${badge}</td>
+        return `<tr style="cursor:pointer" onclick="drillGo(${o.drill})"><td dir="auto">${esc(nn(o.key))}</td><td dir="auto" style="text-align:left;color:var(--text2)">${esc(nn(o.bucket))}${unm}</td><td dir="auto" style="color:var(--text2)">${esc(o.units)}</td><td>${badge}</td>
           ${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mvCell(o,'b')}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mvCell(o,'a')}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
           <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(o.a,o.b))}</td>`:''}</tr>`;}).join('')}</tbody>
     </table></div></div>`;
@@ -1600,6 +1633,13 @@ function renderPerf(){
 let SIDE='both'; // both | budget | actual | variance | ach | share
 let VIEW='summary'; // summary | months | category | bucket
 function setViewSel(v){VIEW=v;renderAll();}
+let LBL='var'; // data labels on graphs: 'var' (variance) | 'ba' (Budget & Actual)
+function setLblSel(v){
+  LBL=v;renderAll();
+  const c=DRILL_STACK&&DRILL_STACK[DRILL_STACK.length-1];
+  if(c&&document.getElementById('drill-modal').style.display==='flex')openDrill(c.dim,c.key,true);
+}
+function lblSeg(){return `<div class="seg" title="Data labels"><button class="${LBL==='var'?'on':''}" onclick="setLblSel('var')">Variance</button><button class="${LBL==='ba'?'on':''}" onclick="setLblSel('ba')">B &amp; A</button></div>`;}
 function setMetricSel(v){METRIC=v;renderAll();}
 function setSideSel(v){SIDE=v;renderAll();}
 function tblControls(){
@@ -1638,10 +1678,20 @@ function setTab(btn){
   document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active',p.id==='pane-'+TAB));
   renderAll();
 }
+let VCAT=new Map();
+function buildVCat(rows){
+  const cnt=new Map();
+  for(const r of rows){const v=r.variety_en||'(none)';const c=(r.category||'').trim();if(!c)continue;const k=v+'\u0001'+c;cnt.set(k,(cnt.get(k)||0)+1);}
+  const best=new Map();
+  for(const [k,n] of cnt){const i=k.indexOf('\u0001'),v=k.slice(0,i),c=k.slice(i+1);const cur=best.get(v);if(!cur||n>cur.n)best.set(v,{c,n});}
+  const m=new Map();for(const [v,o] of best)m.set(v,o.c);return m;
+}
+function vcatSuffix(k){const c=VCAT.get(k);return c?' <span style="color:var(--text3);font-weight:500">· '+esc(c)+'</span>':'';}
 function renderAll(){
   DRILL_REG=[];
   OPB=null;
   const rows=filtered();
+  VCAT=buildVCat(rows);
   renderKPIs(rows);
   if(TAB==='performance')renderPerf();
   else if(TAB==='overview')renderOverview();
