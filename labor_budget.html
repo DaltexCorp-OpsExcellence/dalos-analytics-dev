@@ -248,7 +248,6 @@ table.mx{border-collapse:collapse;font-size:11px}
   <div class="tabs">
     <button class="tab-btn active" data-tab="overview" onclick="setTab(this)"><i class="ti ti-layout-dashboard" style="font-size:14px"></i>Overview</button>
     <button class="tab-btn" data-tab="performance" onclick="setTab(this)"><i class="ti ti-table-options" style="font-size:14px"></i>Performance</button>
-    <button class="tab-btn" data-tab="monthly" onclick="setTab(this)"><i class="ti ti-calendar-month" style="font-size:14px"></i>Monthly</button>
     <button class="tab-btn" data-tab="buckets" onclick="setTab(this)"><i class="ti ti-category" style="font-size:14px"></i>Buckets</button>
     <button class="tab-btn" data-tab="products" onclick="setTab(this)"><i class="ti ti-plant-2" style="font-size:14px"></i>Products</button>
     <button class="tab-btn" data-tab="farms" onclick="setTab(this)"><i class="ti ti-map-pin" style="font-size:14px"></i>Farms</button>
@@ -266,7 +265,6 @@ table.mx{border-collapse:collapse;font-size:11px}
 
     <div class="pane" id="pane-performance"></div>
     <div class="pane active" id="pane-overview"></div>
-    <div class="pane" id="pane-monthly"></div>
     <div class="pane" id="pane-buckets"></div>
     <div class="pane" id="pane-products"></div>
     <div class="pane" id="pane-farms"></div>
@@ -899,7 +897,7 @@ function renderOverview(){
 
   // ---- sub-tab bar ----
   const subbar=`<div class="tabs" style="margin:4px 0 14px">
-    ${['performance','risk','pace'].map(s=>`<button class="tab-btn ${OV_SUB===s?'active':''}" onclick="ovSub('${s}')">${s==='performance'?'Performance':s==='risk'?'Risk & Anomalies':'Pace & Momentum'}</button>`).join('')}
+    ${['performance','risk','pace','monthly'].map(s=>`<button class="tab-btn ${OV_SUB===s?'active':''}" onclick="ovSub('${s}')">${s==='performance'?'Performance':s==='risk'?'Risk & Anomalies':s==='pace'?'Pace & Momentum':'Monthly'}</button>`).join('')}
   </div>`;
 
   let panels='';
@@ -919,6 +917,8 @@ function renderOverview(){
         ${card('Pareto — variance concentration',`${n80} plots drive 80% of total variance · click for details`,miniList(paretoTop,o=>plotLabel(o)+(o.key?plotTag(rows,o.key):'')))}
       </div>
       ${card('Not-started watchlist','Budgeted but zero actuals · risk of unspent/missed work · click for details',miniList(notStarted,o=>plotLabel(o)+plotTag(rows,o.key)))}`;
+  } else if(OV_SUB==='monthly'){
+    panels=monthlyMatrixCard(rows);
   } else {
     const paceCol = pctConsumed>pctElapsed?'var(--bad)':'var(--good)';
     panels=`
@@ -949,9 +949,8 @@ function renderOverview(){
 
 /* ============ MONTHLY TAB (matrix of dimension × month) ============ */
 let MON_DIM='operational_bucket';
-function setMonDim(v){MON_DIM=v;renderMonthly();}
-function renderMonthly(){
-  const rows=filtered();
+function setMonDim(v){MON_DIM=v;renderAll();}
+function monthlyMatrixCard(rows){
   const keyFn={operational_bucket:r=>r.operational_bucket||'(unmapped)',product:r=>r.product,farm:r=>r.farm}[MON_DIM];
   const mdrill={operational_bucket:'bucket',product:'product',farm:'farm'}[MON_DIM];
   const dimLbl={operational_bucket:'Bucket',product:'Category',farm:'Farm'}[MON_DIM];
@@ -969,16 +968,10 @@ function renderMonthly(){
     const tint=(vp!==null&&isFinite(vp)&&Math.abs(vp)>=15)?(v>0?'background:rgba(220,38,38,.06)':'background:rgba(22,163,74,.06)'):'';
     return `<td${drillAttr||''}><span class="cellin" style="color:${col};${tint}${strong?'font-weight:800':''}" title="B ${fmt(o.b)} · A ${fmt(o.a)} · Var ${signTxt(v)} (${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'})">${signTxt(v)}</span></td>`;
   };
-  // grand row (all dims) per month
   const grand=new Map();
   for(const r of rows){let o=grand.get(r.month);if(!o){o={b:0,a:0};grand.set(r.month,o);}o.b+=r.budget_amount||0;o.a+=r.actual_amount||0;}
   const grandTot=rows.reduce((s,r)=>({b:s.b+(r.budget_amount||0),a:s.a+(r.actual_amount||0)}),{b:0,a:0});
-  let html=`<div class="card"><div class="card-h">
-    <div><div class="card-t">Monthly Budget vs Actual</div><div class="card-s">Season trend · toggle the data labels between Variance and B &amp; A</div></div>${lblSeg()}</div>
-    ${monthlySVG(rows,'amount')}
-    <div class="legend"><span class="lg"><span class="lg-dot" style="background:var(--orange)"></span>Budget</span><span class="lg"><span class="lg-dot" style="background:var(--navy)"></span>Actual</span></div>
-  </div>
-  <div class="card"><div class="card-h">
+  return `<div class="card"><div class="card-h">
     <div><div class="card-t">Variance by month</div><div class="card-s">Green = under budget · Red = over budget · click a name or cell to drill</div></div>${seg}</div>
     <div class="mx-wrap"><table class="mx clean"><thead><tr><th>${dimLbl}</th>${monthsPresent.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>
     <tr class="mx-grand"><td>All ${dimLbl.toLowerCase()}s</td>${monthsPresent.map(m=>vCell(grand.get(m),'',true)).join('')}${vCell(grandTot,'',true)}</tr>
@@ -992,7 +985,6 @@ function renderMonthly(){
     }).join('')}
     </tbody></table></div>
   </div>`;
-  document.getElementById('pane-monthly').innerHTML=html;
 }
 
 /* ============ DIMENSION TABS (bars + sortable table) ============ */
@@ -1695,7 +1687,6 @@ function renderAll(){
   renderKPIs(rows);
   if(TAB==='performance')renderPerf();
   else if(TAB==='overview')renderOverview();
-  else if(TAB==='monthly')renderMonthly();
   else if(DIMS[TAB])renderDim(TAB);
   else if(TAB==='operations')renderOps();
   else if(TAB==='matrix')renderMatrix();
