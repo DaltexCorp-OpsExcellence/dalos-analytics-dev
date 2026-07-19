@@ -1671,7 +1671,6 @@ function setTab(btn){
   renderAll();
 }
 let VCAT=new Map();
-let VPROD=new Map();
 function buildVCat(rows){
   const cnt=new Map();
   for(const r of rows){const v=r.variety_en||'(none)';const c=(r.category||'').trim();if(!c)continue;const k=v+'\u0001'+c;cnt.set(k,(cnt.get(k)||0)+1);}
@@ -1679,14 +1678,13 @@ function buildVCat(rows){
   for(const [k,n] of cnt){const i=k.indexOf('\u0001'),v=k.slice(0,i),c=k.slice(i+1);const cur=best.get(v);if(!cur||n>cur.n)best.set(v,{c,n});}
   const m=new Map();for(const [v,o] of best)m.set(v,o.c);return m;
 }
-function buildVProd(rows){
-  const cnt=new Map();
-  for(const r of rows){const v=r.variety_en||'(none)';const p=(r.product||'').trim();if(!p)continue;const k=v+'\u0001'+p;cnt.set(k,(cnt.get(k)||0)+1);}
-  const best=new Map();
-  for(const [k,n] of cnt){const i=k.indexOf('\u0001'),v=k.slice(0,i),p=k.slice(i+1);const cur=best.get(v);if(!cur||n>cur.n)best.set(v,{c:p,n});}
-  const m=new Map();for(const [v,o] of best)m.set(v,o.c);return m;
-}
 function vcatSuffix(k){const c=VCAT.get(k);return c?' <span style="color:var(--text3);font-weight:500">· '+esc(c)+'</span>':'';}
+let VPROD=new Map();
+function buildVProd(rows){
+  const m=new Map();
+  for(const r of rows){const v=r.variety_en||'(none)';if(!m.has(v))m.set(v,new Set());m.get(v).add(r.product);}
+  const out=new Map();for(const [v,s] of m)out.set(v,[...s].join(' / '));return out;
+}
 function renderAll(){
   DRILL_REG=[];
   OPB=null;
