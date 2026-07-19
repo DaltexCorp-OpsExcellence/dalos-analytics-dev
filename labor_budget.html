@@ -1026,10 +1026,10 @@ function renderDim(name){
     <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl}s — ${SIDE==='both'?'Budget vs Actual':SIDE==='budget'?'Budget':SIDE==='actual'?'Actual':'Variance'}</div><div class="card-s">Top 16 by budget · click for details</div></div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">${lblSeg()}${tblControls()}${metricNote()}</div></div>${bars}</div>
     <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl} detail</div><div class="card-s">Variance in EGP and % · click a header to sort · click a row for details</div></div></div>
     <div class="tbl-wrap"><table class="dt">
-      <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th>${name==='varieties'?'<th>Category</th>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<th onclick="dimSort('b')">Budget${arrow('b')}</th>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<th onclick="dimSort('a')">Actual${arrow('a')}</th>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th>`:''}${SIDE==='both'?`<th onclick="dimSort('ach')">Achievement${arrow('ach')}</th>`:''}<th onclick="dimSort('sh')">Share${arrow('sh')}</th></tr></thead>
+      <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th>${name==='varieties'?'<th>Product</th>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<th onclick="dimSort('b')">Budget${arrow('b')}</th>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<th onclick="dimSort('a')">Actual${arrow('a')}</th>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th>`:''}${SIDE==='both'?`<th onclick="dimSort('ach')">Achievement${arrow('ach')}</th>`:''}<th onclick="dimSort('sh')">Share${arrow('sh')}</th></tr></thead>
       <tbody>${data.map(o=>{const vp=pct(o.v,o.b),cl=` style="cursor:pointer" onclick="drillGo(${o.drill})"`;
         const shBase=SIDE==='budget'?tb:ta, shVal=SIDE==='budget'?o.b:o.a;
-        return `<tr${cl}><td dir="auto">${name==='varieties'?esc(nn(o.key)):(o.lbl||esc(nn(o.key)))}${o.tags||''}</td>${name==='varieties'?`<td dir="auto" style="color:var(--text2)">${esc(VCAT.get(o.key)||'—')}</td>`:''}${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mvCell(o,'b')}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mvCell(o,'a')}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`
+        return `<tr${cl}><td dir="auto">${name==='varieties'?esc(nn(o.key)):(o.lbl||esc(nn(o.key)))}${o.tags||''}</td>${name==='varieties'?`<td dir="auto" style="color:var(--text2)">${esc(VPROD.get(o.key)||'—')}</td>`:''}${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mvCell(o,'b')}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mvCell(o,'a')}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`
           <td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
           <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(o.a,o.b))}</td>`:''}<td>${pctTxt(pct(shVal,shBase))}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr><td>Total</td>${name==='varieties'?'<td></td>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mv(tb)}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mv(ta)}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<td class="vcell" style="color:${ta-tb>0?'var(--bad)':'var(--good)'}">${signTxt(ta-tb).replace('−','-')}</td><td>${(()=>{const p=pct(ta-tb,tb);return p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(ta,tb))}</td>`:''}<td>100%</td></tr></tfoot>
@@ -1671,11 +1671,19 @@ function setTab(btn){
   renderAll();
 }
 let VCAT=new Map();
+let VPROD=new Map();
 function buildVCat(rows){
   const cnt=new Map();
   for(const r of rows){const v=r.variety_en||'(none)';const c=(r.category||'').trim();if(!c)continue;const k=v+'\u0001'+c;cnt.set(k,(cnt.get(k)||0)+1);}
   const best=new Map();
   for(const [k,n] of cnt){const i=k.indexOf('\u0001'),v=k.slice(0,i),c=k.slice(i+1);const cur=best.get(v);if(!cur||n>cur.n)best.set(v,{c,n});}
+  const m=new Map();for(const [v,o] of best)m.set(v,o.c);return m;
+}
+function buildVProd(rows){
+  const cnt=new Map();
+  for(const r of rows){const v=r.variety_en||'(none)';const p=(r.product||'').trim();if(!p)continue;const k=v+'\u0001'+p;cnt.set(k,(cnt.get(k)||0)+1);}
+  const best=new Map();
+  for(const [k,n] of cnt){const i=k.indexOf('\u0001'),v=k.slice(0,i),p=k.slice(i+1);const cur=best.get(v);if(!cur||n>cur.n)best.set(v,{c:p,n});}
   const m=new Map();for(const [v,o] of best)m.set(v,o.c);return m;
 }
 function vcatSuffix(k){const c=VCAT.get(k);return c?' <span style="color:var(--text3);font-weight:500">· '+esc(c)+'</span>':'';}
@@ -1684,6 +1692,7 @@ function renderAll(){
   OPB=null;
   const rows=filtered();
   VCAT=buildVCat(rows);
+  VPROD=buildVProd(rows);
   renderKPIs(rows);
   if(TAB==='performance')renderPerf();
   else if(TAB==='overview')renderOverview();
