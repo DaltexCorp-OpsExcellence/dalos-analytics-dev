@@ -966,7 +966,7 @@ function monthlyMatrixCard(rows){
     const v=o.a-o.b, vp=pct(v,o.b);
     const col=v>0?'var(--bad)':v<0?'var(--good)':'var(--text2)';
     const tint=(vp!==null&&isFinite(vp)&&Math.abs(vp)>=15)?(v>0?'background:rgba(220,38,38,.06)':'background:rgba(22,163,74,.06)'):'';
-    return `<td${drillAttr||''}><span class="cellin" style="color:${col};${tint}${strong?'font-weight:800':''}" title="B ${fmt(o.b)} · A ${fmt(o.a)} · Var ${signTxt(v)} (${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'})">${signTxt(v)}</span></td>`;
+    return `<td${drillAttr||''}><span class="cellin" style="color:${col};${tint}${strong?'font-weight:800':''}" title="B ${fmt(o.b)} · A ${fmt(o.a)} · Var ${signTxt(v)} (${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'})">${signTxt(v)}<small>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</small></span></td>`;
   };
   const grand=new Map();
   for(const r of rows){let o=grand.get(r.month);if(!o){o={b:0,a:0};grand.set(r.month,o);}o.b+=r.budget_amount||0;o.a+=r.actual_amount||0;}
