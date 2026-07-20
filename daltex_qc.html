@@ -499,7 +499,7 @@ input,select,button{font-family:var(--font)}
 
 </div></div></div>
 
-<script>/* v1784550280 */
+<script>/* v1784550379 */
 
 /* ===== DalOS Analytics — QC Grapes ===== */
 const SB='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
@@ -544,21 +544,26 @@ function isoWk(ds){const t=new Date(ds+'T00:00:00');t.setDate(t.getDate()+3-((t.
 function perKey(r){return S.gran==='daily'?dcol(r):S.gran==='weekly'?'W'+String(r.wk).padStart(2,'0'):S.gran==='monthly'?dcol(r).slice(0,7):r.season;}
 
 async function fetchAll(){
-  let out=[],from=0,page=1000,total=null;
-  for(;;){
-    const res=await fetch(SB+'/rest/v1/cqc_samples_export?select=*&order=report_id.asc,sample_number.asc',{
-      headers:{apikey:AK,Authorization:'Bearer '+AK,'Range':from+'-'+(from+page-1),'Range-Unit':'items','Prefer':'count=exact'}
+  // Single request with explicit large Range - avoids offset-pagination
+  // skips/duplicates entirely. Falls back to paged loading if capped.
+  const res=await fetch(SB+'/rest/v1/cqc_samples_export?select=*',{
+    headers:{apikey:AK,Authorization:'Bearer '+AK,'Range':'0-99999','Range-Unit':'items','Prefer':'count=exact'}
+  });
+  if(!res.ok && res.status!==206) throw new Error('HTTP '+res.status);
+  let out=await res.json();
+  // Verify against true total from Content-Range (e.g. "0-4031/4032")
+  const cr=res.headers.get('content-range');
+  const total=cr?parseInt(cr.split('/')[1],10):null;
+  // If server capped the response, page the remainder by Range (stable because
+  // we request non-overlapping ranges against count=exact totals)
+  while(total && out.length<total){
+    const r2=await fetch(SB+'/rest/v1/cqc_samples_export?select=*',{
+      headers:{apikey:AK,Authorization:'Bearer '+AK,'Range':out.length+'-'+(out.length+999),'Range-Unit':'items'}
     });
-    if(!res.ok && res.status!==206) throw new Error('HTTP '+res.status);
-    // Parse total from Content-Range header, e.g. "0-999/4040"
-    const cr=res.headers.get('content-range');
-    if(cr && total===null){const m=cr.split('/');total=parseInt(m[1],10)||null;}
-    const js=await res.json();
+    if(!r2.ok && r2.status!==206) break;
+    const js=await r2.json();
     if(!js.length) break;
     out=out.concat(js);
-    from+=js.length;
-    if(total!==null && out.length>=total) break;
-    if(js.length<page && total===null) break;
   }
   return out;
 }
