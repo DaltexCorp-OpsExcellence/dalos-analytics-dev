@@ -499,7 +499,7 @@ input,select,button{font-family:var(--font)}
 
 </div></div></div>
 
-<script>/* v1784549646 */
+<script>/* v1784549730 */
 
 /* ===== DalOS Analytics — QC Grapes ===== */
 const SB='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
@@ -673,18 +673,18 @@ function recalcDates(){
 function setDateBasis(v){
   S.dateBasis=v;
   recalcDates();
-  S.from='';S.to='';
+  S.from=LDF;S.to=LDT;
   S.wk=[];
   const ff=document.getElementById('f-from'),ft=document.getElementById('f-to');
-  if(ff){ff.min=LDF;ff.value='';}
-  if(ft){ft.min=LDF;ft.value='';}
+  if(ff){ff.min=LDF;ff.value=LDF;}
+  if(ft){ft.value=LDT;}
   buildMS();
   apply();
 }
 function setGran(g,btn){S.gran=g;apply();}
 function resetF(){
-  MSF.forEach(f=>S[f]=[]);S.from='';S.to='';
-  document.getElementById('f-from').value='';document.getElementById('f-to').value='';
+  MSF.forEach(f=>S[f]=[]);S.from=LDF;S.to=LDT;
+  document.getElementById('f-from').value=LDF;document.getElementById('f-to').value=LDT;
   document.querySelectorAll('.ms[data-f]').forEach(el=>{el.querySelectorAll('input[data-v]').forEach(i=>i.checked=false);el.querySelector('.ms-all input').checked=true;syncMS(el,el.dataset.f);});
   apply();
 }
@@ -696,7 +696,7 @@ function renderChips(){
   const mc=document.getElementById('mob-fcnt');if(mc){mc.style.display=out.length?'':'none';mc.textContent=out.length;}
 }
 function killChip(f){
-  if(f==='date'){S.from='';S.to='';document.getElementById('f-from').value='';document.getElementById('f-to').value='';}
+  if(f==='date'){S.from=LDF;S.to=LDT;document.getElementById('f-from').value=LDF;document.getElementById('f-to').value=LDT;}
   else{S[f]=[];const el=document.querySelector('.ms[data-f="'+f+'"]');el.querySelectorAll('input[data-v]').forEach(i=>i.checked=false);el.querySelector('.ms-all input').checked=true;syncMS(el,f);}
   apply();
 }
@@ -1483,9 +1483,9 @@ let LDF='',LDT='';
       if(hit>0){const opt=document.querySelector('#f-basis option[value="arrival_date"]');if(opt){opt.disabled=false;opt.textContent='Arrival date';}}
     }catch(e){/* leave arrival disabled */}
     recalcDates();
-    S.from='';S.to='';
+    S.from=LDF;S.to=LDT;
     const ff=document.getElementById('f-from'),ft=document.getElementById('f-to');
-    ff.min=LDF;ff.value='';ft.value='';
+    ff.min=LDF;ff.value=LDF;ft.value=LDT;
     buildMS();
     const reps=new Set(ROWS.map(r=>r.report_id)).size;
     const maxCreated=ROWS.map(r=>r.created_date).filter(Boolean).sort().pop()||'';
