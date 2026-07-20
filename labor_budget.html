@@ -720,12 +720,17 @@ function dimDisp(dim,key,rows){
   return nn(key);
 }
 // modal-local breakdown + measure state
+// Modal state per stack frame: {dim,key,mdim,measure}
+// mdim/measure are stored on the frame so Back restores what the user was seeing at that level
 let MODAL_DIM='operation', MODAL_MEASURE='var';
-function setModalDim(v){MODAL_DIM=v;const c=DRILL_STACK[DRILL_STACK.length-1];if(c)openDrill(c.dim,c.key,true);}
-function setModalMeasure(v){MODAL_MEASURE=v;const c=DRILL_STACK[DRILL_STACK.length-1];if(c)openDrill(c.dim,c.key,true);}
-function drillDeeper(regIdx){ // click inside modal: accumulate context
+function _curFrame(){ return DRILL_STACK[DRILL_STACK.length-1]; }
+function _persist(){ const f=_curFrame(); if(f){f.mdim=MODAL_DIM;f.measure=MODAL_MEASURE;} }
+function setModalDim(v){MODAL_DIM=v;_persist();const c=_curFrame();if(c)openDrill(c.dim,c.key,true);}
+function setModalMeasure(v){MODAL_MEASURE=v;_persist();const c=_curFrame();if(c)openDrill(c.dim,c.key,true);}
+function drillDeeper(regIdx){ // click inside modal: accumulate context; snapshot current selectors first
   const d=DRILL_REG[regIdx]; if(!d) return;
-  const cur=DRILL_STACK[DRILL_STACK.length-1];
+  _persist();
+  const cur=_curFrame();
   let parts=cur? (cur.dim==='combo'?[...cur.key]:[{dim:cur.dim,key:cur.key}]) : [];
   if(!parts.some(p=>p.dim===d.dim&&String(p.key)===String(d.key))) parts.push({dim:d.dim,key:d.key});
   openDrill(parts.length>1?'combo':d.dim, parts.length>1?parts:d.key);
@@ -733,7 +738,11 @@ function drillDeeper(regIdx){ // click inside modal: accumulate context
 function openDrill(dim, key, _fromBack){
   if(!_fromBack){
     if(document.getElementById('drill-modal').style.display!=='flex'){DRILL_STACK=[];MODAL_DIM='operation';MODAL_MEASURE='var';}
-    DRILL_STACK.push({dim,key});
+    DRILL_STACK.push({dim,key,mdim:undefined,measure:undefined});
+  } else {
+    // Back / re-render: restore this frame's remembered selectors, if any
+    const f=_curFrame();
+    if(f){ if(f.mdim)MODAL_DIM=f.mdim; if(f.measure)MODAL_MEASURE=f.measure; }
   }
   const base=filtered();
   const rows=base.filter(r=>matchDim(r,dim,key));
@@ -760,8 +769,13 @@ function openDrill(dim, key, _fromBack){
     month:{lbl:'Months',key:r=>r.month,dsp:(o)=>esc(nn(o.key)),isMonth:true},
     unit:{lbl:'Units',key:r=>r.unit||'(none)',dsp:(o)=>esc(nn(o.key))}
   };
-  if(curDims.includes(MODAL_DIM)) MODAL_DIM = curDims.includes('operation') ? 'plot' : 'operation';
+  if(curDims.includes(MODAL_DIM)){
+    const candidates=['operation','plot','bucket','product','farm','variety','unit','month'];
+    MODAL_DIM = candidates.find(c=>!curDims.includes(c)) || 'operation';
+  }
   const bd=BD[MODAL_DIM]||BD.operation;
+  // remember what we actually rendered on this frame so Back can restore it
+  const _fr=_curFrame(); if(_fr){_fr.mdim=MODAL_DIM;_fr.measure=MODAL_MEASURE;}
   let items=aggYTD(rows,bd.key,cut);
   const shTot=items.reduce((s,o)=>s+o.a,0)||1;
   items=items.map(o=>{
