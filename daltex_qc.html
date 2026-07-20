@@ -499,7 +499,7 @@ input,select,button{font-family:var(--font)}
 
 </div></div></div>
 
-<script>/* v1784549972 */
+<script>/* v1784550167 */
 
 /* ===== DalOS Analytics — QC Grapes ===== */
 const SB='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
@@ -546,7 +546,7 @@ function perKey(r){return S.gran==='daily'?dcol(r):S.gran==='weekly'?'W'+String(
 async function fetchAll(){
   let out=[],from=0,page=1000;
   for(;;){
-    const res=await fetch(SB+'/rest/v1/cqc_samples_export?select=*&order=created_date.asc&offset='+from+'&limit='+page,{headers:{apikey:AK,Authorization:'Bearer '+AK}});
+    const res=await fetch(SB+'/rest/v1/cqc_samples_export?select=*&order=report_id.asc,sample_number.asc&offset='+from+'&limit='+page,{headers:{apikey:AK,Authorization:'Bearer '+AK,'Range-Unit':'items','Prefer':'count=exact'}});
     if(!res.ok) throw new Error('HTTP '+res.status);
     const js=await res.json(); out=out.concat(js);
     if(js.length<page) break; from+=page;
