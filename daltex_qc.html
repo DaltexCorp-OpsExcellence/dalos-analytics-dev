@@ -683,8 +683,8 @@ function setDateBasis(v){
 }
 function setGran(g,btn){S.gran=g;apply();}
 function resetF(){
-  MSF.forEach(f=>S[f]=[]);S.from=LDF;S.to=LDT;
-  document.getElementById('f-from').value=LDF;document.getElementById('f-to').value=LDT;
+  MSF.forEach(f=>S[f]=[]);S.from='';S.to='';
+  document.getElementById('f-from').value='';document.getElementById('f-to').value='';
   document.querySelectorAll('.ms[data-f]').forEach(el=>{el.querySelectorAll('input[data-v]').forEach(i=>i.checked=false);el.querySelector('.ms-all input').checked=true;syncMS(el,el.dataset.f);});
   apply();
 }
@@ -696,7 +696,7 @@ function renderChips(){
   const mc=document.getElementById('mob-fcnt');if(mc){mc.style.display=out.length?'':'none';mc.textContent=out.length;}
 }
 function killChip(f){
-  if(f==='date'){S.from=LDF;S.to=LDT;document.getElementById('f-from').value=LDF;document.getElementById('f-to').value=LDT;}
+  if(f==='date'){S.from='';S.to='';document.getElementById('f-from').value='';document.getElementById('f-to').value='';}
   else{S[f]=[];const el=document.querySelector('.ms[data-f="'+f+'"]');el.querySelectorAll('input[data-v]').forEach(i=>i.checked=false);el.querySelector('.ms-all input').checked=true;syncMS(el,f);}
   apply();
 }
@@ -1483,9 +1483,9 @@ let LDF='',LDT='';
       if(hit>0){const opt=document.querySelector('#f-basis option[value="arrival_date"]');if(opt){opt.disabled=false;opt.textContent='Arrival date';}}
     }catch(e){/* leave arrival disabled */}
     recalcDates();
-    S.from=LDF;S.to=LDT;
+    S.from='';S.to='';
     const ff=document.getElementById('f-from'),ft=document.getElementById('f-to');
-    ff.min=LDF;ff.value=LDF;ft.value=LDT;
+    ff.min=LDF;ff.value='';ft.value='';
     buildMS();
     const reps=new Set(ROWS.map(r=>r.report_id)).size;
     const maxCreated=ROWS.map(r=>r.created_date).filter(Boolean).sort().pop()||'';
