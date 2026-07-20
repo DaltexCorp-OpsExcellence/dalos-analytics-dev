@@ -499,7 +499,7 @@ input,select,button{font-family:var(--font)}
 
 </div></div></div>
 
-<script>/* v1784550709 */
+<script>/* v1784550792 */
 
 /* ===== DalOS Analytics — QC Grapes ===== */
 const SB='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
@@ -996,7 +996,7 @@ function renderOverview(rows){
   renderHM(rows);
   var hmSel=document.getElementById('hm-metric');if(hmSel)hmSel.value=HMM;
   // root cause
-  const rcDims=[['sample_farm','farm','Top Farms','ti-building'],['variety','variety','Top Varieties','ti-plant-2'],['client','client','Top Clients','ti-users'],['packhouse','packhouse','Top Packhouses','ti-home-cog']];
+  const rcDims=[['sample_farm','farm','Top Farms','ti-building'],['variety','variety','Top Varieties','ti-plant-2'],['sub_client','sub_client','Top Sub Clients','ti-users'],['packhouse','packhouse','Top Packhouses','ti-home-cog']];
   let rcHtml=rcDims.map(d=>{
     const g=groupBy(rows,r=>norm(r[d[0]]));
     const top=Object.keys(g).map(k=>({k,v:cavg(g[k],r=>num(r.major_total)),n:g[k].length})).sort((a,b)=>b.v-a.v).slice(0,5);
