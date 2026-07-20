@@ -571,8 +571,11 @@ async function fetchArrivalMap(){
 function F(){
   return ROWS.filter(r=>{
     for(const f of MSF){if(S[f].length&&!S[f].includes(f==='wk'?String(r.wk):norm(r[f])))return false;}
-    if(S.from&&dcol(r)<S.from)return false;
-    if(S.to&&dcol(r)>S.to)return false;
+    const d=dcol(r);
+    if(d){
+      if(S.from&&d<S.from)return false;
+      if(S.to&&d>S.to)return false;
+    }
     return true;
   });
 }
