@@ -322,17 +322,25 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
   // ── Fetch QC data (paginated — REST caps at 1000 rows/request) ──
   try{
-    let qcData=[],from=0,page=1000;
-    for(;;){
-      const qcRes=await fetch(SB_URL+'/rest/v1/cqc_samples_export?select=report_id,major_total,minor_total&order=created_date.asc&offset='+from+'&limit='+page,{
-        headers:{apikey:SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    let qcData=[];
+    {
+      const qcRes=await fetch(SB_URL+'/rest/v1/cqc_samples_export?select=report_id,major_total,minor_total',{
+        headers:{apikey:SB_KEY,'Authorization':'Bearer '+SB_KEY,'Range':'0-99999','Range-Unit':'items','Prefer':'count=exact'}
       });
-      if(!qcRes.ok) break;
-      const chunk=await qcRes.json();
-      if(!chunk||!chunk.length) break;
-      qcData=qcData.concat(chunk);
-      if(chunk.length<page) break;
-      from+=page;
+      if(qcRes.ok||qcRes.status===206){
+        qcData=await qcRes.json();
+        const cr=qcRes.headers.get('content-range');
+        const total=cr?parseInt(cr.split('/')[1],10):null;
+        while(total&&qcData.length<total){
+          const r2=await fetch(SB_URL+'/rest/v1/cqc_samples_export?select=report_id,major_total,minor_total',{
+            headers:{apikey:SB_KEY,'Authorization':'Bearer '+SB_KEY,'Range':qcData.length+'-'+(qcData.length+999),'Range-Unit':'items'}
+          });
+          if(!r2.ok&&r2.status!==206) break;
+          const js2=await r2.json();
+          if(!js2.length) break;
+          qcData=qcData.concat(js2);
+        }
+      }
     }
     if(qcData.length){
       const insp=new Set(qcData.map(r=>r.report_id)).size;
