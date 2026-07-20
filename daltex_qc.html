@@ -499,7 +499,7 @@ input,select,button{font-family:var(--font)}
 
 </div></div></div>
 
-<script>/* v1784549730 */
+<script>/* v1784549972 */
 
 /* ===== DalOS Analytics — QC Grapes ===== */
 const SB='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
@@ -516,7 +516,7 @@ const MSF=['season','wk','sample_farm','country','variety','color','client','sub
 let ROWS=[],S={tab:'ov',gran:'weekly',from:'',to:'',dateBasis:'load_date'},charts={},dataPage=0;
 // Active date column resolver. Falls back to created_date when the chosen basis is empty for a row.
 const DATE_BASES={load_date:'Load date',pack_date:'Pack date',created_date:'Created date',arrival_date:'Arrival date'};
-function dcol(r){return (r[S.dateBasis]||'');}
+function dcol(r){var v=r[S.dateBasis]||'';return v?String(v).slice(0,10):'';}
 MSF.forEach(f=>S[f]=[]);
 const num=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
 const r2=v=>Math.round(v*100)/100;
