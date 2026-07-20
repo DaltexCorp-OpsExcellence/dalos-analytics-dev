@@ -673,12 +673,12 @@ function recalcDates(){
 function setDateBasis(v){
   S.dateBasis=v;
   recalcDates();
-  S.from=LDF;S.to=LDT;
-  S.wk=[];  // reset week filter when basis changes
+  S.from='';S.to='';
+  S.wk=[];
   const ff=document.getElementById('f-from'),ft=document.getElementById('f-to');
-  if(ff){ff.min=LDF;ff.value=LDF;}
-  if(ft){ft.value=LDT;}
-  buildMS();  // rebuild week options for new basis
+  if(ff){ff.min=LDF;ff.value='';}
+  if(ft){ft.min=LDF;ft.value='';}
+  buildMS();
   apply();
 }
 function setGran(g,btn){S.gran=g;apply();}
