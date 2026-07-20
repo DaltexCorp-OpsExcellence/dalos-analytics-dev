@@ -516,7 +516,7 @@ const MSF=['season','wk','sample_farm','country','variety','color','client','sub
 let ROWS=[],S={tab:'ov',gran:'weekly',from:'',to:'',dateBasis:'load_date'},charts={},dataPage=0;
 // Active date column resolver. Falls back to created_date when the chosen basis is empty for a row.
 const DATE_BASES={load_date:'Load date',pack_date:'Pack date',created_date:'Created date',arrival_date:'Arrival date'};
-function dcol(r){return (r[S.dateBasis]||r.created_date||'');}
+function dcol(r){return (r[S.dateBasis]||'');}
 MSF.forEach(f=>S[f]=[]);
 const num=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
 const r2=v=>Math.round(v*100)/100;
@@ -671,9 +671,11 @@ function setDateBasis(v){
   S.dateBasis=v;
   recalcDates();
   S.from=LDF;S.to=LDT;
+  S.wk=[];  // reset week filter when basis changes
   const ff=document.getElementById('f-from'),ft=document.getElementById('f-to');
   if(ff){ff.min=LDF;ff.value=LDF;}
   if(ft){ft.value=LDT;}
+  buildMS();  // rebuild week options for new basis
   apply();
 }
 function setGran(g,btn){S.gran=g;apply();}
