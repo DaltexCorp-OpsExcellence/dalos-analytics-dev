@@ -672,8 +672,8 @@ function setDateBasis(v){
   recalcDates();
   S.from=LDF;S.to=LDT;
   const ff=document.getElementById('f-from'),ft=document.getElementById('f-to');
-  if(ff){ff.min=LDF;ff.max=LDT;ff.value=LDF;}
-  if(ft){ft.min=LDF;ft.max=LDT;ft.value=LDT;}
+  if(ff){ff.min=LDF;ff.value=LDF;}
+  if(ft){ft.value=LDT;}
   apply();
 }
 function setGran(g,btn){S.gran=g;apply();}
@@ -1480,7 +1480,7 @@ let LDF='',LDT='';
     recalcDates();
     S.from=LDF;S.to=LDT;
     const ff=document.getElementById('f-from'),ft=document.getElementById('f-to');
-    ff.min=LDF;ff.max=LDT;ff.value=LDF;ft.min=LDF;ft.max=LDT;ft.value=LDT;
+    ff.min=LDF;ff.value=LDF;ft.value=LDT;
     buildMS();
     const reps=new Set(ROWS.map(r=>r.report_id)).size;
     const maxCreated=ROWS.map(r=>r.created_date).filter(Boolean).sort().pop()||'';
