@@ -499,7 +499,7 @@ input,select,button{font-family:var(--font)}
 
 </div></div></div>
 
-<script>/* v1784550167 */
+<script>/* v1784550280 */
 
 /* ===== DalOS Analytics — QC Grapes ===== */
 const SB='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
@@ -544,12 +544,21 @@ function isoWk(ds){const t=new Date(ds+'T00:00:00');t.setDate(t.getDate()+3-((t.
 function perKey(r){return S.gran==='daily'?dcol(r):S.gran==='weekly'?'W'+String(r.wk).padStart(2,'0'):S.gran==='monthly'?dcol(r).slice(0,7):r.season;}
 
 async function fetchAll(){
-  let out=[],from=0,page=1000;
+  let out=[],from=0,page=1000,total=null;
   for(;;){
-    const res=await fetch(SB+'/rest/v1/cqc_samples_export?select=*&order=report_id.asc,sample_number.asc&offset='+from+'&limit='+page,{headers:{apikey:AK,Authorization:'Bearer '+AK,'Range-Unit':'items','Prefer':'count=exact'}});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const js=await res.json(); out=out.concat(js);
-    if(js.length<page) break; from+=page;
+    const res=await fetch(SB+'/rest/v1/cqc_samples_export?select=*&order=report_id.asc,sample_number.asc',{
+      headers:{apikey:AK,Authorization:'Bearer '+AK,'Range':from+'-'+(from+page-1),'Range-Unit':'items','Prefer':'count=exact'}
+    });
+    if(!res.ok && res.status!==206) throw new Error('HTTP '+res.status);
+    // Parse total from Content-Range header, e.g. "0-999/4040"
+    const cr=res.headers.get('content-range');
+    if(cr && total===null){const m=cr.split('/');total=parseInt(m[1],10)||null;}
+    const js=await res.json();
+    if(!js.length) break;
+    out=out.concat(js);
+    from+=js.length;
+    if(total!==null && out.length>=total) break;
+    if(js.length<page && total===null) break;
   }
   return out;
 }
