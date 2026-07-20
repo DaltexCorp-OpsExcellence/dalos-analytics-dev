@@ -478,7 +478,7 @@ input,select,button{font-family:var(--font)}
 <button class="mob-ftog" id="mob-ftog" onclick="document.getElementById('fbar').classList.toggle('open')"><i class="ti ti-adjustments-horizontal"></i> Filters <span class="cnt" id="mob-fcnt" style="display:none"></span><i class="ti ti-chevron-down" style="margin-left:auto"></i></button>
 <div class="fbar" id="fbar">
   <div class="fgrp"><div class="flab">Season</div><div class="ms" data-f="season"></div></div>
-  <div class="fgrp"><div class="flab">Date basis</div><select class="fdate" id="f-basis" onchange="setDateBasis(this.value)" style="cursor:pointer"><option value="load_date">Load date</option><option value="arrival_date" disabled>Arrival date (pending shipments link)</option><option value="pack_date">Pack date</option><option value="created_date">Created date</option></select></div>
+  <div class="fgrp"><div class="flab">Date basis</div><select class="fdate" id="f-basis" onchange="setDateBasis(this.value)" style="cursor:pointer"><option value="created_date" selected>Created date</option><option value="load_date">Load date</option><option value="arrival_date" disabled>Arrival date (pending shipments link)</option><option value="pack_date">Pack date</option></select></div>
   <div class="fgrp"><div class="flab">From</div><input type="date" class="fdate" id="f-from" onchange="setDate()"></div>
   <div class="fgrp"><div class="flab">To</div><input type="date" class="fdate" id="f-to" onchange="setDate()"></div>
   <div class="fgrp"><div class="flab">Week</div><div class="ms" data-f="wk"></div></div>
@@ -499,7 +499,7 @@ input,select,button{font-family:var(--font)}
 
 </div></div></div>
 
-<script>/* v1784550379 */
+<script>/* v1784550709 */
 
 /* ===== DalOS Analytics — QC Grapes ===== */
 const SB='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
@@ -513,7 +513,7 @@ const MAJC='#dc2626', MINC='#d97706';
 const DIMS={farm:['sample_farm','Farm'],country:['country','Country'],variety:['variety','Variety'],color:['color','Color'],client:['client','Client'],sub_client:['sub_client','Sub Client'],packhouse:['packhouse','Packhouse']};
 const MSF=['season','wk','sample_farm','country','variety','color','client','sub_client','packhouse','container_number','sample_score'];
 
-let ROWS=[],S={tab:'ov',gran:'weekly',from:'',to:'',dateBasis:'load_date'},charts={},dataPage=0;
+let ROWS=[],S={tab:'ov',gran:'weekly',from:'',to:'',dateBasis:'created_date'},charts={},dataPage=0;
 // Active date column resolver. Falls back to created_date when the chosen basis is empty for a row.
 const DATE_BASES={load_date:'Load date',pack_date:'Pack date',created_date:'Created date',arrival_date:'Arrival date'};
 function dcol(r){var v=r[S.dateBasis]||'';return v?String(v).slice(0,10):'';}
@@ -586,10 +586,9 @@ function F(){
   return ROWS.filter(r=>{
     for(const f of MSF){if(S[f].length&&!S[f].includes(f==='wk'?String(r.wk):norm(r[f])))return false;}
     const d=dcol(r);
-    if(d){
-      if(S.from&&d<S.from)return false;
-      if(S.to&&d>S.to)return false;
-    }
+    if(!d)return false; // exclude rows missing the selected date basis
+    if(S.from&&d<S.from)return false;
+    if(S.to&&d>S.to)return false;
     return true;
   });
 }
