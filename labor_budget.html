@@ -663,7 +663,7 @@ function isTrulyUnplanned(r){
 function opTag(rows,opKey){
   if(!OPB) buildOpBudget(RAW);
   let unpl=false,unm=false;
-  for(const r of rows){
+  for(const r of (TAGROWS.length?TAGROWS:rows)){
     if((r.operation_norm||'(none)')!==opKey) continue;
     if((r.actual_amount||0)>0 && (OPB.get(r.product+'|'+(r.operation_norm||''))||0)===0) unpl=true;
     if(r.bucket_status==='unmapped'||!r.operational_bucket) unm=true;
@@ -677,28 +677,28 @@ function opTag(rows,opKey){
 // tag for a composite plot key (product|farm|variety|plot) within a row subset
 function plotTag(rows,plotKey){
   let b=0,a=0,any=false,anyMapped=false;
-  for(const r of rows){
+  for(const r of (TAGROWS.length?TAGROWS:rows)){
     if((r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot)!==plotKey) continue;
     any=true;
     b+=r.budget_amount||0; a+=r.actual_amount||0;
     if(!(r.bucket_status==='unmapped'||!r.operational_bucket||r.operational_bucket==='(unmapped)')) anyMapped=true;
   }
   let h='';
-  if(!(b>0)&&a>0) h+='<span class="tagchip tag-unpl" title="'+fmt(a)+' EGP actual · plot has no budget at all">unplanned</span>';
+  if(!(b>0)&&a>0) h+='<span class="tagchip tag-unpl" title="'+fmt(a)+' EGP actual · this plot has NO budget in any month or operation">unplanned</span>';
   if(any&&!anyMapped) h+='<span class="tagchip tag-unm" title="no operational bucket assigned at all">unmapped</span>';
   return h;
 }
 function groupTags(rows,keyFn,key){
   // TOTALLY unplanned/unmapped: the tag describes the whole group, same rule as operations
   let b=0,a=0,any=false,anyMapped=false;
-  for(const r of rows){
+  for(const r of (TAGROWS.length?TAGROWS:rows)){
     if(keyFn(r)!==key) continue;
     any=true;
     b+=r.budget_amount||0; a+=r.actual_amount||0;
     if(!(r.bucket_status==='unmapped'||!r.operational_bucket||r.operational_bucket==='(unmapped)')) anyMapped=true;
   }
   let h='';
-  if(!(b>0) && a>0) h+=`<span class="tagchip tag-unpl" title="${fmt(a)} EGP actual · no budget at all">unplanned</span>`;
+  if(!(b>0) && a>0) h+=`<span class="tagchip tag-unpl" title="${fmt(a)} EGP actual · this group has NO budget at all">unplanned</span>`;
   if(any && !anyMapped) h+=`<span class="tagchip tag-unm" title="no operational bucket assigned at all">unmapped</span>`;
   return h;
 }
@@ -1729,9 +1729,13 @@ function buildVProd(rows){
   for(const r of rows){const v=r.variety_en||'(none)';if(!m.has(v))m.set(v,new Set());m.get(v).add(r.product);}
   const out=new Map();for(const [v,s] of m)out.set(v,[...s].join(' / '));return out;
 }
+// Rows for TAG evaluation: honours every filter EXCEPT Status, so an "unplanned"
+// tag always describes the item's true budget state rather than the filtered slice.
+let TAGROWS=[];
 function renderAll(){
   DRILL_REG=[];
   OPB=null;
+  TAGROWS=rowsExcept('join_status');
   const rows=filtered();
   VCAT=buildVCat(rows);
   VPROD=buildVProd(rows);
