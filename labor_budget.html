@@ -327,15 +327,45 @@ const MO={};MONTHS.forEach((m,i)=>MO[m]=i+1);
 const mOrd=m=>MO[m]||99;
 const mCmp=(a,b)=>mOrd(a)-mOrd(b);
 
-async function fetchAll(){
-  const rows=[]; let off=0;
-  for(;;){
-    const r=await fetch(`${SB_URL}/rest/v1/labor_bva?select=${COLS}&${ORDER}&limit=1000&offset=${off}`,
-      {headers:{apikey:SB_ANON,Authorization:'Bearer '+(window.__DALOS_TOKEN||SB_ANON)}});
-    if(!r.ok) throw new Error('labor_bva '+r.status);
-    const b=await r.json(); rows.push(...b);
-    if(b.length<1000) break; off+=1000;
+const PAGE_SIZE=1000;
+let LOAD_INFO={got:0,expected:null};
+async function fetchPage(off,wantCount){
+  const hdrs={apikey:SB_ANON,Authorization:'Bearer '+(window.__DALOS_TOKEN||SB_ANON)};
+  if(wantCount) hdrs['Prefer']='count=exact';
+  const r=await fetch(`${SB_URL}/rest/v1/labor_bva?select=${COLS}&${ORDER}&limit=${PAGE_SIZE}&offset=${off}`,{headers:hdrs});
+  if(!r.ok) throw new Error('labor_bva '+r.status+(r.status===504||r.status===500?' (server timeout — try again)':''));
+  let total=null;
+  if(wantCount){
+    const cr=r.headers.get('content-range')||'';          // e.g. "0-999/36798"
+    const n=parseInt((cr.split('/')[1]||''),10);
+    if(!isNaN(n)) total=n;
   }
+  return {batch:await r.json(),total};
+}
+async function fetchAll(){
+  // Ask the server how many rows exist, then verify we actually received them all.
+  // Without this check, a dropped page would silently render plots as "unplanned".
+  const rows=[]; let off=0, expected=null;
+  for(;;){
+    const {batch,total}=await fetchPage(off,off===0);
+    if(off===0&&total!==null) expected=total;
+    rows.push(...batch);
+    if(batch.length<PAGE_SIZE) break;
+    off+=PAGE_SIZE;
+    if(off>400000) break;                                  // runaway guard
+  }
+  // Completeness check + one repair pass for any missing tail
+  if(expected!==null&&rows.length<expected){
+    let cur=rows.length;
+    while(cur<expected){
+      const {batch}=await fetchPage(cur,false);
+      if(!batch.length) break;
+      rows.push(...batch); cur=rows.length;
+    }
+  }
+  LOAD_INFO={got:rows.length,expected};
+  if(expected!==null&&rows.length<expected)
+    throw new Error(`incomplete data — received ${rows.length.toLocaleString()} of ${expected.toLocaleString()} rows. Budget figures would be wrong, so nothing was rendered. Please reload.`);
   return rows;
 }
 
