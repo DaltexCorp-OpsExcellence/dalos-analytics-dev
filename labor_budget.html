@@ -235,7 +235,8 @@ table.mx{border-collapse:collapse;font-size:11px}
     <div class="fl"><label>Plot</label><div class="ms" data-f="_plot"></div></div>
     <div class="fl"><label>Unit</label><div class="ms" data-f="unit"></div></div>
     <div class="fl"><label>Month</label><div class="ms" data-f="month"></div></div>
-    <div class="fl"><label>Status</label><div class="ms" data-f="join_status"></div></div>
+    <div class="fl"><label>Plot status</label><div class="ms" data-f="_plotstatus"></div></div>
+    <div class="fl"><label>Row status</label><div class="ms" data-f="join_status"></div></div>
     <button class="f-reset" onclick="resetFilters()"><i class="ti ti-filter-off" style="font-size:13px"></i>Reset</button>
     <div class="chips">
       <span class="chip"><i class="ti ti-calendar-stats" style="color:var(--orange)"></i>Latest actuals <b id="chip-lastm">—</b></span>
@@ -311,16 +312,32 @@ const ORDER='order=product,farm,variety_en,year,plot,operational_bucket,operatio
 
 let RAW=[], METRIC='value', TAB='overview', OVM='amount';
 let F={q:''};
-const MSF=['budget_season','product','farm','_bucket','_variety','_plot','unit','month','join_status'];
-const S={budget_season:[],product:[],farm:[],_bucket:[],_variety:[],_plot:[],unit:[],month:[],join_status:[]};
+const MSF=['budget_season','product','farm','_bucket','_variety','_plot','unit','month','_plotstatus','join_status'];
+const S={budget_season:[],product:[],farm:[],_bucket:[],_variety:[],_plot:[],unit:[],month:[],_plotstatus:[],join_status:[]};
 // field accessors (virtual fields prefixed _)
+// Plot-level budget: does this plot have ANY budget, in any month or operation?
+// Computed from ALL rows (never from the filtered set) so it describes the plot itself.
+let PLOT_BUD=new Map();
+const plotKeyOf=r=>r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot;
+function buildPlotBudget(){
+  PLOT_BUD=new Map();
+  for(const r of RAW){
+    const k=plotKeyOf(r);
+    PLOT_BUD.set(k,(PLOT_BUD.get(k)||0)+(r.budget_amount||0));
+  }
+}
+const plotIsUnplanned=r=>!((PLOT_BUD.get(plotKeyOf(r))||0)>0);
 function fval(r,f){
+  if(f==='_plotstatus') return plotIsUnplanned(r)?'unplanned_plot':'planned_plot';
   if(f==='_bucket') return r.operational_bucket||'(unmapped)';
   if(f==='_variety') return r.variety_en||'(none)';
   if(f==='_plot') return r.plot||'(none)';
   return r[f]==null?'':String(r[f]);
 }
-const STATUS_LBL={matched:'Planned · active',budget_only:'Planned · not started',actual_only:'Unplanned'};
+// row-level (per operation × month)
+const STATUS_LBL={matched:'Budgeted · spent',budget_only:'Budgeted · not spent yet',actual_only:'Unbudgeted operation'};
+// plot-level (the whole plot)
+const PSTATUS_LBL={planned_plot:'Planned plot (has budget)',unplanned_plot:'Unplanned plot (no budget at all)'};
 
 const MONTHS=["Oct'25","Nov'25","Dec'25","Jan'26","Feb'26","Mar'26","Apr'26","May'26","Jun'26","Jul'26","Aug'26","Sep'26"];
 const MO={};MONTHS.forEach((m,i)=>MO[m]=i+1);
@@ -448,7 +465,7 @@ function buildFilters(){
     const f=el.dataset.f;
     let vals=[...new Set(RAW.map(r=>fval(r,f)).filter(v=>v!==''))];
     vals = f==='month' ? vals.sort(mCmp) : vals.sort();
-    const lbl=v=>f==='join_status'?(STATUS_LBL[v]||v):nn(v);
+    const lbl=v=>f==='join_status'?(STATUS_LBL[v]||v):f==='_plotstatus'?(PSTATUS_LBL[v]||v):nn(v);
     el.innerHTML=
       '<button class="ms-btn" onclick="toggleDD(event,this)"><span class="ms-lbl">All</span><span class="cnt" style="display:none"></span><i class="ti ti-chevron-down" style="font-size:10px"></i></button>'
       +'<div class="ms-dd">'
@@ -481,7 +498,7 @@ function msAll(f,cb){
 }
 function syncMS(el,f){
   const n=S[f].length,lbl=el.querySelector('.ms-lbl'),cnt=el.querySelector('.cnt');
-  const show=v=>f==='join_status'?(STATUS_LBL[v]||v):nn(v);
+  const show=v=>f==='join_status'?(STATUS_LBL[v]||v):f==='_plotstatus'?(PSTATUS_LBL[v]||v):nn(v);
   if(n===0){lbl.textContent='All';cnt.style.display='none';}
   else if(n===1){lbl.textContent=show(S[f][0]);cnt.style.display='none';}
   else{lbl.textContent='Multiple';cnt.style.display='';cnt.textContent=n;}
@@ -678,11 +695,12 @@ function opTag(rows,opKey){
 function plotTag(rows,plotKey){
   let b=0,a=0,any=false,anyMapped=false;
   for(const r of (TAGROWS.length?TAGROWS:rows)){
-    if((r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot)!==plotKey) continue;
+    if(plotKeyOf(r)!==plotKey) continue;
     any=true;
-    b+=r.budget_amount||0; a+=r.actual_amount||0;
+    a+=r.actual_amount||0;
     if(!(r.bucket_status==='unmapped'||!r.operational_bucket||r.operational_bucket==='(unmapped)')) anyMapped=true;
   }
+  b=PLOT_BUD.get(plotKey)||0;   // plot's TRUE total budget — independent of all filters
   let h='';
   if(!(b>0)&&a>0) h+='<span class="tagchip tag-unpl" title="'+fmt(a)+' EGP actual · this plot has NO budget in any month or operation">unplanned</span>';
   if(any&&!anyMapped) h+='<span class="tagchip tag-unm" title="no operational bucket assigned at all">unmapped</span>';
@@ -1754,6 +1772,7 @@ function renderAll(){
       document.getElementById('loading').innerHTML='<i class="ti ti-lock" style="font-size:26px;color:var(--text3)"></i><span>No data returned — your account may not have <b>Finance · Budget</b> access yet.<br>Ask an admin to grant it from the Home page access panel.</span>';
       return;
     }
+    buildPlotBudget();
     buildFilters();
     await detectMapPermission();
     refreshUnmappedBadge();
