@@ -803,6 +803,12 @@ function openDrill(dim, key, _fromBack){
   const cut=ytdCutoff(base);
   const tb=rows.reduce((s,r)=>s+(r.budget_amount||0),0);
   const ta=rows.reduce((s,r)=>s+(r.actual_amount||0),0);
+  // Cost/Feddan for the drilled selection. agg() dedupes area per plot-key so it
+  // is never multiplied across operations/months.
+  const TAG_=agg(rows,()=>'_all')[0]||{rawB:0,rawA:0,bArea:0,aArea:0};
+  const bCpf=TAG_.bArea>0?TAG_.rawB/TAG_.bArea:null;
+  const aCpf=TAG_.aArea>0?TAG_.rawA/TAG_.aArea:null;
+  const cpfVar=(bCpf!==null&&aCpf!==null)?aCpf-bCpf:null;
   const bYTD=rows.reduce((s,r)=>s+(mOrd(r.month)<=cut?(r.budget_amount||0):0),0);
   const vY=bYTD-ta, ach=bYTD?100*ta/bYTD:null;
   // ---- breakdown config ----
@@ -835,12 +841,21 @@ function openDrill(dim, key, _fromBack){
       const sv=100*o.a/shTot;
       return {...o,val:sv,txt:sv.toFixed(1)+'%',col:'var(--navy)',sub:cmp(o.a)+' actual',sortv:sv};
     }
+    if(MODAL_MEASURE==='cpf'){
+      const c=o.area>0?o.a/o.area:null;
+      const rel=(c!==null&&aCpf)?((c/aCpf-1)*100):null;
+      return {...o,val:c===null?0:c,
+        txt:c===null?'no area':fmt(c),
+        col:c===null?'var(--text3)':(rel!==null&&rel>0?'var(--bad)':'var(--good)'),
+        sub:c===null?'':(rel===null?fmt(o.area)+' fed':(rel>0?'+':'')+rel.toFixed(0)+'% vs avg · '+fmt(o.area)+' fed'),
+        sortv:c===null?-1:c};
+    }
     const vPct=o.bYTD>0?o.vYTD/o.bYTD*100:null;return {...o,val:o.vYTD,sortv:Math.abs(o.vYTD),varPct:vPct};
   });
   items.sort(bd.isMonth?((x,y)=>mOrd(x.key)-mOrd(y.key)):((x,y)=>y.sortv-x.sortv));
   items=items.slice(0,14);
   for(const o of items){ if(!(bd.isMonth&&dim==='month')) o.drill=drillRef(MODAL_DIM==='month'?'month':MODAL_DIM,o.key); }
-  const measureLbl={var:'Variance YTD',ach:'Achievement %',share:'Share %'}[MODAL_MEASURE];
+  const measureLbl={var:'Variance YTD',ach:'Achievement %',share:'Share %',cpf:'Cost / Feddan'}[MODAL_MEASURE];
   const backBtn=DRILL_STACK.length>1?`<button onclick="drillBack()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;margin-right:10px"><i class="ti ti-arrow-left" style="font-size:11px"></i> Back</button>`:'';
   document.getElementById('drill-title').innerHTML=`${backBtn}<span style="font-size:11px;color:var(--text3);font-weight:600">${DIM_TITLE[dim]||dim}</span><br><span dir="auto">${esc(dimDisp(dim,key,rows))}</span>`;
   const selStyle='font-family:var(--font);font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:var(--white);cursor:pointer';
@@ -851,12 +866,18 @@ function openDrill(dim, key, _fromBack){
       <div class="kcard"><div class="k-lbl">Variance YTD</div><div class="k-val" style="color:${vY<0?'var(--bad)':'var(--good)'}">${(vY>0?'+':'')+cmp(vY)}</div><div class="k-sub">Budget−Actual to ${lastActualMonth(base)||'—'}</div></div>
       <div class="kcard"><div class="k-lbl">Achievement YTD</div><div class="k-val">${ach===null?'—':ach.toFixed(0)+'%'}</div><div class="k-sub">${ach===null?'':(ach>100?'over plan':'within plan')}</div></div>
     </div>
+    <div class="kgrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+      <div class="kcard"><div class="k-lbl">Budget cost / feddan</div><div class="k-val">${bCpf===null?'—':fmt(bCpf)}</div><div class="k-sub">${TAG_.bArea>0?fmt(TAG_.bArea)+' fed planned':'no planned area'}</div></div>
+      <div class="kcard"><div class="k-lbl">Actual cost / feddan</div><div class="k-val">${aCpf===null?'—':fmt(aCpf)}</div><div class="k-sub">${TAG_.aArea>0?fmt(TAG_.aArea)+' fed worked':'no area'}</div></div>
+      <div class="kcard"><div class="k-lbl">Cost / feddan variance</div><div class="k-val" style="color:${cpfVar===null?'var(--text3)':(cpfVar>0?'var(--bad)':'var(--good)')}">${cpfVar===null?'—':(cpfVar>0?'+':'')+fmt(cpfVar)}</div><div class="k-sub">${cpfVar===null?'':(bCpf>0?((cpfVar/bCpf*100>0?'+':'')+(cpfVar/bCpf*100).toFixed(1)+'% vs plan'):'')}</div></div>
+      <div class="kcard"><div class="k-lbl">Area</div><div class="k-val">${fmt(TAG_.aArea||TAG_.bArea)}</div><div class="k-sub">feddan${TAG_.bArea>0&&TAG_.aArea>0&&Math.abs(TAG_.aArea-TAG_.bArea)>0.5?' · planned '+fmt(TAG_.bArea):''}</div></div>
+    </div>
     <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Monthly Budget vs Actual</div>${lblSeg()}</div>${monthlySVG(rows,'amount')}</div>
     <div class="card" style="box-shadow:none;border:1px solid var(--border)">
       <div class="card-h"><div><div class="card-t">Breakdown</div><div class="card-s">click any row to drill one level deeper (context accumulates)</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <select onchange="setModalDim(this.value)" style="${selStyle}">${Object.keys(BD).map(k=>`<option value="${k}"${MODAL_DIM===k?' selected':''}${curDims.includes(k)?' disabled':''}>${BD[k].lbl}</option>`).join('')}</select>
-        <select onchange="setModalMeasure(this.value)" style="${selStyle}"><option value="var"${MODAL_MEASURE==='var'?' selected':''}>Variance YTD</option><option value="ach"${MODAL_MEASURE==='ach'?' selected':''}>Achievement %</option><option value="share"${MODAL_MEASURE==='share'?' selected':''}>Share %</option></select>
+        <select onchange="setModalMeasure(this.value)" style="${selStyle}"><option value="var"${MODAL_MEASURE==='var'?' selected':''}>Variance YTD</option><option value="ach"${MODAL_MEASURE==='ach'?' selected':''}>Achievement %</option><option value="share"${MODAL_MEASURE==='share'?' selected':''}>Share %</option><option value="cpf"${MODAL_MEASURE==='cpf'?' selected':''}>Cost / Feddan</option></select>
       </div></div>
       <div class="card-s" style="margin:-4px 0 6px">${bd.lbl} by ${measureLbl}</div>
       ${miniList(items,o=>bd.dsp(o))}
