@@ -1103,6 +1103,7 @@ function renderDim(name){
   data.sort((x,y)=>{const a=get(x),b=get(y);return (a<b?-1:a>b?1:0)*SORT.dir*(SORT.col==='k'?-1:1);});
   const arrow=c=>SORT.col===c?(SORT.dir<0?' ↓':' ↑'):'';
   const vw=((name==='buckets'&&VIEW==='bucket')||(name==='products'&&VIEW==='category'))?'summary':VIEW;
+  if(vw==='cpf'){document.getElementById('pane-'+name).innerHTML=cpfPanel(rows,name,cfg);return;}
   if(vw!=='summary'){document.getElementById('pane-'+name).innerHTML=dimMatrix(rows,name,cfg,vw);return;}
   const bars=SIDE==='both'?pairedBars(data.slice(0,16),null):sideBars(data.slice(0,16),o=>(o.lbl||esc(nn(o.key)))+(o.tags||''));
   document.getElementById('pane-'+name).innerHTML=`
@@ -1135,6 +1136,64 @@ function mxCellHtml(o,drillIdx,shareBase){
   if(SIDE==='budget') return `<td${click}><span class="cellin" style="background:#fdf3ec;color:var(--text)">${o.b?mv(o.b):'·'}</span></td>`;
   if(SIDE==='actual') return `<td${click}><span class="cellin" style="background:#eef2f9;color:var(--text)">${o.a?mv(o.a):'·'}</span></td>`;
   return `<td${click}><span class="cellin" style="background:var(--bg)" title="Budget ${fmt(o.rawB)} · Actual ${fmt(o.rawA)}"><span style="color:var(--orange);font-weight:700">${o.b?mv(o.b):'·'}</span><small style="color:var(--navy);font-weight:700">${o.a?mv(o.a):'·'}</small></span></td>`;
+}
+function cpfPanel(rows,name,cfg){
+  // Cost per Feddan deep-dive for a whole tab. Always CPF regardless of the KPI selector.
+  const ddim=DIM_DRILL[name];
+  const items=agg(rows,cfg.key).map(o=>{
+    const bCpf=o.bArea>0?o.rawB/o.bArea:null;
+    const aCpf=o.aArea>0?o.rawA/o.aArea:null;
+    const gap=(bCpf!==null&&aCpf!==null)?aCpf-bCpf:null;
+    const gapPct=(gap!==null&&bCpf>0)?100*gap/bCpf:null;
+    return {...o,bCpf,aCpf,gap,gapPct};
+  }).filter(o=>o.bArea>0||o.aArea>0);
+  const withA=items.filter(o=>o.aCpf!==null).map(o=>o.aCpf).sort((x,y)=>x-y);
+  const median=withA.length?(withA.length%2?withA[(withA.length-1)/2]:(withA[withA.length/2-1]+withA[withA.length/2])/2):null;
+  for(const o of items) o.idx=(median&&o.aCpf!==null)?o.aCpf/median:null;
+  items.sort((x,y)=>(y.gap===null?-Infinity:y.gap)-(x.gap===null?-Infinity:x.gap));
+  const totB=items.reduce((s,o)=>s+o.rawB,0), totA=items.reduce((s,o)=>s+o.rawA,0);
+  const totBA=items.reduce((s,o)=>s+o.bArea,0), totAA=items.reduce((s,o)=>s+o.aArea,0);
+  const oB=totBA>0?totB/totBA:null, oA=totAA>0?totA/totAA:null;
+  const oGap=(oB!==null&&oA!==null)?oA-oB:null;
+  const rate=v=>v===null?'—':fmt(v);
+  const flag=o=>{
+    if(o.idx===null) return '';
+    if(o.idx>=1.5) return '<span class="tagchip tag-unpl" title="actual cost per feddan is '+o.idx.toFixed(1)+'× the median in this view — check for over-servicing, small-plot distortion, or misposted cost">high CPF</span>';
+    if(o.idx<=0.5) return '<span class="tagchip" style="background:#eef2f9;color:var(--navy)" title="actual cost per feddan is only '+o.idx.toFixed(2)+'× the median — possibly under-serviced or partially recorded">low CPF</span>';
+    return '';
+  };
+  const barItems=items.slice(0,16).map(o=>({...o,b:o.bCpf||0,a:o.aCpf||0,v:(o.aCpf||0)-(o.bCpf||0),
+      lbl:(cfg.disp?cfg.disp(o.key):esc(nn(o.key)))+flag(o),drill:drillRef(ddim,String(o.key))}));
+  return `<div class="card"><div class="card-h">
+      <div><div class="card-t">Cost per Feddan · ${cfg.lbl}s</div>
+      <div class="card-s">Budget EGP/fed vs Actual EGP/fed · area de-duplicated per plot · click any row to drill</div></div>
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">${lblSeg()}${tblControls()}</div></div>
+    <div class="kgrid" style="grid-template-columns:repeat(4,1fr);margin:0 0 14px">
+      <div class="kcard"><div class="k-lbl">Budget CPF</div><div class="k-val">${rate(oB)}</div><div class="k-sub">EGP / feddan · ${fmt(totBA)} fed planned</div></div>
+      <div class="kcard"><div class="k-lbl">Actual CPF</div><div class="k-val">${rate(oA)}</div><div class="k-sub">EGP / feddan · ${fmt(totAA)} fed worked</div></div>
+      <div class="kcard"><div class="k-lbl">Gap</div><div class="k-val" style="color:${oGap===null?'var(--text)':(oGap>0?'var(--bad)':'var(--good)')}">${oGap===null?'—':(oGap>0?'+':'')+fmt(oGap)}</div><div class="k-sub">${(oGap!==null&&oB>0)?((oGap>0?'+':'')+(100*oGap/oB).toFixed(1)+'% vs plan'):'per feddan'}</div></div>
+      <div class="kcard"><div class="k-lbl">Median CPF</div><div class="k-val">${rate(median)}</div><div class="k-sub">benchmark across ${withA.length} ${cfg.lbl.toLowerCase()}s</div></div>
+    </div>
+    ${pairedBars(barItems,null)}
+    <div class="mx-wrap" style="margin-top:12px"><table class="mx"><thead><tr>
+      <th style="text-align:left">${cfg.lbl}</th><th>Area (fed)</th><th>Budget CPF</th><th>Actual CPF</th><th>Gap</th><th>Gap %</th><th>vs median</th>
+    </tr></thead><tbody>
+    ${items.map(o=>{
+      const gcol=o.gap===null?'var(--text3)':(o.gap>0?'var(--bad)':'var(--good)');
+      return `<tr style="cursor:pointer" onclick="drillGo(${drillRef(ddim,String(o.key))})">
+        <td dir="auto" style="text-align:left">${cfg.disp?cfg.disp(o.key):esc(nn(o.key))}${flag(o)}</td>
+        <td>${fmt(o.bArea||o.aArea)}</td>
+        <td>${rate(o.bCpf)}</td>
+        <td>${rate(o.aCpf)}</td>
+        <td style="color:${gcol};font-weight:700">${o.gap===null?'—':(o.gap>0?'+':'')+fmt(o.gap)}</td>
+        <td style="color:${gcol}">${o.gapPct===null||!isFinite(o.gapPct)?'—':(o.gapPct>0?'+':'')+o.gapPct.toFixed(1)+'%'}</td>
+        <td>${o.idx===null?'—':o.idx.toFixed(2)+'×'}</td>
+      </tr>`;
+    }).join('')}
+    </tbody><tfoot><tr><td style="text-align:left">Total</td><td>${fmt(totBA)}</td><td>${rate(oB)}</td><td>${rate(oA)}</td>
+      <td style="color:${oGap===null?'var(--text)':(oGap>0?'var(--bad)':'var(--good)')}">${oGap===null?'—':(oGap>0?'+':'')+fmt(oGap)}</td>
+      <td>${(oGap!==null&&oB>0)?((oGap>0?'+':'')+(100*oGap/oB).toFixed(1)+'%'):'—'}</td><td>—</td></tr></tfoot></table></div>
+  </div>`;
 }
 function dimMatrix(rows,name,cfg,colType){
   const rowsAgg=agg(rows,cfg.key).sort((x,y)=>y.b-x.b||y.a-x.a);
@@ -1207,6 +1266,7 @@ function bucketExtras(rows){
 /* ============ OPERATIONS ============ */
 function renderOps(){
   const rows=filtered();
+  if(VIEW==='cpf'){document.getElementById('pane-operations').innerHTML=cpfPanel(rows,'operations',{key:r=>r.operation_norm||'(none)',lbl:'Operation'});return;}
   if(VIEW!=='summary'){document.getElementById('pane-operations').innerHTML=dimMatrix(rows,'operations',{key:r=>r.operation_norm||'(none)',lbl:'Operation'},VIEW);return;}
   const bmap=new Map(),umap=new Map();
   for(const r of rows){const k=r.operation_norm||'(none)';if(!bmap.has(k))bmap.set(k,r.operational_bucket||'(unmapped)');if(r.unit){if(!umap.has(k))umap.set(k,new Set());umap.get(k).add(r.unit);}}
@@ -1720,7 +1780,7 @@ function setSideSel(v){SIDE=v;renderAll();}
 function tblControls(){
   const kpi=[['value','Value (EGP)'],['qty','Quantity'],['cpf','Cost / Feddan'],['price','Unit Price']];
   const side=[['both','Budget vs Actual'],['budget','Budget only'],['actual','Actual only'],['variance','Variance'],['ach','Achievement %'],['share','Share %']];
-  const views=[['summary','Summary'],['months','By Month'],['category','By Category'],['bucket','By Bucket']].filter(([v])=>!(TAB==='buckets'&&v==='bucket')&&!(TAB==='products'&&v==='category'));
+  const views=[['summary','Summary'],['months','By Month'],['category','By Category'],['bucket','By Bucket'],['cpf','Cost / Feddan']].filter(([v])=>!(TAB==='buckets'&&v==='bucket')&&!(TAB==='products'&&v==='category'));
   const showView=['buckets','products','farms','varieties','plots','operations'].includes(TAB);
   return `<div style="display:flex;gap:8px;flex-wrap:wrap">
     ${showView?`<div class="fl"><label>View</label><select onchange="setViewSel(this.value)" style="font-family:var(--font);font-size:11.5px;font-weight:600;border:1px solid var(--border);border-radius:8px;padding:6px 9px;background:var(--white);cursor:pointer">${views.map(([v,l])=>`<option value="${v}"${VIEW===v?' selected':''}>${l}</option>`).join('')}</select></div>`:''}
