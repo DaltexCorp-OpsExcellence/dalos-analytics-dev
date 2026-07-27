@@ -395,12 +395,14 @@ async function fetchAll(){
    Metric is applied AFTER aggregation in agg() so ratios are computed on
    the summed totals, never by averaging per-row ratios. */
 const METRICS={
-  value:{lbl:'Value',unit:'EGP',hasActual:true,compact:true,unitAware:false},
-  cpf:{lbl:'Cost / Feddan',unit:'EGP/fed',hasActual:true,compact:false,unitAware:false},
-  qty:{lbl:'Quantity',unit:'',hasActual:true,compact:true,unitAware:true},
-  price:{lbl:'Unit Price',unit:'EGP/unit',hasActual:true,compact:false,unitAware:true}
+  value:{lbl:'Value',unit:'EGP',hasActual:true,compact:true,unitAware:false,ratio:false},
+  cpf:{lbl:'Cost / Feddan',unit:'EGP/fed',hasActual:true,compact:false,unitAware:false,ratio:true},
+  qty:{lbl:'Quantity',unit:'',hasActual:true,compact:true,unitAware:true,ratio:false},
+  price:{lbl:'Unit Price',unit:'EGP/unit',hasActual:true,compact:false,unitAware:true,ratio:true}
 };
 function metricHasActual(){ return METRICS[METRIC].hasActual; }
+// Share-of-total only makes sense for additive metrics; a per-feddan / per-unit ratio can't be summed.
+function shareValid(){ return !METRICS[METRIC].ratio; }
 
 /* ============ FORMAT ============ */
 const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
@@ -1141,13 +1143,13 @@ function renderDim(name){
     <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl}s — ${SIDE==='both'?'Budget vs Actual':SIDE==='budget'?'Budget':SIDE==='actual'?'Actual':'Variance'}</div><div class="card-s">Top 16 by budget · click for details</div></div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">${lblSeg()}${tblControls()}${metricNote()}</div></div>${bars}</div>
     <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl} detail</div><div class="card-s">Variance in EGP and % · click a header to sort · click a row for details</div></div></div>
     <div class="tbl-wrap"><table class="dt">
-      <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th>${name==='varieties'?'<th>Product</th>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<th onclick="dimSort('b')">Budget${arrow('b')}</th>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<th onclick="dimSort('a')">Actual${arrow('a')}</th>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th>`:''}${SIDE==='both'?`<th onclick="dimSort('ach')">Achievement${arrow('ach')}</th>`:''}<th onclick="dimSort('sh')">Share${arrow('sh')}</th></tr></thead>
+      <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th>${name==='varieties'?'<th>Product</th>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<th onclick="dimSort('b')">Budget${arrow('b')}</th>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<th onclick="dimSort('a')">Actual${arrow('a')}</th>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th>`:''}${SIDE==='both'?`<th onclick="dimSort('ach')">Achievement${arrow('ach')}</th>`:''}${shareValid()?`<th onclick="dimSort('sh')">Share${arrow('sh')}</th>`:''}</tr></thead>
       <tbody>${data.map(o=>{const vp=pct(o.v,o.b),cl=` style="cursor:pointer" onclick="drillGo(${o.drill})"`;
         const shBase=SIDE==='budget'?tb:ta, shVal=SIDE==='budget'?o.b:o.a;
         return `<tr${cl}><td dir="auto">${name==='varieties'?esc(nn(o.key)):(o.lbl||esc(nn(o.key)))}${o.tags||''}</td>${name==='varieties'?`<td dir="auto" style="color:var(--text2)">${esc(VPROD.get(o.key)||'—')}</td>`:''}${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mvCell(o,'b')}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mvCell(o,'a')}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`
           <td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
-          <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(o.a,o.b))}</td>`:''}<td>${pctTxt(pct(shVal,shBase))}</td></tr>`;}).join('')}</tbody>
-      <tfoot><tr><td>Total</td>${name==='varieties'?'<td></td>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mv(tb)}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mv(ta)}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<td class="vcell" style="color:${ta-tb>0?'var(--bad)':'var(--good)'}">${signTxt(ta-tb).replace('−','-')}</td><td>${(()=>{const p=pct(ta-tb,tb);return p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(ta,tb))}</td>`:''}<td>100%</td></tr></tfoot>
+          <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(o.a,o.b))}</td>`:''}${shareValid()?`<td>${pctTxt(pct(shVal,shBase))}</td>`:''}</tr>`;}).join('')}</tbody>
+      <tfoot><tr><td>Total</td>${name==='varieties'?'<td></td>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mv(tb)}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mv(ta)}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<td class="vcell" style="color:${ta-tb>0?'var(--bad)':'var(--good)'}">${signTxt(ta-tb).replace('−','-')}</td><td>${(()=>{const p=pct(ta-tb,tb);return p===null?'—':(p>0?'+':'')+p.toFixed(1)+'%';})()}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(ta,tb))}</td>`:''}${shareValid()?'<td>100%</td>':''}</tr></tfoot>
     </table></div></div>`;
 }
 
@@ -1806,11 +1808,11 @@ function setLblSel(v){
   if(c&&document.getElementById('drill-modal').style.display==='flex')openDrill(c.dim,c.key,true);
 }
 function lblSeg(){return `<div class="seg" title="Data labels"><button class="${LBL==='var'?'on':''}" onclick="setLblSel('var')">Variance</button><button class="${LBL==='ba'?'on':''}" onclick="setLblSel('ba')">B &amp; A</button></div>`;}
-function setMetricSel(v){METRIC=v;if(v!=='value')OVVAL='money';renderAll();}
+function setMetricSel(v){METRIC=v;if(v!=='value')OVVAL='money';if(METRICS[v].ratio&&SIDE==='share')SIDE='both';renderAll();}
 function setSideSel(v){SIDE=v;renderAll();}
 function tblControls(){
   const kpi=[['value','Value (EGP)'],['qty','Quantity'],['cpf','Cost / Feddan'],['price','Unit Price']];
-  const side=[['both','Budget vs Actual'],['budget','Budget only'],['actual','Actual only'],['variance','Variance'],['ach','Achievement %'],['share','Share %']];
+  const side=[['both','Budget vs Actual'],['budget','Budget only'],['actual','Actual only'],['variance','Variance'],['ach','Achievement %'],['share','Share %']].filter(([v])=>!(v==='share'&&!shareValid()));
   const views=[['summary','Summary'],['months','By Month'],['category','By Category'],['bucket','By Bucket'],['cpf','Cost / Feddan']].filter(([v])=>!(TAB==='buckets'&&v==='bucket')&&!(TAB==='products'&&v==='category'));
   const showView=['buckets','products','farms','varieties','plots','operations'].includes(TAB);
   return `<div style="display:flex;gap:8px;flex-wrap:wrap">
