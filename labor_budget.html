@@ -310,7 +310,7 @@ const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 const COLS='budget_season,product,category,farm,variety_en,year,plot,operational_bucket,operation_norm,unit,month,net_area,actual_net_area,effective_area,budget_qty,actual_qty,budget_amount,actual_amount,budget_cpf,actual_cpf,budget_unit_price,actual_unit_price,variance,join_status,bucket_status';
 const ORDER='order=product,farm,variety_en,year,plot,operational_bucket,operation_norm,month,unit,budget_amount,actual_amount';
 
-let RAW=[], METRIC='value', TAB='overview', OVM='amount';
+let RAW=[], METRIC='value', TAB='overview', OVM='amount', OVVAL='money'; // OVVAL: money | cpf (Overview monthly chart value mode)
 let F={q:''};
 const MSF=['budget_season','product','farm','_bucket','_variety','_plot','unit','month','_plotstatus','join_status'];
 const S={budget_season:[],product:[],farm:[],_bucket:[],_variety:[],_plot:[],unit:[],month:[],_plotstatus:[],join_status:[]};
@@ -607,26 +607,35 @@ function renderKPIs(rows){
 }
 
 /* ============ MONTHLY CHART ============ */
-function monthlySVG(rows,mode){
-  const byM=agg(rows,r=>r.month).sort((x,y)=>mCmp(x.key,y.key));
+function monthlySVG(rows,mode,valMode){
+  const isCpf=valMode==='cpf';
+  // agg() returns per-group rawB/rawA + de-duplicated bArea/aArea. For CPF we divide
+  // each MONTH's money by that month's own worked area — never an average of ratios.
+  const byM=agg(rows,r=>r.month).map(o=>isCpf?{...o,
+      b:o.bArea>0?o.rawB/o.bArea:0, a:o.aArea>0?o.rawA/o.aArea:0,
+      v:(o.bArea>0&&o.aArea>0)?(o.rawA/o.aArea-o.rawB/o.bArea):0}:o
+    ).sort((x,y)=>mCmp(x.key,y.key));
   const data=MONTHS.filter(m=>byM.some(o=>o.key===m)).map(m=>byM.find(o=>o.key===m)||{key:m,b:0,a:0,v:0});
-  if(mode==='cum'){let cb=0,ca=0;data.forEach(o=>{cb+=o.b;ca+=o.a;o.b=cb;o.a=ca;o.v=ca-cb;});}
+  if(mode==='cum'&&!isCpf){let cb=0,ca=0;data.forEach(o=>{cb+=o.b;ca+=o.a;o.b=cb;o.a=ca;o.v=ca-cb;});}
+  const fmtV=v=>isCpf?fmt(v):mv(v);
+  const unitV=isCpf?'EGP/fed':metricUnit();
   const W=Math.max(680,data.length*88),H=290,P={t:30,r:8,b:42,l:8};
   const max=Math.max(1,...data.map(o=>Math.max(o.b,o.a)));
   const bw=26,gap=5,grp=bw*2+gap,step=(W-P.l-P.r)/Math.max(1,data.length);
   const y=v=>P.t+(H-P.t-P.b)*(1-v/max);
   let s=`<div style="overflow-x:auto"><svg width="${W}" height="${H}" style="display:block">`;
-  [0,.25,.5,.75,1].forEach(f=>{const yy=y(max*f);s+=`<line x1="${P.l}" x2="${W-P.r}" y1="${yy}" y2="${yy}" stroke="#eef1f8"/><text x="${P.l+2}" y="${yy-3}" font-size="9" fill="#8a95b0">${mv(max*f)}</text>`;});
+  [0,.25,.5,.75,1].forEach(f=>{const yy=y(max*f);s+=`<line x1="${P.l}" x2="${W-P.r}" y1="${yy}" y2="${yy}" stroke="#eef1f8"/><text x="${P.l+2}" y="${yy-3}" font-size="9" fill="#8a95b0">${fmtV(max*f)}</text>`;});
+  const sgn=v=>(v>0?'+':v<0?'−':'')+fmtV(Math.abs(v));
   data.forEach((o,i)=>{
     const cx=P.l+step*i+step/2,bx=cx-grp/2,ax=bx+bw+gap,vp=pct(o.v,o.b);
-    const tip=`${o.key} — Budget ${mv(o.b)} · Actual ${mv(o.a)} ${metricUnit()} · Var ${signTxt(o.v)} (${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'})`;
+    const tip=`${o.key} — Budget ${fmtV(o.b)} · Actual ${fmtV(o.a)} ${unitV} · Var ${sgn(o.v)} (${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'})`;
     s+=`<g><title>${esc(tip)}</title>`;
     s+=`<rect x="${bx}" y="${y(o.b)}" width="${bw}" height="${Math.max(1,H-P.b-y(o.b))}" rx="3" fill="var(--orange)"/>`;
     s+=`<rect x="${ax}" y="${y(o.a)}" width="${bw}" height="${Math.max(1,H-P.b-y(o.a))}" rx="3" fill="var(--navy)"/>`;
     if(LBL==='ba'){
-      if(o.b>0)s+=`<text x="${bx+bw/2}" y="${y(o.b)-4}" font-size="8.5" font-weight="700" text-anchor="middle" fill="var(--orange)">${mv(o.b)}</text>`;
-      if(o.a>0)s+=`<text x="${ax+bw/2}" y="${y(o.a)-4}" font-size="8.5" font-weight="700" text-anchor="middle" fill="var(--navy)">${mv(o.a)}</text>`;
-    } else if(o.a>0){const cy=Math.min(y(o.b),y(o.a))-8;s+=`<text x="${cx}" y="${cy}" font-size="9" font-weight="700" text-anchor="middle" fill="${o.v>0?'#dc2626':'#16a34a'}">${signTxt(o.v)}</text>`;}
+      if(o.b>0)s+=`<text x="${bx+bw/2}" y="${y(o.b)-4}" font-size="8.5" font-weight="700" text-anchor="middle" fill="var(--orange)">${fmtV(o.b)}</text>`;
+      if(o.a>0)s+=`<text x="${ax+bw/2}" y="${y(o.a)-4}" font-size="8.5" font-weight="700" text-anchor="middle" fill="var(--navy)">${fmtV(o.a)}</text>`;
+    } else if(o.a>0){const cy=Math.min(y(o.b),y(o.a))-8;s+=`<text x="${cx}" y="${cy}" font-size="9" font-weight="700" text-anchor="middle" fill="${o.v>0?'#dc2626':'#16a34a'}">${sgn(o.v)}</text>`;}
     s+=`<text x="${cx}" y="${H-P.b+14}" font-size="10" font-weight="600" text-anchor="middle" fill="#4a5778">${esc(o.key)}</text></g>`;
   });
   s+='</svg></div>';return s;
@@ -650,7 +659,8 @@ function metricNote(){
 }
 
 /* ============ OVERVIEW ============ */
-function ovMode(btn){OVM=btn.dataset.m;document.querySelectorAll('#ov-mode button').forEach(b=>b.classList.toggle('on',b===btn));renderOverview();}
+function ovMode(btn){if(btn.disabled)return;OVM=btn.dataset.m;document.querySelectorAll('#ov-mode button').forEach(b=>b.classList.toggle('on',b===btn));renderOverview();}
+function ovVal(btn){OVVAL=btn.dataset.v;if(OVVAL==='cpf')OVM='amount';/* a per-feddan ratio can't accumulate */document.querySelectorAll('#ov-val button').forEach(b=>b.classList.toggle('on',b===btn));renderOverview();}
 /* ============ OVERVIEW ANALYTICS (drill-through + 11 analyses) ============ */
 // YTD cutoff = last month with any actuals
 function ytdCutoff(rows){ const lm=lastActualMonth(rows); return lm?mOrd(lm):0; }
@@ -976,8 +986,8 @@ function renderOverview(){
   const top=`
     <div class="card">
       <div class="card-h"><div><div class="card-t">Monthly Budget vs Actual</div><div class="card-s">Fiscal year Oct → Sep · label = Actual − Budget · click a bar's bucket below to drill</div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">${lblSeg()}<div class="seg" id="ov-mode"><button class="on" data-m="amount" onclick="ovMode(this)">Monthly</button><button data-m="cum" onclick="ovMode(this)">Cumulative</button></div></div></div>
-      ${monthlySVG(rows,OVM)}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${lblSeg()}${METRIC==='value'?`<div class="seg" id="ov-val"><button class="${OVVAL==='money'?'on':''}" data-v="money" onclick="ovVal(this)">Cost (EGP)</button><button class="${OVVAL==='cpf'?'on':''}" data-v="cpf" onclick="ovVal(this)">Cost / Feddan</button></div>`:''}<div class="seg" id="ov-mode"><button class="${OVM==='amount'?'on':''}" data-m="amount" onclick="ovMode(this)">Monthly</button><button class="${OVM==='cum'?'on':''}"${OVVAL==='cpf'?' disabled style="opacity:.4;cursor:not-allowed"':''} data-m="cum" onclick="ovMode(this)">Cumulative</button></div></div></div>
+      ${monthlySVG(rows,OVM,OVVAL)}
       <div class="legend"><span class="lg"><span class="lg-dot" style="background:var(--orange)"></span>Budget</span><span class="lg"><span class="lg-dot" style="background:var(--navy)"></span>Actual</span></div>
     </div>
     <div class="grid2">
@@ -1782,7 +1792,7 @@ function setLblSel(v){
   if(c&&document.getElementById('drill-modal').style.display==='flex')openDrill(c.dim,c.key,true);
 }
 function lblSeg(){return `<div class="seg" title="Data labels"><button class="${LBL==='var'?'on':''}" onclick="setLblSel('var')">Variance</button><button class="${LBL==='ba'?'on':''}" onclick="setLblSel('ba')">B &amp; A</button></div>`;}
-function setMetricSel(v){METRIC=v;renderAll();}
+function setMetricSel(v){METRIC=v;if(v!=='value')OVVAL='money';renderAll();}
 function setSideSel(v){SIDE=v;renderAll();}
 function tblControls(){
   const kpi=[['value','Value (EGP)'],['qty','Quantity'],['cpf','Cost / Feddan'],['price','Unit Price']];
