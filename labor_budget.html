@@ -640,16 +640,19 @@ function monthlySVG(rows,mode,valMode){
   });
   s+='</svg></div>';return s;
 }
-function pairedBars(data,onClick,tagFn){
+function pairedBars(data,onClick,tagFn,unitOverride){
+  const cpf = unitOverride==='cpf';
+  const fV = cpf ? (n=>fmt(n)) : mv;                 // CPF shows full numbers, not compact money
+  const unit = cpf ? 'EGP/fed' : metricUnit();
   const max=Math.max(1,...data.map(o=>Math.max(o.b,o.a)));
   return data.map(o=>{
     const c=(o.drill!==undefined)?`drillGo(${o.drill})`:(onClick?onClick.replace('%K',esc(String(o.key)).replace(/'/g,'&#39;')):'');
-    const t=`${esc(o.key)} — Budget ${mv(o.b)} · Actual ${mv(o.a)} ${metricUnit()} · Var ${signTxt(o.v)}${o.b?` (${((o.v/o.b)*100).toFixed(1)}%)`:''}`;
+    const t=`${esc(o.key)} — Budget ${fV(o.b)} · Actual ${fV(o.a)} ${unit} · Var ${(o.v>0?'+':o.v<0?'−':'')+fV(Math.abs(o.v))}${o.b?` (${((o.v/o.b)*100).toFixed(1)}%)`:''}`;
     return `<div class="pb-row" title="${t}" ${c?`onclick="${c}"`:''}>
       <div class="pb-name" dir="auto" title="${esc(String(nn(o.key)))}">${o.lbl||esc(nn(o.key))}${tagFn?tagFn(o):(o.tags||'')}</div>
       <div class="pb-bars"><div class="pb-track"><div class="pb-fill" style="width:${100*o.b/max}%;background:var(--orange)"></div></div>
       <div class="pb-track"><div class="pb-fill" style="width:${100*o.a/max}%;background:var(--navy)"></div></div></div>
-      <div class="pb-nums">${METRICS[METRIC].unitAware&&o.mixedUnit?'<span style="color:var(--warn)">⚠ mixed units</span>':(LBL==='ba'?('B '+mv(o.b)+'<br>A '+mv(o.a)):('<span style="font-weight:700;color:'+(o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)')+'">'+signTxt(o.v)+'</span><br>'+varPill(o.v,o.b)))}</div></div>`;
+      <div class="pb-nums">${METRICS[METRIC].unitAware&&o.mixedUnit?'<span style="color:var(--warn)">⚠ mixed units</span>':(LBL==='ba'?('B '+fV(o.b)+'<br>A '+fV(o.a)):('<span style="font-weight:700;color:'+(o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)')+'">'+((o.v>0?'+':o.v<0?'−':'')+fV(Math.abs(o.v)))+'</span><br>'+varPill(o.v,o.b)))}</div></div>`;
   }).join('');
 }
 function metricNote(){
@@ -659,6 +662,17 @@ function metricNote(){
 }
 
 /* ============ OVERVIEW ============ */
+// Recompute an agg() array's b/a/v as cost-per-feddan (money ÷ de-duped area) when the
+// Overview value toggle is on CPF. Never averages ratios: each row divides its own summed
+// money by its own summed area. Rows with no area drop to 0 so they don't distort the axis.
+function ovCpfRows(data){
+  if(OVVAL!=='cpf'||METRIC!=='value') return data;
+  return data.map(o=>{
+    const b=o.bArea>0?o.rawB/o.bArea:0;
+    const a=o.aArea>0?o.rawA/o.aArea:0;
+    return {...o, b, a, v:(o.bArea>0&&o.aArea>0)?(a-b):0};
+  });
+}
 function ovMode(btn){if(btn.disabled)return;OVM=btn.dataset.m;document.querySelectorAll('#ov-mode button').forEach(b=>b.classList.toggle('on',b===btn));renderOverview();}
 function ovVal(btn){OVVAL=btn.dataset.v;if(OVVAL==='cpf')OVM='amount';/* a per-feddan ratio can't accumulate */document.querySelectorAll('#ov-val button').forEach(b=>b.classList.toggle('on',b===btn));renderOverview();}
 /* ============ OVERVIEW ANALYTICS (drill-through + 11 analyses) ============ */
@@ -991,8 +1005,8 @@ function renderOverview(){
       <div class="legend"><span class="lg"><span class="lg-dot" style="background:var(--orange)"></span>Budget</span><span class="lg"><span class="lg-dot" style="background:var(--navy)"></span>Actual</span></div>
     </div>
     <div class="grid2">
-      ${card('Buckets','Budget vs Actual · click to drill', pairedBars(bk,"openDrill('bucket','%K')"))}
-      ${card('Products','Budget vs Actual · click to drill', pairedBars(pr,"openDrill('product','%K')"))}
+      ${card('Buckets',(OVVAL==='cpf'&&METRIC==='value'?'Cost / Feddan · click to drill':'Budget vs Actual · click to drill'), pairedBars(ovCpfRows(bk),"openDrill('bucket','%K')",null,OVVAL==='cpf'&&METRIC==='value'?'cpf':null))}
+      ${card('Products',(OVVAL==='cpf'&&METRIC==='value'?'Cost / Feddan · click to drill':'Budget vs Actual · click to drill'), pairedBars(ovCpfRows(pr),"openDrill('product','%K')",null,OVVAL==='cpf'&&METRIC==='value'?'cpf':null))}
     </div>`;
 
   // ---- sub-tab bar ----
