@@ -585,10 +585,17 @@ function renderKPIs(rows){
   const opb=new Map();for(const r of rows){const k=r.product+'|'+(r.operation_norm||'');opb.set(k,(opb.get(k)||0)+(r.budget_amount||0));}
   const unpl=rows.reduce((s,r)=>s+((opb.get(r.product+'|'+(r.operation_norm||''))||0)===0?(r.actual_amount||0):0),0);
   const area=[...new Map(rows.map(r=>[r.product+'|'+r.farm+'|'+r.variety_en,r.net_area||0])).values()].reduce((s,x)=>s+x,0);
+  // Cost/feddan: sum money, sum de-duplicated plot area, then divide (never average per-row ratios)
+  const CPF_=agg(rows,()=>'_all')[0]||{rawB:0,rawA:0,bArea:0,aArea:0};
+  const bCpf=CPF_.bArea>0?CPF_.rawB/CPF_.bArea:null;
+  const aCpf=CPF_.aArea>0?CPF_.rawA/CPF_.aArea:null;
+  const cpfV=(bCpf!==null&&aCpf!==null)?aCpf-bCpf:null;
   document.getElementById('kpi-grid').innerHTML=[
     {l:'Budget · Full Season',i:'ti-target',v:cmp(tb),s:fmt(tb)+' EGP'},
     {l:'Budget · YTD',i:'ti-calendar-check',v:cmp(ytdB),s:'through '+(lm||'—')},
     {l:'Actual',i:'ti-coins',v:cmp(ta),s:fmt(ta)+' EGP'},
+    {l:'Budget Cost / Feddan',i:'ti-map-2',v:bCpf===null?'—':fmt(bCpf),s:(CPF_.bArea>0?fmt(CPF_.bArea)+' fed planned':'no planned area')},
+    {l:'Actual Cost / Feddan',i:'ti-map-pin',v:aCpf===null?'—':fmt(aCpf),s:(CPF_.aArea>0?fmt(CPF_.aArea)+' fed worked':'no area'),pill:cpfV!==null?`<span class="kpill ${cpfV>0?'p-bad':'p-good'}">${cpfV>0?'+':''}${fmt(cpfV)} vs plan</span>`:''},
     {l:'Achievement vs YTD',i:'ti-percentage',v:pctTxt(ach),s:'Actual ÷ Budget YTD',pill:ach!==null?`<span class="kpill ${ach>100?'p-bad':'p-good'}">${ach>100?'over plan':'within plan'}</span>`:''},
     {l:'Variance vs YTD',i:'ti-scale',v:signTxt(vY),s:pctTxt(Math.abs(pct(vY,ytdB)))+' of YTD',pill:varPill(vY,ytdB)},
     {l:'Unplanned Spend',i:'ti-alert-triangle',v:cmp(unpl),s:pctTxt(pct(unpl,ta))+' of actual',pill:`<span class="kpill p-warn">no budget line</span>`}
