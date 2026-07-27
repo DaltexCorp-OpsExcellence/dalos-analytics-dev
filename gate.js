@@ -15,6 +15,41 @@
   var SB_URL='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
   var SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmeWp2Z2p3dnR3a3JucXJ2cXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzIxNjYsImV4cCI6MjA5MDQ0ODE2Nn0.FjA75XZsp0Kx5Xam_rrnYoAHX4JHKey6vEFCH_zlMuQ';
   var SKEY='sb-sfyjvgjwvtwkrnqrvqyc-auth-token';
+  /* Shared idle heartbeat. All DalOS apps sit on one GitHub Pages origin and so
+     share localStorage; Vision's inactivity timer polls this key. Writing it here
+     means "user is working in Analytics" keeps Vision's timer alive — before this,
+     an idle background Vision tab signed the user out of every app after 60 min.
+     Must stay byte-identical to DALOS_ACTIVITY_KEY in Vision and Workspace. */
+  var DALOS_ACTIVITY_KEY='dalos_last_activity';
+  /* supabase-js is pinned so auth behaviour can't change under us via the CDN.
+     Asserted against the <script> tag, not a library property — window.supabase.version
+     is not reliably exposed. */
+  var DALOS_SB_PIN='2.110.8';
+
+  (function(){
+    var last=0;
+    function mark(){
+      var now=Date.now();
+      if(now-last<30000) return;      /* one write per 30s is plenty for a 60-min window */
+      last=now;
+      try{ localStorage.setItem(DALOS_ACTIVITY_KEY,String(now)); }catch(e){}
+    }
+    ['mousemove','mousedown','keydown','scroll','touchstart','click'].forEach(function(e){
+      window.addEventListener(e,mark,{passive:true});
+    });
+    mark();                            /* opening a dashboard is itself activity */
+  })();
+
+  (function(){
+    try{
+      var tag=document.querySelector('script[src*="supabase-js"]');
+      var src=tag&&tag.getAttribute('src')||'';
+      if(src.indexOf(DALOS_SB_PIN)<0){
+        console.warn('[DalOS] supabase-js is NOT pinned to '+DALOS_SB_PIN+' on this page ('+(src||'no tag found')+
+                     '). Auth behaviour may differ from the tested build. Run scripts/check-auth-invariants.sh.');
+      }
+    }catch(e){}
+  })();
 
   function bounce(){
     var nx=encodeURIComponent(location.pathname.split('/').pop()+location.search+location.hash);
@@ -66,31 +101,51 @@
 
   function proceed(sb){
     window.__DALOS_SB=sb;
+    // getSession() already refreshes an expired token internally, and does so under
+    // supabase-js's cross-tab lock. The previous explicit refreshSession() here fired
+    // on EVERY Analytics page load within 15s of expiry — and Analytics is multi-page,
+    // so two tabs navigating near expiry raced each other. Let the library serialise it.
     sb.auth.getSession().then(function(r){
-      var sx=r&&r.data&&r.data.session;
-      var now=Date.now();
-      // Refresh unless we already hold a session whose expiry is comfortably in
-      // the future. Missing session, missing expires_at, or <15s to expiry all
-      // force a refresh.
-      var ok=sx&&sx.access_token&&sx.expires_at&&((sx.expires_at*1000-now)>15000);
-      var step=ok?Promise.resolve({data:{session:sx}}):sb.auth.refreshSession();
-      return step.then(function(rr){
-        var vs=rr&&rr.data&&rr.data.session;
-        if(!vs||!vs.access_token){bounce();return;}   // no valid session -> bounce, RPC never called
-        window.__DALOS_TOKEN=vs.access_token;          // only a validated/refreshed token is trusted
-        _resolveReady();                               // release any held Supabase reads
-        var chk=window.__DALOS_ACCESS_CHECK;
-        var fn=(chk&&chk.fn)||'has_analytics_access';
-        var call=(chk&&chk.args)?sb.rpc(fn,chk.args):sb.rpc(fn);
-        return call.then(function(a){
-          if(!(a&&!a.error&&a.data===true)){bounce();}
-        });
+      var vs=r&&r.data&&r.data.session;
+      if(!vs||!vs.access_token){bounce();return;}     // no valid session -> bounce, RPC never called
+      window.__DALOS_TOKEN=vs.access_token;            // only a validated/refreshed token is trusted
+      _resolveReady();                                 // release any held Supabase reads
+      var chk=window.__DALOS_ACCESS_CHECK;
+      var fn=(chk&&chk.fn)||'has_analytics_access';
+      var call=(chk&&chk.args)?sb.rpc(fn,chk.args):sb.rpc(fn);
+      return call.then(function(a){
+        if(!(a&&!a.error&&a.data===true)){bounce();}
       });
     }).catch(function(){bounce();});
 
     sb.auth.onAuthStateChange(function(ev,s2){
       if(s2&&s2.access_token){window.__DALOS_TOKEN=s2.access_token;}
-      if(ev==='SIGNED_OUT'){bounce();}
+      /* SIGNED_OUT used to bounce() immediately, which is why Analytics ejected the
+         user instantly on any transient sign-out while Vision (which retries) often
+         survived. Supabase also fires SIGNED_OUT on refresh-token rotation conflicts
+         between tabs, where a valid session is usually present moments later. Retry
+         before giving up, and never bounce while offline. Mirrors Vision's handler. */
+      if(ev==='SIGNED_OUT'){
+        console.warn('[DalOS] SIGNED_OUT received — attempting session recovery before bouncing');
+        var attempt=0, delays=[2000,4000,8000];
+        function retryOrBounce(){
+          if(attempt<delays.length-1){attempt++;setTimeout(recover,delays[attempt]);}
+          else{console.warn('[DalOS] session not recoverable — bouncing to Workspace');bounce();}
+        }
+        function recover(){
+          if(typeof navigator!=='undefined'&&!navigator.onLine){setTimeout(recover,10000);return;}
+          sb.auth.getSession().then(function(res){
+            var s3=res&&res.data&&res.data.session;
+            if(s3&&s3.access_token){
+              window.__DALOS_TOKEN=s3.access_token;
+              console.log('[DalOS] session recovered after SIGNED_OUT — staying on the page');
+              return;
+            }
+            retryOrBounce();
+          }).catch(retryOrBounce);
+        }
+        setTimeout(recover,delays[0]);
+      }
     });
   }
 
