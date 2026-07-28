@@ -312,6 +312,7 @@ const ORDER='order=product,farm,variety_en,year,plot,operational_bucket,operatio
 
 let RAW=[], METRIC='value', TAB='overview', OVM='amount', OVVAL='money'; // OVVAL: money | cpf (Overview monthly chart value mode)
 let BKVAL='money', PRVAL='money'; // per-block value mode for Overview Buckets / Products charts (independent of the monthly chart)
+let BKLBL='var', PRLBL='var';     // per-block data-label mode (Variance | B&A) for those same two charts
 let F={q:''};
 const MSF=['budget_season','product','farm','_bucket','_variety','_plot','unit','month','_plotstatus','join_status'];
 const S={budget_season:[],product:[],farm:[],_bucket:[],_variety:[],_plot:[],unit:[],month:[],_plotstatus:[],join_status:[]};
@@ -668,7 +669,8 @@ function monthlySVG(rows,mode,valMode){
   });
   s+='</svg></div>';return s;
 }
-function pairedBars(data,onClick,tagFn,unitOverride){
+function pairedBars(data,onClick,tagFn,unitOverride,lblMode){
+  const lbl = lblMode || LBL;                        // per-chart label mode; falls back to the global toggle
   const cpf = unitOverride==='cpf';
   const fV = cpf ? (n=>fmt(n)) : mv;                 // CPF shows full numbers, not compact money
   const unit = cpf ? 'EGP/fed' : metricUnit();
@@ -680,7 +682,7 @@ function pairedBars(data,onClick,tagFn,unitOverride){
       <div class="pb-name" dir="auto" title="${esc(String(nn(o.key)))}">${o.lbl||esc(nn(o.key))}${tagFn?tagFn(o):(o.tags||'')}</div>
       <div class="pb-bars"><div class="pb-track"><div class="pb-fill" style="width:${100*o.b/max}%;background:var(--orange)"></div></div>
       <div class="pb-track"><div class="pb-fill" style="width:${100*o.a/max}%;background:var(--navy)"></div></div></div>
-      <div class="pb-nums">${METRICS[METRIC].unitAware&&o.mixedUnit?'<span style="color:var(--warn)">⚠ mixed units</span>':(LBL==='ba'?('B '+fV(o.b)+'<br>A '+fV(o.a)):('<span style="font-weight:700;color:'+(o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)')+'">'+((o.v>0?'+':o.v<0?'−':'')+fV(Math.abs(o.v)))+'</span><br>'+varPill(o.v,o.b)))}</div></div>`;
+      <div class="pb-nums">${METRICS[METRIC].unitAware&&o.mixedUnit?'<span style="color:var(--warn)">⚠ mixed units</span>':(lbl==='ba'?('B '+fV(o.b)+'<br>A '+fV(o.a)):('<span style="font-weight:700;color:'+(o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)')+'">'+((o.v>0?'+':o.v<0?'−':'')+fV(Math.abs(o.v)))+'</span><br>'+varPill(o.v,o.b)))}</div></div>`;
   }).join('');
 }
 function metricNote(){
@@ -707,6 +709,9 @@ function ovVal(btn){OVVAL=btn.dataset.v;if(OVVAL==='cpf')OVM='amount';/* a per-f
 // Buckets / Products blocks each own their value mode — independent of the monthly chart's OVVAL
 function bkVal(btn){BKVAL=btn.dataset.v;renderOverview();}
 function prVal(btn){PRVAL=btn.dataset.v;renderOverview();}
+// …and each own their data-label mode (Variance | B&A), independent of the monthly chart's global LBL
+function bkLbl(v){BKLBL=v;renderOverview();}
+function prLbl(v){PRLBL=v;renderOverview();}
 /* ============ OVERVIEW ANALYTICS (drill-through + 11 analyses) ============ */
 // YTD cutoff = last month with any actuals
 function ytdCutoff(rows){ const lm=lastActualMonth(rows); return lm?mOrd(lm):0; }
@@ -1028,13 +1033,15 @@ function renderOverview(){
 
   const card=(title,sub,body)=>`<div class="card"><div class="card-h"><div><div class="card-t">${title}</div>${sub?`<div class="card-s">${sub}</div>`:''}</div></div>${body}</div>`;
 
-  // Buckets / Products card with its own Cost / Cost-per-Feddan toggle (independent of the monthly chart)
-  const bpCard=(title,dim,cur,data,drill)=>{
+  // Buckets / Products card with its own Cost/Cost-per-Feddan AND Variance/B&A toggles (independent of the monthly chart)
+  const bpCard=(title,dim,cur,lbl,data,drill)=>{
     const isCpf=cur==='cpf'&&METRIC==='value';
     const sub=isCpf?'Cost / Feddan · click to drill':'Budget vs Actual · click to drill';
-    const fn=dim==='bk'?'bkVal':'prVal';
-    const seg=METRIC==='value'?`<div class="seg" id="ov-${dim}val"><button class="${cur==='money'?'on':''}" data-v="money" onclick="${fn}(this)">Cost (EGP)</button><button class="${cur==='cpf'?'on':''}" data-v="cpf" onclick="${fn}(this)">Cost / Feddan</button></div>`:'';
-    return `<div class="card"><div class="card-h"><div><div class="card-t">${title}</div><div class="card-s">${sub}</div></div>${seg}</div>${pairedBars(ovCpfRows(data,cur),drill,null,isCpf?'cpf':null)}</div>`;
+    const vfn=dim==='bk'?'bkVal':'prVal';
+    const lfn=dim==='bk'?'bkLbl':'prLbl';
+    const valSeg=METRIC==='value'?`<div class="seg" id="ov-${dim}val"><button class="${cur==='money'?'on':''}" data-v="money" onclick="${vfn}(this)">Cost (EGP)</button><button class="${cur==='cpf'?'on':''}" data-v="cpf" onclick="${vfn}(this)">Cost / Feddan</button></div>`:'';
+    const lblSegBlk=`<div class="seg" title="Data labels"><button class="${lbl==='var'?'on':''}" onclick="${lfn}('var')">Variance</button><button class="${lbl==='ba'?'on':''}" onclick="${lfn}('ba')">B &amp; A</button></div>`;
+    return `<div class="card"><div class="card-h"><div><div class="card-t">${title}</div><div class="card-s">${sub}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">${lblSegBlk}${valSeg}</div></div>${pairedBars(ovCpfRows(data,cur),drill,null,isCpf?'cpf':null,lbl)}</div>`;
   };
 
   // ---- top block (always) ----
@@ -1046,8 +1053,8 @@ function renderOverview(){
       <div class="legend"><span class="lg"><span class="lg-dot" style="background:var(--orange)"></span>Budget</span><span class="lg"><span class="lg-dot" style="background:var(--navy)"></span>Actual</span></div>
     </div>
     <div class="grid2">
-      ${bpCard('Buckets','bk',BKVAL,bk,"openDrill('bucket','%K')")}
-      ${bpCard('Products','pr',PRVAL,pr,"openDrill('product','%K')")}
+      ${bpCard('Buckets','bk',BKVAL,BKLBL,bk,"openDrill('bucket','%K')")}
+      ${bpCard('Products','pr',PRVAL,PRLBL,pr,"openDrill('product','%K')")}
     </div>`;
 
   // ---- sub-tab bar ----
