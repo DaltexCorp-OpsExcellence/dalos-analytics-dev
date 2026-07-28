@@ -90,6 +90,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .seg{display:inline-flex;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:2px;gap:2px}
 .seg button{font-family:var(--font);font-size:10.5px;font-weight:600;color:var(--text2);background:none;border:none;border-radius:6px;padding:5px 11px;cursor:pointer}
 .seg button.on{background:var(--navy);color:#fff}
+.pf-sel{font-family:var(--font);font-size:11px;font-weight:600;color:var(--text2);border:1px solid var(--border);border-radius:var(--r);padding:5px 24px 5px 9px;background:var(--white);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a95b0' fill='none' stroke-width='1.6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;cursor:pointer;flex:none}
 /* paired bars */
 .pb-row{display:grid;grid-template-columns:170px 1fr 220px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--bg);cursor:pointer}
 .pb-row:hover{background:#fafbfe}
@@ -965,6 +966,9 @@ function drillBack(){
 /* ---- THE 11 ANALYSES + sub-tabbed Overview ---- */
 let OV_SUB='performance';
 function ovSub(s){ OV_SUB=s; renderOverview(); }
+// Per-card plot-status filter for the Performance cards: 'all' (overall) | 'planned' | 'unplanned'
+const OV_PF={best:'all',worst:'all',contrib:'all',variety:'all'};
+function setPf(which,v){ OV_PF[which]=v; renderOverview(); }
 
 function renderOverview(){
   const rows=filtered();
@@ -976,16 +980,18 @@ function renderOverview(){
 
   // --- shared computations ---
   const plots=aggYTD(rows,r=>r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot,cut);
-  const varieties=aggYTD(rows,r=>r.variety_en||'(none)',cut);
-  const bucketFarm=aggYTD(rows,r=>(r.operational_bucket||'(unmapped)')+' · '+r.farm,cut);
 
-  // 1. Best/Worst plots by Variance YTD
-  const plotsSorted=[...plots].sort((a,b)=>b.vYTD-a.vYTD);
-  const bestPlots=plotsSorted.filter(p=>p.vYTD>0).slice(0,8).map(o=>({...o,val:o.vYTD,drill:drillRef('plot',o.key)}));
-  const worstPlots=plotsSorted.filter(p=>p.vYTD<0).slice(-8).reverse().map(o=>({...o,val:o.vYTD,drill:drillRef('plot',o.key)}));
+  // Per-card plot-status filter: restrict rows to planned-only / unplanned-only / overall
+  // (a plot is "unplanned" when it has no budget anywhere in the season — plotIsUnplanned).
+  const pfRows=m=> m==='planned'?rows.filter(r=>!plotIsUnplanned(r)) : m==='unplanned'?rows.filter(r=>plotIsUnplanned(r)) : rows;
+  const plotKeyFn=r=>r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot;
+
+  // 1. Best/Worst plots by Variance YTD (each card filtered independently)
+  const bestPlots=[...aggYTD(pfRows(OV_PF.best),plotKeyFn,cut)].sort((a,b)=>b.vYTD-a.vYTD).filter(p=>p.vYTD>0).slice(0,8).map(o=>({...o,val:o.vYTD,drill:drillRef('plot',o.key)}));
+  const worstPlots=[...aggYTD(pfRows(OV_PF.worst),plotKeyFn,cut)].sort((a,b)=>b.vYTD-a.vYTD).filter(p=>p.vYTD<0).slice(-8).reverse().map(o=>({...o,val:o.vYTD,drill:drillRef('plot',o.key)}));
 
   // 2. Biggest variance contributors bucket×farm (absolute)
-  const contrib=[...bucketFarm].sort((a,b)=>Math.abs(b.vYTD)-Math.abs(a.vYTD)).slice(0,10).map(o=>({...o,val:o.vYTD,drill:drillRef('bucketfarm',o.key)}));
+  const contrib=[...aggYTD(pfRows(OV_PF.contrib),r=>(r.operational_bucket||'(unmapped)')+' · '+r.farm,cut)].sort((a,b)=>Math.abs(b.vYTD)-Math.abs(a.vYTD)).slice(0,10).map(o=>({...o,val:o.vYTD,drill:drillRef('bucketfarm',o.key)}));
 
   // 3. Unplanned spend spotlight (actual, no budget line for that product+op)
   const opb=new Map(); for(const r of rows){const k=r.product+'|'+(r.operation_norm||'');opb.set(k,(opb.get(k)||0)+(r.budget_amount||0));}
@@ -1003,8 +1009,8 @@ function renderOverview(){
   const tb=rows.reduce((s,r)=>s+(r.budget_amount||0),0), ta=rows.reduce((s,r)=>s+(r.actual_amount||0),0);
   const pctConsumed=tb?100*ta/tb:0;
 
-  // 5. Variety performance ranking
-  const varSorted=[...varieties].sort((a,b)=>a.vYTD-b.vYTD).map(o=>({...o,val:o.vYTD,drill:drillRef('variety',o.key)}));
+  // 5. Variety performance ranking (filtered independently)
+  const varSorted=[...aggYTD(pfRows(OV_PF.variety),r=>r.variety_en||'(none)',cut)].sort((a,b)=>a.vYTD-b.vYTD).map(o=>({...o,val:o.vYTD,drill:drillRef('variety',o.key)}));
 
   // 6. Month-over-month momentum (last two actual months, actual change per bucket)
   const monthsWithA=MONTHS.filter(m=>rows.some(r=>r.month===m&&(r.actual_amount||0)>0));
@@ -1032,6 +1038,13 @@ function renderOverview(){
   const notStarted=plots.filter(p=>p.b>0&&p.a===0).map(o=>({val:o.b,meta:o.meta,drill:drillRef('plot',o.key)})).sort((a,b)=>b.val-a.val).slice(0,8);
 
   const card=(title,sub,body)=>`<div class="card"><div class="card-h"><div><div class="card-t">${title}</div>${sub?`<div class="card-s">${sub}</div>`:''}</div></div>${body}</div>`;
+
+  // Card with a plot-status dropdown (Overall / Planned only / Unplanned only) in its header
+  const cardPF=(title,sub,which,body)=>{
+    const cur=OV_PF[which];
+    const sel=`<select class="pf-sel" title="Plot status" onchange="setPf('${which}',this.value)">${[['all','Overall'],['planned','Planned only'],['unplanned','Unplanned only']].map(([v,l])=>`<option value="${v}"${cur===v?' selected':''}>${l}</option>`).join('')}</select>`;
+    return `<div class="card"><div class="card-h"><div><div class="card-t">${title}</div>${sub?`<div class="card-s">${sub}</div>`:''}</div>${sel}</div>${body}</div>`;
+  };
 
   // Buckets / Products card with its own Cost/Cost-per-Feddan AND Variance/B&A toggles (independent of the monthly chart)
   const bpCard=(title,dim,cur,lbl,data,drill)=>{
@@ -1066,11 +1079,11 @@ function renderOverview(){
   if(OV_SUB==='performance'){
     panels=`
       <div class="grid2">
-        ${card('✅ Best plots — under budget','Variance YTD (Budget−Actual) · Plot · Variety · Farm · click for details', miniList(bestPlots,o=>plotLabel(o)+plotTag(rows,o.key)))}
-        ${card('🔴 Worst plots — over budget','Variance YTD · Plot · Variety · Farm · click for details', miniList(worstPlots,o=>plotLabel(o)+plotTag(rows,o.key)))}
+        ${cardPF('✅ Best plots — under budget','Variance YTD (Budget−Actual) · Plot · Variety · Farm · click for details','best', miniList(bestPlots,o=>plotLabel(o)+plotTag(rows,o.key)))}
+        ${cardPF('🔴 Worst plots — over budget','Variance YTD · Plot · Variety · Farm · click for details','worst', miniList(worstPlots,o=>plotLabel(o)+plotTag(rows,o.key)))}
       </div>
-      ${card('Biggest variance contributors','Bucket × Farm · absolute Variance YTD · click for details',miniList(contrib,o=>esc(nn(o.key))))}
-      ${card('Variety performance','Ranked by Variance YTD (worst first) · click for details',miniList(varSorted.slice(0,12),o=>esc(nn(o.key))))}`;
+      ${cardPF('Biggest variance contributors','Bucket × Farm · absolute Variance YTD · click for details','contrib',miniList(contrib,o=>esc(nn(o.key))))}
+      ${cardPF('Variety performance','Ranked by Variance YTD (worst first) · click for details','variety',miniList(varSorted.slice(0,12),o=>esc(nn(o.key))))}`;
   } else if(OV_SUB==='risk'){
     panels=`
       ${card('⚠ Unplanned spend spotlight','Actual cost with no budget line · Plot · Variety · Farm · click for details',miniList(unplanned,plotLabel))}
