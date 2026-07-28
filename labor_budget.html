@@ -349,11 +349,22 @@ const mCmp=(a,b)=>mOrd(a)-mOrd(b);
 
 const PAGE_SIZE=1000;
 let LOAD_INFO={got:0,expected:null};
+const sleep=ms=>new Promise(res=>setTimeout(res,ms));
+// Transient server states worth retrying (gateway/statement timeouts, rate limits, pool exhaustion).
+const RETRYABLE=new Set([429,500,502,503,504]);
 async function fetchPage(off,wantCount){
   const hdrs={apikey:SB_ANON,Authorization:'Bearer '+(window.__DALOS_TOKEN||SB_ANON)};
   if(wantCount) hdrs['Prefer']='count=exact';
-  const r=await fetch(`${SB_URL}/rest/v1/labor_bva?select=${COLS}&${ORDER}&limit=${PAGE_SIZE}&offset=${off}`,{headers:hdrs});
-  if(!r.ok) throw new Error('labor_bva '+r.status+(r.status===504||r.status===500?' (server timeout — try again)':''));
+  const url=`${SB_URL}/rest/v1/labor_bva?select=${COLS}&${ORDER}&limit=${PAGE_SIZE}&offset=${off}`;
+  let r,lastStatus=0;
+  for(let attempt=0;attempt<4;attempt++){                 // up to 4 tries per page with backoff
+    if(attempt) await sleep(400*attempt+Math.floor(Math.random()*250)); // 0.4s,0.8s,1.2s + jitter
+    r=await fetch(url,{headers:hdrs});
+    if(r.ok) break;
+    lastStatus=r.status;
+    if(!RETRYABLE.has(r.status)) break;                   // e.g. 401/403 won't fix themselves
+  }
+  if(!r.ok) throw new Error('labor_bva '+lastStatus+(RETRYABLE.has(lastStatus)?' (server timeout — try again)':''));
   let total=null;
   if(wantCount){
     const cr=r.headers.get('content-range')||'';          // e.g. "0-999/36798"
@@ -362,7 +373,7 @@ async function fetchPage(off,wantCount){
   }
   return {batch:await r.json(),total};
 }
-const FETCH_CONCURRENCY=8;   // parallel page requests once the total row count is known
+const FETCH_CONCURRENCY=4;   // parallel page requests once the total row count is known (kept modest so heavy offset scans don't time the server out)
 async function fetchAll(){
   // First page also asks the server for the exact row count. Once we know the total we fire
   // all remaining pages in parallel (bounded) instead of one-after-another — the previous
