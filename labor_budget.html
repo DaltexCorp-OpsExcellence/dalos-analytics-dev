@@ -311,6 +311,7 @@ const COLS='budget_season,product,category,farm,variety_en,year,plot,operational
 const ORDER='order=product,farm,variety_en,year,plot,operational_bucket,operation_norm,month,unit,budget_amount,actual_amount';
 
 let RAW=[], METRIC='value', TAB='overview', OVM='amount', OVVAL='money'; // OVVAL: money | cpf (Overview monthly chart value mode)
+let BKVAL='money', PRVAL='money'; // per-block value mode for Overview Buckets / Products charts (independent of the monthly chart)
 let F={q:''};
 const MSF=['budget_season','product','farm','_bucket','_variety','_plot','unit','month','_plotstatus','join_status'];
 const S={budget_season:[],product:[],farm:[],_bucket:[],_variety:[],_plot:[],unit:[],month:[],_plotstatus:[],join_status:[]};
@@ -667,8 +668,9 @@ function metricNote(){
 // Recompute an agg() array's b/a/v as cost-per-feddan (money ÷ de-duped area) when the
 // Overview value toggle is on CPF. Never averages ratios: each row divides its own summed
 // money by its own summed area. Rows with no area drop to 0 so they don't distort the axis.
-function ovCpfRows(data){
-  if(OVVAL!=='cpf'||METRIC!=='value') return data;
+function ovCpfRows(data,val){
+  val=val||OVVAL;
+  if(val!=='cpf'||METRIC!=='value') return data;
   return data.map(o=>{
     const b=o.bArea>0?o.rawB/o.bArea:0;
     const a=o.aArea>0?o.rawA/o.aArea:0;
@@ -677,6 +679,9 @@ function ovCpfRows(data){
 }
 function ovMode(btn){if(btn.disabled)return;OVM=btn.dataset.m;document.querySelectorAll('#ov-mode button').forEach(b=>b.classList.toggle('on',b===btn));renderOverview();}
 function ovVal(btn){OVVAL=btn.dataset.v;if(OVVAL==='cpf')OVM='amount';/* a per-feddan ratio can't accumulate */document.querySelectorAll('#ov-val button').forEach(b=>b.classList.toggle('on',b===btn));renderOverview();}
+// Buckets / Products blocks each own their value mode — independent of the monthly chart's OVVAL
+function bkVal(btn){BKVAL=btn.dataset.v;renderOverview();}
+function prVal(btn){PRVAL=btn.dataset.v;renderOverview();}
 /* ============ OVERVIEW ANALYTICS (drill-through + 11 analyses) ============ */
 // YTD cutoff = last month with any actuals
 function ytdCutoff(rows){ const lm=lastActualMonth(rows); return lm?mOrd(lm):0; }
@@ -998,6 +1003,15 @@ function renderOverview(){
 
   const card=(title,sub,body)=>`<div class="card"><div class="card-h"><div><div class="card-t">${title}</div>${sub?`<div class="card-s">${sub}</div>`:''}</div></div>${body}</div>`;
 
+  // Buckets / Products card with its own Cost / Cost-per-Feddan toggle (independent of the monthly chart)
+  const bpCard=(title,dim,cur,data,drill)=>{
+    const isCpf=cur==='cpf'&&METRIC==='value';
+    const sub=isCpf?'Cost / Feddan · click to drill':'Budget vs Actual · click to drill';
+    const fn=dim==='bk'?'bkVal':'prVal';
+    const seg=METRIC==='value'?`<div class="seg" id="ov-${dim}val"><button class="${cur==='money'?'on':''}" data-v="money" onclick="${fn}(this)">Cost (EGP)</button><button class="${cur==='cpf'?'on':''}" data-v="cpf" onclick="${fn}(this)">Cost / Feddan</button></div>`:'';
+    return `<div class="card"><div class="card-h"><div><div class="card-t">${title}</div><div class="card-s">${sub}</div></div>${seg}</div>${pairedBars(ovCpfRows(data,cur),drill,null,isCpf?'cpf':null)}</div>`;
+  };
+
   // ---- top block (always) ----
   const top=`
     <div class="card">
@@ -1007,8 +1021,8 @@ function renderOverview(){
       <div class="legend"><span class="lg"><span class="lg-dot" style="background:var(--orange)"></span>Budget</span><span class="lg"><span class="lg-dot" style="background:var(--navy)"></span>Actual</span></div>
     </div>
     <div class="grid2">
-      ${card('Buckets',(OVVAL==='cpf'&&METRIC==='value'?'Cost / Feddan · click to drill':'Budget vs Actual · click to drill'), pairedBars(ovCpfRows(bk),"openDrill('bucket','%K')",null,OVVAL==='cpf'&&METRIC==='value'?'cpf':null))}
-      ${card('Products',(OVVAL==='cpf'&&METRIC==='value'?'Cost / Feddan · click to drill':'Budget vs Actual · click to drill'), pairedBars(ovCpfRows(pr),"openDrill('product','%K')",null,OVVAL==='cpf'&&METRIC==='value'?'cpf':null))}
+      ${bpCard('Buckets','bk',BKVAL,bk,"openDrill('bucket','%K')")}
+      ${bpCard('Products','pr',PRVAL,pr,"openDrill('product','%K')")}
     </div>`;
 
   // ---- sub-tab bar ----
@@ -1808,7 +1822,7 @@ function setLblSel(v){
   if(c&&document.getElementById('drill-modal').style.display==='flex')openDrill(c.dim,c.key,true);
 }
 function lblSeg(){return `<div class="seg" title="Data labels"><button class="${LBL==='var'?'on':''}" onclick="setLblSel('var')">Variance</button><button class="${LBL==='ba'?'on':''}" onclick="setLblSel('ba')">B &amp; A</button></div>`;}
-function setMetricSel(v){METRIC=v;if(v!=='value')OVVAL='money';if(METRICS[v].ratio&&SIDE==='share')SIDE='both';renderAll();}
+function setMetricSel(v){METRIC=v;if(v!=='value'){OVVAL='money';BKVAL='money';PRVAL='money';}if(METRICS[v].ratio&&SIDE==='share')SIDE='both';renderAll();}
 function setSideSel(v){SIDE=v;renderAll();}
 function tblControls(){
   const kpi=[['value','Value (EGP)'],['qty','Quantity'],['cpf','Cost / Feddan'],['price','Unit Price']];
