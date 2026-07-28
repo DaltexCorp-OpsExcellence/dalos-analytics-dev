@@ -759,9 +759,14 @@ function isTrulyUnplanned(r){
 // tag for one operation key within a row subset (drill modal / lists)
 function opTag(rows,opKey){
   if(!OPB) buildOpBudget(RAW);
+  // Stay within the drilled context's product(s): the "unplanned" rule is per (product|operation),
+  // so an operation that is budgeted for THIS product must not inherit the tag just because some
+  // OTHER product spent on the same operation name without a budget.
+  const prods=new Set(rows.map(r=>r.product));
   let unpl=false,unm=false;
   for(const r of (TAGROWS.length?TAGROWS:rows)){
     if((r.operation_norm||'(none)')!==opKey) continue;
+    if(prods.size && !prods.has(r.product)) continue;
     if((r.actual_amount||0)>0 && (OPB.get(r.product+'|'+(r.operation_norm||''))||0)===0) unpl=true;
     if(r.bucket_status==='unmapped'||!r.operational_bucket) unm=true;
     if(unpl&&unm) break;
