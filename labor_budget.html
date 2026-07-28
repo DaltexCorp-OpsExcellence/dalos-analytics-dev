@@ -360,30 +360,55 @@ async function fetchPage(off,wantCount){
   }
   return {batch:await r.json(),total};
 }
+const FETCH_CONCURRENCY=8;   // parallel page requests once the total row count is known
 async function fetchAll(){
-  // Ask the server how many rows exist, then verify we actually received them all.
-  // Without this check, a dropped page would silently render plots as "unplanned".
-  const rows=[]; let off=0, expected=null;
-  for(;;){
-    const {batch,total}=await fetchPage(off,off===0);
-    if(off===0&&total!==null) expected=total;
-    rows.push(...batch);
-    if(batch.length<PAGE_SIZE) break;
-    off+=PAGE_SIZE;
-    if(off>400000) break;                                  // runaway guard
+  // First page also asks the server for the exact row count. Once we know the total we fire
+  // all remaining pages in parallel (bounded) instead of one-after-another — the previous
+  // sequential loop cost ~1 round-trip per 1000 rows (≈37 serial trips on a 37k-row table).
+  const {batch:first,total}=await fetchPage(0,true);
+  const rows=first.slice();
+
+  if(total===null){
+    // Server didn't report a count — fall back to safe sequential paging.
+    let off=PAGE_SIZE;
+    for(;;){
+      const {batch}=await fetchPage(off,false);
+      rows.push(...batch);
+      if(batch.length<PAGE_SIZE) break;
+      off+=PAGE_SIZE;
+      if(off>400000) break;                                // runaway guard
+    }
+    LOAD_INFO={got:rows.length,expected:null};
+    return rows;
   }
-  // Completeness check + one repair pass for any missing tail
-  if(expected!==null&&rows.length<expected){
+
+  // Known total: build the list of remaining offsets and fetch them with a small worker pool,
+  // keeping each page in its slot so the final order still matches the ORDER clause.
+  const offsets=[];
+  for(let off=PAGE_SIZE; off<total; off+=PAGE_SIZE){ offsets.push(off); if(off>400000) break; }
+  const pages=new Array(offsets.length);
+  let next=0;
+  async function worker(){
+    while(next<offsets.length){
+      const i=next++;
+      pages[i]=(await fetchPage(offsets[i],false)).batch;   // a failed page throws → whole load fails (no partial render)
+    }
+  }
+  await Promise.all(Array.from({length:Math.min(FETCH_CONCURRENCY,offsets.length)},worker));
+  for(const p of pages) rows.push(...p);
+
+  // Completeness check + one sequential repair pass for any missing tail.
+  if(rows.length<total){
     let cur=rows.length;
-    while(cur<expected){
+    while(cur<total){
       const {batch}=await fetchPage(cur,false);
       if(!batch.length) break;
       rows.push(...batch); cur=rows.length;
     }
   }
-  LOAD_INFO={got:rows.length,expected};
-  if(expected!==null&&rows.length<expected)
-    throw new Error(`incomplete data — received ${rows.length.toLocaleString()} of ${expected.toLocaleString()} rows. Budget figures would be wrong, so nothing was rendered. Please reload.`);
+  LOAD_INFO={got:rows.length,expected:total};
+  if(rows.length<total)
+    throw new Error(`incomplete data — received ${rows.length.toLocaleString()} of ${total.toLocaleString()} rows. Budget figures would be wrong, so nothing was rendered. Please reload.`);
   return rows;
 }
 
