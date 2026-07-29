@@ -374,7 +374,28 @@ async function fetchPage(off,wantCount){
   return {batch:await r.json(),total};
 }
 const FETCH_CONCURRENCY=4;   // parallel page requests once the total row count is known (kept modest so heavy offset scans don't time the server out)
+
+// FAST PATH: one round-trip via the labor_bva_all() RPC. The database builds the whole report
+// ONCE and returns every row as a single JSON array — instead of the browser paging it in ~37
+// requests that each re-compute the view (~0.3s apiece → ~11s + timeouts). Read-only & access-gated.
+async function fetchAllRPC(){
+  const hdrs={apikey:SB_ANON,Authorization:'Bearer '+(window.__DALOS_TOKEN||SB_ANON),Accept:'application/json'};
+  const r=await fetch(`${SB_URL}/rest/v1/rpc/labor_bva_all`,{headers:hdrs});
+  if(!r.ok) throw new Error('rpc labor_bva_all '+r.status);
+  const data=await r.json();
+  if(!Array.isArray(data)) throw new Error('rpc labor_bva_all: unexpected response');
+  return data;
+}
 async function fetchAll(){
+  // Try the fast single-request RPC first; fall back to paginated fetch if it's unavailable/errors.
+  try{
+    const rows=await fetchAllRPC();
+    LOAD_INFO={got:rows.length,expected:rows.length};
+    return rows;                       // 200 with [] = no access / no data — same as the paged path would yield
+  }catch(e){ /* RPC missing or errored — use the resilient paginated path below */ }
+  return fetchAllPaged();
+}
+async function fetchAllPaged(){
   // First page also asks the server for the exact row count. Once we know the total we fire
   // all remaining pages in parallel (bounded) instead of one-after-another — the previous
   // sequential loop cost ~1 round-trip per 1000 rows (≈37 serial trips on a 37k-row table).
