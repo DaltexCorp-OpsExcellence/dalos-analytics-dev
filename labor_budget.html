@@ -1415,21 +1415,29 @@ function bucketExtras(rows){
 }
 
 /* ============ OPERATIONS ============ */
+let OPSORT={col:'b',dir:-1};   // Operations table sort — default Budget descending
+function opSort(col){OPSORT=OPSORT.col===col?{col,dir:-OPSORT.dir}:{col,dir:-1};renderOps();}
 function renderOps(){
   const rows=filtered();
   if(VIEW==='cpf'){document.getElementById('pane-operations').innerHTML=cpfPanel(rows,'operations',{key:r=>r.operation_norm||'(none)',lbl:'Operation'});return;}
   if(VIEW!=='summary'){document.getElementById('pane-operations').innerHTML=dimMatrix(rows,'operations',{key:r=>r.operation_norm||'(none)',lbl:'Operation'},VIEW);return;}
   const bmap=new Map(),umap=new Map();
   for(const r of rows){const k=r.operation_norm||'(none)';if(!bmap.has(k))bmap.set(k,r.operational_bucket||'(unmapped)');if(r.unit){if(!umap.has(k))umap.set(k,new Set());umap.get(k).add(r.unit);}}
-  let data=agg(rows,r=>r.operation_norm||'(none)').map(o=>({...o,bucket:bmap.get(o.key)||'(unmapped)',units:umap.has(o.key)?[...umap.get(o.key)].join(' / '):'—',drill:drillRef('operation',o.key)})).sort((x,y)=>y.a-x.a||y.b-x.b);
+  let data=agg(rows,r=>r.operation_norm||'(none)').map(o=>({...o,bucket:bmap.get(o.key)||'(unmapped)',units:umap.has(o.key)?[...umap.get(o.key)].join(' / '):'—',drill:drillRef('operation',o.key)}));
+  // sortable columns — default Budget descending
+  const OPG={bucket:o=>nn(o.bucket),k:o=>nn(o.key),unit:o=>o.units,status:o=>(o.rawB===0&&o.rawA>0?0:o.rawA===0?1:2),b:o=>o.b,a:o=>o.a,v:o=>o.v,vp:o=>pct(o.v,o.b)??-1e18,ach:o=>pct(o.a,o.b)??-1e18};
+  const g=OPG[OPSORT.col]||OPG.b;
+  data.sort((x,y)=>{const a=g(x),b=g(y);const c=(typeof a==='string'||typeof b==='string')?String(a).localeCompare(String(b),'ar'):(a<b?-1:a>b?1:0);return c*OPSORT.dir;});
+  const ar=c=>OPSORT.col===c?(OPSORT.dir<0?' ↓':' ↑'):'';
+  const th=(c,label,left)=>`<th onclick="opSort('${c}')"${left?' style="text-align:left"':''}>${label}${ar(c)}</th>`;
   document.getElementById('pane-operations').innerHTML=`
-    <div class="card"><div class="card-h"><div><div class="card-t">Operations</div><div class="card-s">${data.length} operations · click a row for details</div></div><div style="display:flex;gap:10px;align-items:flex-end">${tblControls()}${metricNote()}</div></div>
+    <div class="card"><div class="card-h"><div><div class="card-t">Operations</div><div class="card-s">${data.length} operations · click a header to sort · click a row for details</div></div><div style="display:flex;gap:10px;align-items:flex-end">${tblControls()}${metricNote()}</div></div>
     <div class="tbl-wrap"><table class="dt">
-      <thead><tr><th>Operation</th><th style="text-align:left">Bucket</th><th>Unit</th><th>Status</th>${SIDE!=='actual'&&SIDE!=='variance'?'<th>Budget</th>':''}${SIDE!=='budget'&&SIDE!=='variance'?'<th>Actual</th>':''}${SIDE!=='budget'&&SIDE!=='actual'?'<th>Variance</th><th>Var %</th>':''}${SIDE==='both'?'<th>Spend %</th>':''}</tr></thead>
+      <thead><tr>${th('bucket','Bucket',true)}${th('k','Operation',true)}${th('unit','Unit')}${th('status','Status')}${SIDE!=='actual'&&SIDE!=='variance'?th('b','Budget'):''}${SIDE!=='budget'&&SIDE!=='variance'?th('a','Actual'):''}${SIDE!=='budget'&&SIDE!=='actual'?th('v','Variance')+th('vp','Var %'):''}${SIDE==='both'?th('ach','Spend %'):''}</tr></thead>
       <tbody>${data.map(o=>{const vp=pct(o.v,o.b);
         const badge=o.rawB===0&&o.rawA>0?'<span class="badge b-unpl">Unplanned</span>':(o.rawA===0?'<span class="badge b-nost">Not started</span>':'<span class="badge b-match">Planned</span>');
         const unm=o.bucket==='(unmapped)'?' <span class="badge b-unm">unmapped</span>':'';
-        return `<tr style="cursor:pointer" onclick="drillGo(${o.drill})"><td dir="auto">${esc(nn(o.key))}</td><td dir="auto" style="text-align:left;color:var(--text2)">${esc(nn(o.bucket))}${unm}</td><td dir="auto" style="color:var(--text2)">${esc(o.units)}</td><td>${badge}</td>
+        return `<tr style="cursor:pointer" onclick="drillGo(${o.drill})"><td dir="auto" style="text-align:left;color:var(--text2)">${esc(nn(o.bucket))}${unm}</td><td dir="auto" style="text-align:left">${esc(nn(o.key))}</td><td dir="auto" style="color:var(--text2)">${esc(o.units)}</td><td>${badge}</td>
           ${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mvCell(o,'b')}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mvCell(o,'a')}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<td class="vcell" style="color:${o.v>0?'var(--bad)':o.v<0?'var(--good)':'var(--text2)'}">${signTxt(o.v).replace('−','-')}</td>
           <td>${vp===null||!isFinite(vp)?'—':(vp>0?'+':'')+vp.toFixed(1)+'%'}</td>`:''}${SIDE==='both'?`<td>${pctTxt(pct(o.a,o.b))}</td>`:''}</tr>`;}).join('')}</tbody>
     </table></div></div>`;
