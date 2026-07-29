@@ -963,13 +963,15 @@ function openDrill(dim, key, _fromBack){
       return {...o,val:sv,txt:sv.toFixed(1)+'%',col:'var(--navy)',sub:cmp(o.a)+' actual',sortv:sv};
     }
     if(MODAL_MEASURE==='cpf'){
-      const c=o.area>0?o.a/o.area:null;
-      const rel=(c!==null&&aCpf)?((c/aCpf-1)*100):null;
-      return {...o,val:c===null?0:c,
-        txt:c===null?'no area':fmt(c),
-        col:c===null?'var(--text3)':(rel!==null&&rel>0?'var(--bad)':'var(--good)'),
-        sub:c===null?'':(rel===null?fmt(o.area)+' fed':(rel>0?'+':'')+rel.toFixed(0)+'% vs avg · '+fmt(o.area)+' fed'),
-        sortv:c===null?-1:c};
+      // Budget vs Actual cost/feddan (absolute) + how far actual is over/under budget (%). No average.
+      const ac=o.area>0?o.a/o.area:null;   // actual cost / feddan
+      const bc=o.area>0?o.b/o.area:null;   // budget cost / feddan
+      const pct=(bc>0&&ac!==null)?((ac/bc-1)*100):null;
+      return {...o,val:ac===null?0:ac,
+        txt:ac===null?'no area':('A '+fmt(ac)+' · B '+fmt(bc)),
+        varPct:pct,
+        col:ac===null?'var(--text3)':(pct!==null&&pct>0?'var(--bad)':'var(--good)'),
+        sortv:ac===null?-1:ac};
     }
     const vPct=o.bYTD>0?o.vYTD/o.bYTD*100:null;return {...o,val:o.vYTD,sortv:Math.abs(o.vYTD),varPct:vPct};
   });
@@ -981,7 +983,7 @@ function openDrill(dim, key, _fromBack){
   const bdLegend = `<div class="legend">${
       MODAL_MEASURE==='ach'   ? _lg('var(--good)','Within plan (≤100%)')+_lg('var(--bad)','Over plan (>100%)')
     : MODAL_MEASURE==='share' ? _lg('var(--navy)','Share of actual')
-    : MODAL_MEASURE==='cpf'   ? _lg('var(--good)','Below variety avg')+_lg('var(--bad)','Above variety avg')
+    : MODAL_MEASURE==='cpf'   ? _lg('var(--good)','Actual under budget')+_lg('var(--bad)','Actual over budget')
     :                           _lg('var(--good)','Under budget')+_lg('var(--bad)','Over budget')
   }</div>`;
   const backBtn=DRILL_STACK.length>1?`<button onclick="drillBack()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;margin-right:10px"><i class="ti ti-arrow-left" style="font-size:11px"></i> Back</button>`:'';
@@ -1086,10 +1088,13 @@ function renderOverview(){
   const projVar = tb-projActual;
 
 
-  // 10. Cost/feddan outliers: plot actual cpf vs variety average
-  const varCpf=new Map();
-  for(const p of plots){ if(p.area>0){const k=p.meta.variety;let o=varCpf.get(k)||{sum:0,area:0};o.sum+=p.a;o.area+=p.area;varCpf.set(k,o);}}
-  const outliers=plots.filter(p=>p.area>0).map(p=>{const va=varCpf.get(p.meta.variety);const varAvg=va&&va.area?va.sum/va.area:0;const cpf=p.a/p.area;return{val:cpf-varAvg,cpf,varAvg,meta:p.meta,key:p.key,drill:drillRef('plot',p.key)};}).filter(x=>x.varAvg>0).sort((a,b)=>b.val-a.val).slice(0,8);
+  // 10. Cost/feddan — Budget vs Actual per plot (absolute + % over/under budget; no average)
+  const cpfPlots=plots.filter(p=>p.area>0).map(p=>{
+    const ac=p.a/p.area, bc=p.b/p.area, pct=bc>0?((ac/bc-1)*100):null;
+    return {val:ac, meta:p.meta, key:p.key, drill:drillRef('plot',p.key),
+            txt:'A '+fmt(ac)+' · B '+fmt(bc), varPct:pct,
+            col:pct!==null&&pct>0?'var(--bad)':'var(--good)'};
+  }).sort((a,b)=>b.val-a.val).slice(0,8);
 
   // 11. Not-started watchlist: budget>0, actual=0, late in season
   const notStarted=plots.filter(p=>p.b>0&&p.a===0).map(o=>({val:o.b,meta:o.meta,drill:drillRef('plot',o.key)})).sort((a,b)=>b.val-a.val).slice(0,8);
@@ -1144,7 +1149,7 @@ function renderOverview(){
   } else if(OV_SUB==='risk'){
     panels=`
       ${card('⚠ Unplanned spend spotlight','Actual cost with no budget line · Plot · Variety · Farm · click for details',miniList(unplanned,plotLabel))}
-      ${card('Cost/Feddan outliers','Plot actual cost/fed vs its variety average · click for details',miniList(outliers.map(o=>({val:o.val,meta:o.meta,key:o.key,sub:`${fmt(o.cpf)} vs ${fmt(o.varAvg)} avg`,drill:o.drill})),o=>plotLabel(o)+(o.key?plotTag(rows,o.key):'')))}
+      ${card('Cost / Feddan — Budget vs Actual','Actual (A) vs Budget (B) cost per feddan · % = actual over/under budget · click for details',miniList(cpfPlots,o=>plotLabel(o)+(o.key?plotTag(rows,o.key):'')))}
       ${card('Not-started watchlist','Budgeted but zero actuals · risk of unspent/missed work · click for details',miniList(notStarted,o=>plotLabel(o)+plotTag(rows,o.key)))}`;
   } else if(OV_SUB==='monthly'){
     panels=monthlyMatrixCard(rows);
