@@ -658,7 +658,7 @@ function renderKPIs(rows){
     {l:'Actual',i:'ti-coins',v:cmp(ta),s:fmt(ta)+' EGP'},
     {l:'Budget Cost / Feddan',i:'ti-map-2',v:bCpf===null?'—':fmt(bCpf),s:(CPF_.bArea>0?fmt(CPF_.bArea)+' fed planned':'no planned area')},
     {l:'Actual Cost / Feddan',i:'ti-map-pin',v:aCpf===null?'—':fmt(aCpf),s:(CPF_.aArea>0?fmt(CPF_.aArea)+' fed worked':'no area'),pill:cpfV!==null?`<span class="kpill ${cpfV>0?'p-bad':'p-good'}">${cpfV>0?'+':''}${fmt(cpfV)} vs plan</span>`:''},
-    {l:'Achievement vs YTD',i:'ti-percentage',v:pctTxt(ach),s:'Actual ÷ Budget YTD',pill:ach!==null?`<span class="kpill ${ach>100?'p-bad':'p-good'}">${ach>100?'over plan':'within plan'}</span>`:''},
+    {l:'Spend % vs YTD',i:'ti-percentage',v:pctTxt(ach),s:'Actual ÷ Budget YTD',pill:ach!==null?`<span class="kpill ${ach>100?'p-bad':'p-good'}">${ach>100?'over plan':'within plan'}</span>`:''},
     {l:'Variance vs YTD',i:'ti-scale',v:signTxt(vY),s:pctTxt(Math.abs(pct(vY,ytdB)))+' of YTD',pill:varPill(vY,ytdB)},
     {l:'Unplanned Spend',i:'ti-alert-triangle',v:cmp(unpl),s:pctTxt(pct(unpl,ta))+' of actual',pill:`<span class="kpill p-warn">no budget line</span>`}
   ].map(k=>`<div class="kcard"><div class="k-lbl"><i class="ti ${k.i}" style="font-size:12px;color:var(--orange)"></i>${k.l}</div><div class="k-val">${k.v}</div><div class="k-sub">${k.s} ${k.pill||''}</div></div>`).join('');
@@ -976,7 +976,7 @@ function openDrill(dim, key, _fromBack){
   items.sort(bd.isMonth?((x,y)=>mOrd(x.key)-mOrd(y.key)):((x,y)=>y.sortv-x.sortv));
   const shownCount=items.length;   // show all rows (no top-N cap)
   for(const o of items){ if(!(bd.isMonth&&dim==='month')) o.drill=drillRef(MODAL_DIM==='month'?'month':MODAL_DIM,o.key); }
-  const measureLbl={var:'Variance YTD',ach:'Achievement %',share:'Share %',cpf:'Cost / Feddan'}[MODAL_MEASURE];
+  const measureLbl={var:'Variance YTD',ach:'Spend %',share:'Share %',cpf:'Cost / Feddan'}[MODAL_MEASURE];
   const _lg=(c,t)=>`<span class="lg"><span class="lg-dot" style="background:${c}"></span>${t}</span>`;
   const bdLegend = `<div class="legend">${
       MODAL_MEASURE==='ach'   ? _lg('var(--good)','Within plan (≤100%)')+_lg('var(--bad)','Over plan (>100%)')
@@ -993,7 +993,7 @@ function openDrill(dim, key, _fromBack){
       <div class="kcard"><div class="k-lbl">Budget (season)</div><div class="k-val">${cmp(tb)}</div><div class="k-sub">${fmt(tb)} EGP</div></div>
       <div class="kcard"><div class="k-lbl">Actual</div><div class="k-val">${cmp(ta)}</div><div class="k-sub">${fmt(ta)} EGP</div></div>
       <div class="kcard"><div class="k-lbl">Variance YTD</div><div class="k-val" style="color:${vY<0?'var(--bad)':'var(--good)'}">${(vY>0?'+':'')+cmp(vY)}</div><div class="k-sub">Budget−Actual to ${lastActualMonth(base)||'—'}</div></div>
-      <div class="kcard"><div class="k-lbl">Achievement YTD</div><div class="k-val">${ach===null?'—':ach.toFixed(0)+'%'}</div><div class="k-sub">${ach===null?'':(ach>100?'over plan':'within plan')}</div></div>
+      <div class="kcard"><div class="k-lbl">Spend % YTD</div><div class="k-val">${ach===null?'—':ach.toFixed(0)+'%'}</div><div class="k-sub">${ach===null?'':(ach>100?'over plan':'within plan')}</div></div>
     </div>
     <div class="kgrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
       <div class="kcard"><div class="k-lbl">Budget cost / feddan</div><div class="k-val">${bCpf===null?'—':fmt(bCpf)}</div><div class="k-sub">${TAG_.bArea>0?fmt(TAG_.bArea)+' fed planned':'no planned area'}</div></div>
@@ -1007,7 +1007,7 @@ function openDrill(dim, key, _fromBack){
       <div class="card-h"><div><div class="card-t">Breakdown</div><div class="card-s">click any row to drill one level deeper (context accumulates)</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <select onchange="setModalDim(this.value)" style="${selStyle}">${Object.keys(BD).map(k=>`<option value="${k}"${MODAL_DIM===k?' selected':''}${curDims.includes(k)?' disabled':''}>${BD[k].lbl}</option>`).join('')}</select>
-        <select onchange="setModalMeasure(this.value)" style="${selStyle}"><option value="var"${MODAL_MEASURE==='var'?' selected':''}>Variance YTD</option><option value="ach"${MODAL_MEASURE==='ach'?' selected':''}>Achievement %</option><option value="share"${MODAL_MEASURE==='share'?' selected':''}>Share %</option><option value="cpf"${MODAL_MEASURE==='cpf'?' selected':''}>Cost / Feddan</option></select>
+        <select onchange="setModalMeasure(this.value)" style="${selStyle}"><option value="var"${MODAL_MEASURE==='var'?' selected':''}>Variance YTD</option><option value="ach"${MODAL_MEASURE==='ach'?' selected':''}>Spend %</option><option value="share"${MODAL_MEASURE==='share'?' selected':''}>Share %</option><option value="cpf"${MODAL_MEASURE==='cpf'?' selected':''}>Cost / Feddan</option></select>
       </div></div>
       <div class="card-s" style="margin:-4px 0 6px">${bd.lbl} by ${measureLbl} · showing all ${shownCount}</div>
       ${bdLegend}
@@ -1256,7 +1256,7 @@ function renderDim(name){
     <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl}s — ${SIDE==='both'?'Budget vs Actual':SIDE==='budget'?'Budget':SIDE==='actual'?'Actual':'Variance'}</div><div class="card-s">Top 16 by budget · click for details</div></div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">${lblSeg()}${tblControls()}${metricNote()}</div></div>${bars}</div>
     <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl} detail</div><div class="card-s">Variance in EGP and % · click a header to sort · click a row for details</div></div></div>
     <div class="tbl-wrap"><table class="dt">
-      <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th>${name==='varieties'?'<th>Product</th>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<th onclick="dimSort('b')">Budget${arrow('b')}</th>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<th onclick="dimSort('a')">Actual${arrow('a')}</th>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th>`:''}${SIDE==='both'?`<th onclick="dimSort('ach')">Achievement${arrow('ach')}</th>`:''}${shareValid()?`<th onclick="dimSort('sh')">Share${arrow('sh')}</th>`:''}</tr></thead>
+      <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th>${name==='varieties'?'<th>Product</th>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<th onclick="dimSort('b')">Budget${arrow('b')}</th>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<th onclick="dimSort('a')">Actual${arrow('a')}</th>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th>`:''}${SIDE==='both'?`<th onclick="dimSort('ach')">Spend %${arrow('ach')}</th>`:''}${shareValid()?`<th onclick="dimSort('sh')">Share${arrow('sh')}</th>`:''}</tr></thead>
       <tbody>${data.map(o=>{const vp=pct(o.v,o.b),cl=` style="cursor:pointer" onclick="drillGo(${o.drill})"`;
         const shBase=SIDE==='budget'?tb:ta, shVal=SIDE==='budget'?o.b:o.a;
         return `<tr${cl}><td dir="auto">${name==='varieties'?esc(nn(o.key)):(o.lbl||esc(nn(o.key)))}${o.tags||''}</td>${name==='varieties'?`<td dir="auto" style="color:var(--text2)">${esc(VPROD.get(o.key)||'—')}</td>`:''}${SIDE!=='actual'&&SIDE!=='variance'?`<td>${mvCell(o,'b')}</td>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<td>${mvCell(o,'a')}</td>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`
@@ -1354,7 +1354,7 @@ function dimMatrix(rows,name,cfg,colType){
   const colShare=new Map();
   for(const c of cols){let s=0;for(const o of colMaps.get(c).values())s+=o.a;colShare.set(c,s||1);}
   const grandShare=rowsAgg.reduce((s,o)=>s+o.a,0)||1;
-  const sideLbl=({both:'Budget vs Actual',budget:'Budget',actual:'Actual',variance:'Variance',ach:'Achievement %',share:'Share %'})[SIDE]||SIDE;
+  const sideLbl=({both:'Budget vs Actual',budget:'Budget',actual:'Actual',variance:'Variance',ach:'Spend %',share:'Share %'})[SIDE]||SIDE;
   let h=`<div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl}s × ${colLbl}s</div><div class="card-s">${sideLbl} · follows the KPI &amp; Show selectors · click a cell to drill into the combination · click a row label to drill into the ${cfg.lbl.toLowerCase()}</div></div><div style="display:flex;gap:10px;align-items:flex-end">${tblControls()}${metricNote()}</div></div>
     <div class="mx-wrap"><table class="mx"><thead><tr><th>${cfg.lbl}</th>${cols.map(c=>`<th dir="auto">${esc(nn(c))}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
   for(const ro of rowsAgg){
@@ -1420,7 +1420,7 @@ function renderOps(){
   document.getElementById('pane-operations').innerHTML=`
     <div class="card"><div class="card-h"><div><div class="card-t">Operations</div><div class="card-s">${data.length} operations · click a row for details</div></div><div style="display:flex;gap:10px;align-items:flex-end">${tblControls()}${metricNote()}</div></div>
     <div class="tbl-wrap"><table class="dt">
-      <thead><tr><th>Operation</th><th style="text-align:left">Bucket</th><th>Unit</th><th>Status</th>${SIDE!=='actual'&&SIDE!=='variance'?'<th>Budget</th>':''}${SIDE!=='budget'&&SIDE!=='variance'?'<th>Actual</th>':''}${SIDE!=='budget'&&SIDE!=='actual'?'<th>Variance</th><th>Var %</th>':''}${SIDE==='both'?'<th>Achievement</th>':''}</tr></thead>
+      <thead><tr><th>Operation</th><th style="text-align:left">Bucket</th><th>Unit</th><th>Status</th>${SIDE!=='actual'&&SIDE!=='variance'?'<th>Budget</th>':''}${SIDE!=='budget'&&SIDE!=='variance'?'<th>Actual</th>':''}${SIDE!=='budget'&&SIDE!=='actual'?'<th>Variance</th><th>Var %</th>':''}${SIDE==='both'?'<th>Spend %</th>':''}</tr></thead>
       <tbody>${data.map(o=>{const vp=pct(o.v,o.b);
         const badge=o.rawB===0&&o.rawA>0?'<span class="badge b-unpl">Unplanned</span>':(o.rawA===0?'<span class="badge b-nost">Not started</span>':'<span class="badge b-match">Planned</span>');
         const unm=o.bucket==='(unmapped)'?' <span class="badge b-unm">unmapped</span>':'';
@@ -1925,7 +1925,7 @@ function setMetricSel(v){METRIC=v;if(v!=='value'){OVVAL='money';BKVAL='money';PR
 function setSideSel(v){SIDE=v;renderAll();}
 function tblControls(){
   const kpi=[['value','Value (EGP)'],['qty','Quantity'],['cpf','Cost / Feddan'],['price','Unit Price']];
-  const side=[['both','Budget vs Actual'],['budget','Budget only'],['actual','Actual only'],['variance','Variance'],['ach','Achievement %'],['share','Share %']].filter(([v])=>!(v==='share'&&!shareValid()));
+  const side=[['both','Budget vs Actual'],['budget','Budget only'],['actual','Actual only'],['variance','Variance'],['ach','Spend %'],['share','Share %']].filter(([v])=>!(v==='share'&&!shareValid()));
   const views=[['summary','Summary'],['months','By Month'],['category','By Category'],['bucket','By Bucket'],['cpf','Cost / Feddan']].filter(([v])=>!(TAB==='buckets'&&v==='bucket')&&!(TAB==='products'&&v==='category'));
   const showView=['buckets','products','farms','varieties','plots','operations'].includes(TAB);
   return `<div style="display:flex;gap:8px;flex-wrap:wrap">
