@@ -973,7 +973,9 @@ function openDrill(dim, key, _fromBack){
         col:ac===null?'var(--text3)':(pct!==null&&pct>0?'var(--bad)':'var(--good)'),
         sortv:ac===null?-1:ac};
     }
-    const vPct=o.bYTD>0?o.vYTD/o.bYTD*100:null;return {...o,val:o.vYTD,sortv:Math.abs(o.vYTD),varPct:vPct};
+    // Variance YTD — show Actual (A) and Budget-to-date (B) absolute + variance %, like the cost/feddan view
+    const vPct=o.bYTD>0?o.vYTD/o.bYTD*100:null;
+    return {...o,val:o.vYTD,sortv:Math.abs(o.vYTD),varPct:vPct,txt:'A '+cmp(o.a)+' · B '+cmp(o.bYTD)};
   });
   items.sort(bd.isMonth?((x,y)=>mOrd(x.key)-mOrd(y.key)):((x,y)=>y.sortv-x.sortv));
   const shownCount=items.length;   // show all rows (no top-N cap)
