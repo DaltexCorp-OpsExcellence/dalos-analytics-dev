@@ -1045,11 +1045,6 @@ function renderOverview(){
   const projActual = monthsElapsed? ta/(monthsElapsed/seasonMonths) : 0;
   const projVar = tb-projActual;
 
-  // 9. Pareto: cumulative share of |variance| by plot
-  const paretoAll=[...plots].map(p=>({abs:Math.abs(p.vYTD),meta:p.meta,key:p.key})).sort((a,b)=>b.abs-a.abs);
-  const totalAbs=paretoAll.reduce((s,x)=>s+x.abs,0)||1; let cum=0,n80=0;
-  for(const p of paretoAll){cum+=p.abs;n80++;if(cum/totalAbs>=0.8)break;}
-  const paretoTop=paretoAll.slice(0,8).map(o=>({val:o.abs,meta:o.meta,drill:drillRef('plot',o.key)}));
 
   // 10. Cost/feddan outliers: plot actual cpf vs variety average
   const varCpf=new Map();
@@ -1109,10 +1104,7 @@ function renderOverview(){
   } else if(OV_SUB==='risk'){
     panels=`
       ${card('⚠ Unplanned spend spotlight','Actual cost with no budget line · Plot · Variety · Farm · click for details',miniList(unplanned,plotLabel))}
-      <div class="grid2">
-        ${card('Cost/Feddan outliers','Plot actual cost/fed vs its variety average · click for details',miniList(outliers.map(o=>({val:o.val,meta:o.meta,key:o.key,sub:`${fmt(o.cpf)} vs ${fmt(o.varAvg)} avg`,drill:o.drill})),o=>plotLabel(o)+(o.key?plotTag(rows,o.key):'')))}
-        ${card('Pareto — variance concentration',`${n80} plots drive 80% of total variance · click for details`,miniList(paretoTop,o=>plotLabel(o)+(o.key?plotTag(rows,o.key):'')))}
-      </div>
+      ${card('Cost/Feddan outliers','Plot actual cost/fed vs its variety average · click for details',miniList(outliers.map(o=>({val:o.val,meta:o.meta,key:o.key,sub:`${fmt(o.cpf)} vs ${fmt(o.varAvg)} avg`,drill:o.drill})),o=>plotLabel(o)+(o.key?plotTag(rows,o.key):'')))}
       ${card('Not-started watchlist','Budgeted but zero actuals · risk of unspent/missed work · click for details',miniList(notStarted,o=>plotLabel(o)+plotTag(rows,o.key)))}`;
   } else if(OV_SUB==='monthly'){
     panels=monthlyMatrixCard(rows);
