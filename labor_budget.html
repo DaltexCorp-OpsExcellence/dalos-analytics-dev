@@ -853,14 +853,17 @@ function dimDisp(dim,key,rows){
   return nn(key);
 }
 // modal-local breakdown + measure state
-// Modal state per stack frame: {dim,key,mdim,measure}
-// mdim/measure are stored on the frame so Back restores what the user was seeing at that level
-let MODAL_DIM='operation', MODAL_MEASURE='var', MODAL_PROD='all';
+// Modal state per stack frame: {dim,key,mdim,measure,prods,ps}
+// stored on the frame so Back restores what the user was seeing at that level
+let MODAL_DIM='operation', MODAL_MEASURE='var', MODAL_PRODS=[], MODAL_PS='all'; // MODAL_PRODS: [] = all products; MODAL_PS: all|planned|unplanned
 function _curFrame(){ return DRILL_STACK[DRILL_STACK.length-1]; }
-function _persist(){ const f=_curFrame(); if(f){f.mdim=MODAL_DIM;f.measure=MODAL_MEASURE;f.prod=MODAL_PROD;} }
-function setModalDim(v){MODAL_DIM=v;_persist();const c=_curFrame();if(c)openDrill(c.dim,c.key,true);}
-function setModalMeasure(v){MODAL_MEASURE=v;_persist();const c=_curFrame();if(c)openDrill(c.dim,c.key,true);}
-function setModalProd(v){MODAL_PROD=v;_persist();const c=_curFrame();if(c)openDrill(c.dim,c.key,true);}
+function _persist(){ const f=_curFrame(); if(f){f.mdim=MODAL_DIM;f.measure=MODAL_MEASURE;f.prods=MODAL_PRODS.slice();f.ps=MODAL_PS;} }
+function _reopen(){const c=_curFrame();if(c)openDrill(c.dim,c.key,true);}
+function setModalDim(v){MODAL_DIM=v;_persist();_reopen();}
+function setModalMeasure(v){MODAL_MEASURE=v;_persist();_reopen();}
+function toggleModalProd(p){const i=MODAL_PRODS.indexOf(p);if(i>=0)MODAL_PRODS.splice(i,1);else MODAL_PRODS.push(p);_persist();_reopen();}
+function clearModalProds(){MODAL_PRODS=[];_persist();_reopen();}
+function setModalPS(v){MODAL_PS=v;_persist();_reopen();}
 function drillDeeper(regIdx){ // click inside modal: accumulate context; snapshot current selectors first
   const d=DRILL_REG[regIdx]; if(!d) return;
   _persist();
@@ -871,21 +874,29 @@ function drillDeeper(regIdx){ // click inside modal: accumulate context; snapsho
 }
 function openDrill(dim, key, _fromBack){
   if(!_fromBack){
-    if(document.getElementById('drill-modal').style.display!=='flex'){DRILL_STACK=[];MODAL_DIM='operation';MODAL_MEASURE='var';MODAL_PROD='all';}
-    DRILL_STACK.push({dim,key,mdim:undefined,measure:undefined,prod:'all'});
+    if(document.getElementById('drill-modal').style.display!=='flex'){DRILL_STACK=[];MODAL_DIM='operation';MODAL_MEASURE='var';MODAL_PRODS=[];MODAL_PS='all';}
+    DRILL_STACK.push({dim,key,mdim:undefined,measure:undefined,prods:MODAL_PRODS.slice(),ps:MODAL_PS});
   } else {
     // Back / re-render: restore this frame's remembered selectors, if any
     const f=_curFrame();
-    if(f){ if(f.mdim)MODAL_DIM=f.mdim; if(f.measure)MODAL_MEASURE=f.measure; MODAL_PROD=f.prod||'all'; }
+    if(f){ if(f.mdim)MODAL_DIM=f.mdim; if(f.measure)MODAL_MEASURE=f.measure; MODAL_PRODS=(f.prods||[]).slice(); MODAL_PS=f.ps||'all'; }
   }
   const base=filtered();
   let rows=base.filter(r=>matchDim(r,dim,key));
-  // In-modal product filter — options come from the drilled selection before filtering
+  // In-modal filters — product options come from the drilled selection before filtering
   const prodOpts=[...new Set(rows.map(r=>r.product).filter(Boolean))].sort();
-  if(MODAL_PROD!=='all'){ if(prodOpts.includes(MODAL_PROD)) rows=rows.filter(r=>r.product===MODAL_PROD); else MODAL_PROD='all'; }
+  MODAL_PRODS=MODAL_PRODS.filter(p=>prodOpts.includes(p));           // drop products not present at this level
+  if(MODAL_PRODS.length) rows=rows.filter(r=>MODAL_PRODS.includes(r.product));
+  if(MODAL_PS==='planned')   rows=rows.filter(r=>!plotIsUnplanned(r));
+  else if(MODAL_PS==='unplanned') rows=rows.filter(r=>plotIsUnplanned(r));
+  // Filter bar (product multi-select chips + plot-status) — built once, reused even when a filter empties the result
+  const _chip=(active,label,onclick)=>`<button onclick="${onclick}" style="font-family:var(--font);font-size:10.5px;font-weight:600;border:1px solid ${active?'var(--navy)':'var(--border)'};background:${active?'var(--navy)':'var(--white)'};color:${active?'#fff':'var(--text2)'};border-radius:999px;padding:4px 11px;cursor:pointer">${label}</button>`;
+  const prodChips = prodOpts.length>1 ? `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);font-weight:700"><i class="ti ti-plant-2" style="font-size:12px;color:var(--orange)"></i> Products</span>${_chip(MODAL_PRODS.length===0,'All','clearModalProds()')}${prodOpts.map(p=>_chip(MODAL_PRODS.includes(p),esc(nn(p)),`toggleModalProd('${esc(p).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')`)).join('')}</div>` : '';
+  const psSel = `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--text3);font-weight:700">Plot status</span><select class="pf-sel" onchange="setModalPS(this.value)"><option value="all"${MODAL_PS==='all'?' selected':''}>Overall</option><option value="planned"${MODAL_PS==='planned'?' selected':''}>Planned only</option><option value="unplanned"${MODAL_PS==='unplanned'?' selected':''}>Unplanned only</option></select></div>`;
+  const filterBar = `<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid var(--border)">${prodChips}${psSel}</div>`;
   if(!rows.length){
     document.getElementById('drill-title').innerHTML='<span dir="auto">'+esc(dimDisp(dim,key,base))+'</span>';
-    document.getElementById('drill-body').innerHTML='<div style="text-align:center;color:var(--text3);padding:40px">No rows match this selection with the current filters.</div>';
+    document.getElementById('drill-body').innerHTML=filterBar+'<div style="text-align:center;color:var(--text3);padding:40px">No rows match this product / plot-status filter. Adjust the filters above.</div>';
     document.getElementById('drill-modal').style.display='flex';
     return;
   }
@@ -918,7 +929,7 @@ function openDrill(dim, key, _fromBack){
   }
   const bd=BD[MODAL_DIM]||BD.operation;
   // remember what we actually rendered on this frame so Back can restore it
-  const _fr=_curFrame(); if(_fr){_fr.mdim=MODAL_DIM;_fr.measure=MODAL_MEASURE;_fr.prod=MODAL_PROD;}
+  const _fr=_curFrame(); if(_fr){_fr.mdim=MODAL_DIM;_fr.measure=MODAL_MEASURE;_fr.prods=MODAL_PRODS.slice();_fr.ps=MODAL_PS;}
   let items=aggYTD(rows,bd.key,cut);
   const shTot=items.reduce((s,o)=>s+o.a,0)||1;
   items=items.map(o=>{
@@ -942,15 +953,21 @@ function openDrill(dim, key, _fromBack){
     const vPct=o.bYTD>0?o.vYTD/o.bYTD*100:null;return {...o,val:o.vYTD,sortv:Math.abs(o.vYTD),varPct:vPct};
   });
   items.sort(bd.isMonth?((x,y)=>mOrd(x.key)-mOrd(y.key)):((x,y)=>y.sortv-x.sortv));
-  items=items.slice(0,14);
+  const shownCount=items.length;   // show all rows (no top-N cap)
   for(const o of items){ if(!(bd.isMonth&&dim==='month')) o.drill=drillRef(MODAL_DIM==='month'?'month':MODAL_DIM,o.key); }
   const measureLbl={var:'Variance YTD',ach:'Achievement %',share:'Share %',cpf:'Cost / Feddan'}[MODAL_MEASURE];
+  const _lg=(c,t)=>`<span class="lg"><span class="lg-dot" style="background:${c}"></span>${t}</span>`;
+  const bdLegend = `<div class="legend">${
+      MODAL_MEASURE==='ach'   ? _lg('var(--good)','Within plan (≤100%)')+_lg('var(--bad)','Over plan (>100%)')
+    : MODAL_MEASURE==='share' ? _lg('var(--navy)','Share of actual')
+    : MODAL_MEASURE==='cpf'   ? _lg('var(--good)','Below variety avg')+_lg('var(--bad)','Above variety avg')
+    :                           _lg('var(--good)','Under budget')+_lg('var(--bad)','Over budget')
+  }</div>`;
   const backBtn=DRILL_STACK.length>1?`<button onclick="drillBack()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;margin-right:10px"><i class="ti ti-arrow-left" style="font-size:11px"></i> Back</button>`:'';
   document.getElementById('drill-title').innerHTML=`${backBtn}<span style="font-size:11px;color:var(--text3);font-weight:600">${DIM_TITLE[dim]||dim}</span><br><span dir="auto">${esc(dimDisp(dim,key,rows))}</span>`;
   const selStyle='font-family:var(--font);font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:var(--white);cursor:pointer';
-  const prodFilter = prodOpts.length>1 ? `<div style="display:flex;align-items:center;gap:8px;margin:0 0 12px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);font-weight:700"><i class="ti ti-plant-2" style="font-size:12px;color:var(--orange)"></i> Product</span><select onchange="setModalProd(this.value)" style="${selStyle}"><option value="all"${MODAL_PROD==='all'?' selected':''}>All products (${prodOpts.length})</option>${prodOpts.map(p=>`<option value="${esc(p)}"${MODAL_PROD===p?' selected':''}>${esc(nn(p))}</option>`).join('')}</select>${MODAL_PROD!=='all'?`<span style="font-size:10.5px;color:var(--text3)">everything below is limited to <b>${esc(nn(MODAL_PROD))}</b></span>`:''}</div>` : '';
   document.getElementById('drill-body').innerHTML=`
-    ${prodFilter}
+    ${filterBar}
     <div class="kgrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
       <div class="kcard"><div class="k-lbl">Budget (season)</div><div class="k-val">${cmp(tb)}</div><div class="k-sub">${fmt(tb)} EGP</div></div>
       <div class="kcard"><div class="k-lbl">Actual</div><div class="k-val">${cmp(ta)}</div><div class="k-sub">${fmt(ta)} EGP</div></div>
@@ -963,21 +980,23 @@ function openDrill(dim, key, _fromBack){
       <div class="kcard"><div class="k-lbl">Cost / feddan variance</div><div class="k-val" style="color:${cpfVar===null?'var(--text3)':(cpfVar>0?'var(--bad)':'var(--good)')}">${cpfVar===null?'—':(cpfVar>0?'+':'')+fmt(cpfVar)}</div><div class="k-sub">${cpfVar===null?'':(bCpf>0?((cpfVar/bCpf*100>0?'+':'')+(cpfVar/bCpf*100).toFixed(1)+'% vs plan'):'')}</div></div>
       <div class="kcard"><div class="k-lbl">Area</div><div class="k-val">${fmt(TAG_.aArea||TAG_.bArea)}</div><div class="k-sub">feddan${TAG_.bArea>0&&TAG_.aArea>0&&Math.abs(TAG_.aArea-TAG_.bArea)>0.5?' · planned '+fmt(TAG_.bArea):''}</div></div>
     </div>
-    <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Monthly Budget vs Actual</div>${lblSeg()}</div>${monthlySVG(rows,'amount')}</div>
+    <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Monthly Budget vs Actual</div>${lblSeg()}</div>${monthlySVG(rows,'amount')}
+      <div class="legend"><span class="lg"><span class="lg-dot" style="background:var(--orange)"></span>Budget</span><span class="lg"><span class="lg-dot" style="background:var(--navy)"></span>Actual</span></div></div>
     <div class="card" style="box-shadow:none;border:1px solid var(--border)">
       <div class="card-h"><div><div class="card-t">Breakdown</div><div class="card-s">click any row to drill one level deeper (context accumulates)</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <select onchange="setModalDim(this.value)" style="${selStyle}">${Object.keys(BD).map(k=>`<option value="${k}"${MODAL_DIM===k?' selected':''}${curDims.includes(k)?' disabled':''}>${BD[k].lbl}</option>`).join('')}</select>
         <select onchange="setModalMeasure(this.value)" style="${selStyle}"><option value="var"${MODAL_MEASURE==='var'?' selected':''}>Variance YTD</option><option value="ach"${MODAL_MEASURE==='ach'?' selected':''}>Achievement %</option><option value="share"${MODAL_MEASURE==='share'?' selected':''}>Share %</option><option value="cpf"${MODAL_MEASURE==='cpf'?' selected':''}>Cost / Feddan</option></select>
       </div></div>
-      <div class="card-s" style="margin:-4px 0 6px">${bd.lbl} by ${measureLbl}</div>
+      <div class="card-s" style="margin:-4px 0 6px">${bd.lbl} by ${measureLbl} · showing all ${shownCount}</div>
+      ${bdLegend}
       ${miniList(items,o=>bd.dsp(o))}
     </div>`;
   // rewire clicks: breakdown rows must accumulate context (drillDeeper), not plain drill
   document.getElementById('drill-body').innerHTML=document.getElementById('drill-body').innerHTML.replace(/drillGo\((\d+)\)/g,'drillDeeper($1)');
   document.getElementById('drill-modal').style.display='flex';
 }
-function closeDrill(){document.getElementById('drill-modal').style.display='none';DRILL_STACK=[];MODAL_DIM='operation';MODAL_MEASURE='var';MODAL_PROD='all';}
+function closeDrill(){document.getElementById('drill-modal').style.display='none';DRILL_STACK=[];MODAL_DIM='operation';MODAL_MEASURE='var';MODAL_PRODS=[];MODAL_PS='all';}
 function drillBack(){
   if(DRILL_STACK.length<2){closeDrill();return;}
   DRILL_STACK.pop();
