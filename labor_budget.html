@@ -855,11 +855,12 @@ function dimDisp(dim,key,rows){
 // modal-local breakdown + measure state
 // Modal state per stack frame: {dim,key,mdim,measure}
 // mdim/measure are stored on the frame so Back restores what the user was seeing at that level
-let MODAL_DIM='operation', MODAL_MEASURE='var';
+let MODAL_DIM='operation', MODAL_MEASURE='var', MODAL_PROD='all';
 function _curFrame(){ return DRILL_STACK[DRILL_STACK.length-1]; }
-function _persist(){ const f=_curFrame(); if(f){f.mdim=MODAL_DIM;f.measure=MODAL_MEASURE;} }
+function _persist(){ const f=_curFrame(); if(f){f.mdim=MODAL_DIM;f.measure=MODAL_MEASURE;f.prod=MODAL_PROD;} }
 function setModalDim(v){MODAL_DIM=v;_persist();const c=_curFrame();if(c)openDrill(c.dim,c.key,true);}
 function setModalMeasure(v){MODAL_MEASURE=v;_persist();const c=_curFrame();if(c)openDrill(c.dim,c.key,true);}
+function setModalProd(v){MODAL_PROD=v;_persist();const c=_curFrame();if(c)openDrill(c.dim,c.key,true);}
 function drillDeeper(regIdx){ // click inside modal: accumulate context; snapshot current selectors first
   const d=DRILL_REG[regIdx]; if(!d) return;
   _persist();
@@ -870,15 +871,18 @@ function drillDeeper(regIdx){ // click inside modal: accumulate context; snapsho
 }
 function openDrill(dim, key, _fromBack){
   if(!_fromBack){
-    if(document.getElementById('drill-modal').style.display!=='flex'){DRILL_STACK=[];MODAL_DIM='operation';MODAL_MEASURE='var';}
-    DRILL_STACK.push({dim,key,mdim:undefined,measure:undefined});
+    if(document.getElementById('drill-modal').style.display!=='flex'){DRILL_STACK=[];MODAL_DIM='operation';MODAL_MEASURE='var';MODAL_PROD='all';}
+    DRILL_STACK.push({dim,key,mdim:undefined,measure:undefined,prod:'all'});
   } else {
     // Back / re-render: restore this frame's remembered selectors, if any
     const f=_curFrame();
-    if(f){ if(f.mdim)MODAL_DIM=f.mdim; if(f.measure)MODAL_MEASURE=f.measure; }
+    if(f){ if(f.mdim)MODAL_DIM=f.mdim; if(f.measure)MODAL_MEASURE=f.measure; MODAL_PROD=f.prod||'all'; }
   }
   const base=filtered();
-  const rows=base.filter(r=>matchDim(r,dim,key));
+  let rows=base.filter(r=>matchDim(r,dim,key));
+  // In-modal product filter — options come from the drilled selection before filtering
+  const prodOpts=[...new Set(rows.map(r=>r.product).filter(Boolean))].sort();
+  if(MODAL_PROD!=='all'){ if(prodOpts.includes(MODAL_PROD)) rows=rows.filter(r=>r.product===MODAL_PROD); else MODAL_PROD='all'; }
   if(!rows.length){
     document.getElementById('drill-title').innerHTML='<span dir="auto">'+esc(dimDisp(dim,key,base))+'</span>';
     document.getElementById('drill-body').innerHTML='<div style="text-align:center;color:var(--text3);padding:40px">No rows match this selection with the current filters.</div>';
@@ -914,7 +918,7 @@ function openDrill(dim, key, _fromBack){
   }
   const bd=BD[MODAL_DIM]||BD.operation;
   // remember what we actually rendered on this frame so Back can restore it
-  const _fr=_curFrame(); if(_fr){_fr.mdim=MODAL_DIM;_fr.measure=MODAL_MEASURE;}
+  const _fr=_curFrame(); if(_fr){_fr.mdim=MODAL_DIM;_fr.measure=MODAL_MEASURE;_fr.prod=MODAL_PROD;}
   let items=aggYTD(rows,bd.key,cut);
   const shTot=items.reduce((s,o)=>s+o.a,0)||1;
   items=items.map(o=>{
@@ -944,7 +948,9 @@ function openDrill(dim, key, _fromBack){
   const backBtn=DRILL_STACK.length>1?`<button onclick="drillBack()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;margin-right:10px"><i class="ti ti-arrow-left" style="font-size:11px"></i> Back</button>`:'';
   document.getElementById('drill-title').innerHTML=`${backBtn}<span style="font-size:11px;color:var(--text3);font-weight:600">${DIM_TITLE[dim]||dim}</span><br><span dir="auto">${esc(dimDisp(dim,key,rows))}</span>`;
   const selStyle='font-family:var(--font);font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:8px;padding:5px 8px;background:var(--white);cursor:pointer';
+  const prodFilter = prodOpts.length>1 ? `<div style="display:flex;align-items:center;gap:8px;margin:0 0 12px;flex-wrap:wrap"><span style="font-size:11px;color:var(--text3);font-weight:700"><i class="ti ti-plant-2" style="font-size:12px;color:var(--orange)"></i> Product</span><select onchange="setModalProd(this.value)" style="${selStyle}"><option value="all"${MODAL_PROD==='all'?' selected':''}>All products (${prodOpts.length})</option>${prodOpts.map(p=>`<option value="${esc(p)}"${MODAL_PROD===p?' selected':''}>${esc(nn(p))}</option>`).join('')}</select>${MODAL_PROD!=='all'?`<span style="font-size:10.5px;color:var(--text3)">everything below is limited to <b>${esc(nn(MODAL_PROD))}</b></span>`:''}</div>` : '';
   document.getElementById('drill-body').innerHTML=`
+    ${prodFilter}
     <div class="kgrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
       <div class="kcard"><div class="k-lbl">Budget (season)</div><div class="k-val">${cmp(tb)}</div><div class="k-sub">${fmt(tb)} EGP</div></div>
       <div class="kcard"><div class="k-lbl">Actual</div><div class="k-val">${cmp(ta)}</div><div class="k-sub">${fmt(ta)} EGP</div></div>
@@ -971,7 +977,7 @@ function openDrill(dim, key, _fromBack){
   document.getElementById('drill-body').innerHTML=document.getElementById('drill-body').innerHTML.replace(/drillGo\((\d+)\)/g,'drillDeeper($1)');
   document.getElementById('drill-modal').style.display='flex';
 }
-function closeDrill(){document.getElementById('drill-modal').style.display='none';DRILL_STACK=[];MODAL_DIM='operation';MODAL_MEASURE='var';}
+function closeDrill(){document.getElementById('drill-modal').style.display='none';DRILL_STACK=[];MODAL_DIM='operation';MODAL_MEASURE='var';MODAL_PROD='all';}
 function drillBack(){
   if(DRILL_STACK.length<2){closeDrill();return;}
   DRILL_STACK.pop();
