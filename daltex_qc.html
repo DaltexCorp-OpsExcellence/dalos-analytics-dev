@@ -522,8 +522,14 @@ const num=v=>{const n=parseFloat(v);return isNaN(n)?0:n;};
 const r2=v=>Math.round(v*100)/100;
 const norm=v=>(v==null?'':String(v).trim());
 const avg=(rows,fn)=>rows.length?rows.reduce((s,r)=>s+fn(r),0)/rows.length:0;
+// A mixed sample (2 varieties from 2 farms) is split into 2 rows sharing one sample_uid,
+// with identical KPIs. For any metric that is NOT broken down by farm/variety we must count
+// each physical sample once. uniqSamples keeps one row per sample_uid; nSamp counts them.
+const uniqSamples=rows=>{const seen={},out=[];for(const r of rows){const k=r&&r.sample_uid;if(k!=null){if(seen[k])continue;seen[k]=1;}out.push(r);}return out;};
+const nSamp=rows=>{const s=new Set();for(let i=0;i<rows.length;i++){const k=rows[i].sample_uid;s.add(k==null?('__row_'+i):k);}return s.size;};
 // Container-level average: average samples within each container first, then average those container-numbers.
 // Rows with no container_number are treated as their own single-sample container so nothing is dropped.
+// Split mix rows are collapsed by sample_uid within each container so a sample is never weighted twice.
 const cavg=(rows,fn)=>{
   if(!rows.length) return 0;
   const byC={};
@@ -532,7 +538,7 @@ const cavg=(rows,fn)=>{
     (byC[c]=byC[c]||[]).push(r);
   });
   const contVals=Object.keys(byC).map(c=>{
-    const g=byC[c];
+    const g=uniqSamples(byC[c]);
     return g.reduce((s,r)=>s+fn(r),0)/g.length;
   });
   return contVals.reduce((s,v)=>s+v,0)/contVals.length;
@@ -778,7 +784,7 @@ function openItem(el){
   var all=F(),rows=all.filter(r=>norm(r[field])===val);
   if(!rows.length)return;
   __ITEM={field:field,val:val,tab:tab,label:label};
-  var n=rows.length,reps=new Set(rows.map(r=>r.report_id)).size,ctr=new Set(rows.map(r=>norm(r.container_number)).filter(Boolean)).size;
+  var n=nSamp(rows),reps=new Set(rows.map(r=>r.report_id)).size,ctr=new Set(rows.map(r=>norm(r.container_number)).filter(Boolean)).size;
   var maj=cavg(rows,r=>num(r.major_total)),min=cavg(rows,r=>num(r.minor_total)),tot=cavg(rows,r=>num(r.grand_total));
   var reasons=ALLDEF.map(d=>({name:d[1],sev:d[2],v:cavg(rows,r=>num(r[d[0]]))})).sort((a,b)=>b.v-a.v);
   var rmax=Math.max(0.0001,...reasons.map(r=>r.v));
@@ -864,7 +870,7 @@ async function askQC(uid){
   if(tEl) tEl.style.display='block';
   if(aEl) aEl.style.display='none';
   var rows=F();
-  var ctx='Daltex QC data (defect rates computed per container). '+rows.length+' samples. Avg major: '+fmt(cavg(rows,function(r){return num(r.major_total);}))+'%. Avg minor: '+fmt(cavg(rows,function(r){return num(r.minor_total);}))+'%. Top defects: '+ALLDEF.slice(0,4).map(function(d){return d[1]+': '+fmt(cavg(rows,function(r){return num(r[d[0]]);}))+'%';}).join(', ')+'.';
+  var ctx='Daltex QC data (defect rates computed per container). '+nSamp(rows)+' samples. Avg major: '+fmt(cavg(rows,function(r){return num(r.major_total);}))+'%. Avg minor: '+fmt(cavg(rows,function(r){return num(r.minor_total);}))+'%. Top defects: '+ALLDEF.slice(0,4).map(function(d){return d[1]+': '+fmt(cavg(rows,function(r){return num(r[d[0]]);}))+'%';}).join(', ')+'.';
   try{
     var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -944,7 +950,7 @@ function apply(){renderChips();refreshFilterOptions();killCharts();const rows=F(
 }
 function updateSub(rows){
   const reps=new Set(rows.map(r=>r.report_id)).size,ctr=new Set(rows.map(r=>norm(r.container_number)).filter(Boolean)).size;
-  document.getElementById('hdr-sub').innerHTML='Season 2025/26 &middot; '+rows.length+' samples &middot; '+reps+' inspections &middot; '+ctr+' containers &middot; Avg Major <b class="sev-maj">'+fmt(cavg(rows,r=>num(r.major_total)))+'%</b> &middot; Avg Minor <b class="sev-min">'+fmt(cavg(rows,r=>num(r.minor_total)))+'%</b>';
+  document.getElementById('hdr-sub').innerHTML='Season 2025/26 &middot; '+nSamp(rows)+' samples &middot; '+reps+' inspections &middot; '+ctr+' containers &middot; Avg Major <b class="sev-maj">'+fmt(cavg(rows,r=>num(r.major_total)))+'%</b> &middot; Avg Minor <b class="sev-min">'+fmt(cavg(rows,r=>num(r.minor_total)))+'%</b>';
 }
 
 /* ---------- OVERVIEW ---------- */
@@ -955,14 +961,15 @@ function renderOverview(rows){
   const ctrs=new Set(rows.map(r=>norm(r.container_number)).filter(Boolean)).size;
   const farms=new Set(rows.map(r=>norm(r.sample_farm)).filter(Boolean)).size;
   const cls=new Set(rows.map(r=>norm(r.client)).filter(Boolean)).size;
-  const amber=rows.length?rows.filter(r=>norm(r.sample_score)==='AMBER').length/rows.length*100:0;
+  const urows=uniqSamples(rows);
+  const amber=urows.length?urows.filter(r=>norm(r.sample_score)==='AMBER').length/urows.length*100:0;
   const top3=ALLDEF.map(d=>({n:d[1],sev:d[2],v:cavg(rows,r=>num(r[d[0]]))})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,3);
   const top3html=top3.length?'<div style="display:flex;flex-direction:column;gap:7px;margin-top:2px">'+top3.map((x,i)=>'<div style="display:flex;align-items:center;gap:8px;font-family:var(--font);letter-spacing:0;line-height:1.3"><span class="'+(x.sev==='maj'?'sev-maj':'sev-min')+'" style="width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:currentColor"></span><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;font-weight:600;color:var(--navy)">'+esc(x.n)+'</span><span style="font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--navy)">'+fmt(x.v)+'%</span></div>').join('')+'</div>':'<div style="font-family:var(--font);letter-spacing:0;font-size:12px;font-weight:400;color:#8a95b0;margin-top:2px">No defects in scope</div>';
   c.innerHTML=
    '<div class="kgrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:12px">'
    +kcard('Overall Major Defects','ti-alert-triangle','<span class="sev-maj">'+fmt(aM)+'%</span>','avg per container · zeros included','',aM*10)
    +kcard('Overall Minor Defects','ti-alert-circle','<span class="sev-min">'+fmt(am)+'%</span>','avg per container · zeros included','',am*10)
-   +kcard('Reports','ti-clipboard-check',reps,rows.length+' samples','',reps*4)
+   +kcard('Reports','ti-clipboard-check',reps,nSamp(rows)+' samples','',reps*4)
    +kcard('Shipments Inspected','ti-ship',ctrs,'unique containers','',ctrs*4)
    +kcard('Farms / Clients','ti-building',farms+' / '+cls,'farms · clients inspected','',(farms+cls)*5)
    +'</div>'
@@ -992,7 +999,7 @@ function renderOverview(rows){
   PARETO_ROWS['ch-pareto']=rows;
   buildPareto('ch-pareto',rows);
   // score donut
-  SCORE_ROWS=rows;
+  SCORE_ROWS=uniqSamples(rows);
   renderScoreChart();
   renderHM(rows);
   var hmSel=document.getElementById('hm-metric');if(hmSel)hmSel.value=HMM;
@@ -1011,7 +1018,8 @@ function renderOverview(rows){
   var worstFarm=Object.entries(groupBy(rows,function(r){return r.sample_farm||'';})).map(function(e){return {k:e[0],v:cavg(e[1],function(r){return num(r.major_total);})};}).filter(function(x){return x.k;}).sort(function(a,b){return b.v-a.v;})[0];
   var worstVar=Object.entries(groupBy(rows,function(r){return r.sample_variety||'';})).map(function(e){return {k:e[0],v:cavg(e[1],function(r){return num(r.major_total);})};}).filter(function(x){return x.k;}).sort(function(a,b){return b.v-a.v;})[0];
   var ovMaj=cavg(rows,function(r){return num(r.major_total);}),ovMin=cavg(rows,function(r){return num(r.minor_total);});
-  var amberCount=rows.filter(function(r){var sc=r.sample_score||'';return sc.toUpperCase()==='AMBER';}).length;
+  var amberRows=uniqSamples(rows),amberBase=amberRows.length;
+  var amberCount=amberRows.filter(function(r){var sc=r.sample_score||'';return sc.toUpperCase()==='AMBER';}).length;
   var topDefOv=ALLDEF.map(function(d){return {n:d[1],sev:d[2],v:cavg(rows,function(r){return num(r[d[0]]);})};}).sort(function(a,b){return b.v-a.v;})[0];
 
   function insRow(bg,icon,col,html){var d=document.createElement('div');d.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f0f2f7';d.innerHTML='<div style="width:30px;height:30px;border-radius:7px;background:'+bg+';display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti '+icon+'" style="font-size:13px;color:'+col+'"></i></div><div style="font-size:12px;color:#4a5778;line-height:1.5;flex:1">'+html+'</div>';return d;}
@@ -1021,7 +1029,7 @@ function renderOverview(rows){
   insWrap.innerHTML='<div style="font-size:13px;font-weight:700;color:#142850;margin-bottom:12px;display:flex;align-items:center;gap:6px"><i class="ti ti-bulb" style="color:#DC6428"></i> Auto Insights</div>';
   if(worstFarm) insWrap.appendChild(insRow('#fef2f2','ti-building','#dc2626','Highest-risk farm: <strong>'+esc(worstFarm.k)+'</strong> at avg <strong>'+fmt(worstFarm.v)+'%</strong> major defects.'));
   if(worstVar) insWrap.appendChild(insRow('#fff7ed','ti-plant-2','#d97706','Most affected variety: <strong>'+esc(worstVar.k)+'</strong> at avg <strong>'+fmt(worstVar.v)+'%</strong> major defects.'));
-  insWrap.appendChild(insRow('#fef2f2','ti-flag','#dc2626','AMBER score rate: <strong>'+fmt(amberCount/Math.max(rows.length,1)*100,1)+'%</strong> ('+amberCount+' of '+rows.length+' samples).'+(amberCount/Math.max(rows.length,1)>0.2?' ⚠ Review required.':'')));
+  insWrap.appendChild(insRow('#fef2f2','ti-flag','#dc2626','AMBER score rate: <strong>'+fmt(amberCount/Math.max(amberBase,1)*100,1)+'%</strong> ('+amberCount+' of '+amberBase+' samples).'+(amberCount/Math.max(amberBase,1)>0.2?' ⚠ Review required.':'')));
   insWrap.appendChild(insRow('#f4f6fb','ti-sum','#142850','Defect split: <strong>'+fmt(ovMaj)+'%</strong> major + <strong>'+fmt(ovMin)+'%</strong> minor = <strong>'+fmt(ovMaj+ovMin)+'%</strong> combined avg.'));
   if(topDefOv&&topDefOv.v>0) insWrap.appendChild(insRow(topDefOv.sev==='maj'?'#fef2f2':'#fff7ed',topDefOv.sev==='maj'?'ti-virus':'ti-alert-circle',topDefOv.sev==='maj'?'#dc2626':'#d97706','Leading defect: <strong>'+esc(topDefOv.n)+'</strong> at <strong>'+fmt(topDefOv.v)+'%</strong> avg.'));
   insWrap.lastElementChild.style.borderBottom='none';
@@ -1062,7 +1070,7 @@ function renderDim(rows,field,label){
     const rs=g[k];
     const reasons=ALLDEF.map(d=>({key:d[0],name:d[1],sev:d[2],v:cavg(rs,r=>num(r[d[0]]))}));
     let best='',bv=-1;reasons.forEach(rr=>{if(rr.v>bv){bv=rr.v;best=rr.name;}});
-    return {k,n:rs.length,reps:new Set(rs.map(r=>r.report_id)).size,maj:cavg(rs,r=>num(r.major_total)),min:cavg(rs,r=>num(r.minor_total)),tot:cavg(rs,r=>num(r.grand_total)),top:bv>0?best:'—',reasons,rs};
+    return {k,n:nSamp(rs),reps:new Set(rs.map(r=>r.report_id)).size,maj:cavg(rs,r=>num(r.major_total)),min:cavg(rs,r=>num(r.minor_total)),tot:cavg(rs,r=>num(r.grand_total)),top:bv>0?best:'—',reasons,rs};
   }).sort((a,b)=>b.tot-a.tot);
   const worst=items[0];
   const dh=Math.max(220,items.length*34);
@@ -1072,7 +1080,7 @@ function renderDim(rows,field,label){
   window.__DIM={field,label,g,items,rows};
   c.innerHTML=backBtn()+
    '<div class="dim-kpis">'
-   +kcard(label+'s Inspected','ti-category',items.length,rows.length+' samples · '+new Set(rows.map(r=>r.report_id)).size+' inspections','',items.length*8)
+   +kcard(label+'s Inspected','ti-category',items.length,nSamp(rows)+' samples · '+new Set(rows.map(r=>r.report_id)).size+' inspections','',items.length*8)
    +kcard('Avg Major Defects','ti-alert-triangle','<span class="sev-maj">'+fmt(cavg(rows,r=>num(r.major_total)))+'%</span>','across selection','',cavg(rows,r=>num(r.major_total))*10)
    +kcard('Avg Minor Defects','ti-alert-circle','<span class="sev-min">'+fmt(cavg(rows,r=>num(r.minor_total)))+'%</span>','across selection','',cavg(rows,r=>num(r.minor_total))*10)
    +kcard('Highest Defects','ti-flame',worst?esc(worst.k):'--',worst?fmt(worst.tot)+'% avg total · '+worst.n+' samples':'','',worst?Math.min(worst.tot*10,100):0)
@@ -1474,7 +1482,7 @@ function expSummary(){
   const out=[['Report','Date','Container','Client','Country','Variety','Packhouse','Samples','Avg Major %','Avg Minor %','Avg Total %','Top Defect']];
   Object.keys(g).sort().forEach(k=>{const rs=g[k],r0=rs[0];
     let best='',bv=-1;ALLDEF.forEach(d=>{const v=cavg(rs,x=>num(x[d[0]]));if(v>bv){bv=v;best=d[1];}});
-    out.push([k,r0.created_date,r0.container_number,r0.client,r0.country,r0.variety,r0.packhouse,rs.length,r2(cavg(rs,x=>num(x.major_total))),r2(cavg(rs,x=>num(x.minor_total))),r2(cavg(rs,x=>num(x.grand_total))),bv>0?best:'—']);
+    out.push([k,r0.created_date,r0.container_number,r0.client,r0.country,r0.variety,r0.packhouse,nSamp(rs),r2(cavg(rs,x=>num(x.major_total))),r2(cavg(rs,x=>num(x.minor_total))),r2(cavg(rs,x=>num(x.grand_total))),bv>0?best:'—']);
   });
   csvDl('qc_report_summary.csv',out);
 }
