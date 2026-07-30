@@ -485,6 +485,7 @@ input,select,button{font-family:var(--font)}
   <div class="fgrp"><div class="flab">Farm</div><div class="ms" data-f="sample_farm"></div></div>
   <div class="fgrp"><div class="flab">Country</div><div class="ms" data-f="country"></div></div>
   <div class="fgrp"><div class="flab">Variety</div><div class="ms" data-f="sample_variety"></div></div>
+  <div class="fgrp"><div class="flab">Mix / Single</div><div class="ms" data-f="variety_type"></div></div>
   <div class="fgrp"><div class="flab">Color</div><div class="ms" data-f="color"></div></div>
   <div class="fgrp"><div class="flab">Client</div><div class="ms" data-f="client"></div></div>
   <div class="fgrp"><div class="flab">Sub Client</div><div class="ms" data-f="sub_client"></div></div>
@@ -511,7 +512,7 @@ const ALLDEF=MAJ.map(d=>[d[0],d[1],'maj']).concat(MIN.map(d=>[d[0],d[1],'min']))
 const PAL=['#142850','#2563eb','#7c3aed','#0e7490','#16a34a','#d97706','#dc2626','#db2777','#64748b','#a16207','#0891b2'];
 const MAJC='#dc2626', MINC='#d97706';
 const DIMS={farm:['sample_farm','Farm'],country:['country','Country'],variety:['sample_variety','Variety'],color:['color','Color'],client:['client','Client'],sub_client:['sub_client','Sub Client'],packhouse:['packhouse','Packhouse']};
-const MSF=['season','wk','sample_farm','country','sample_variety','color','client','sub_client','packhouse','container_number','sample_score'];
+const MSF=['season','wk','sample_farm','country','sample_variety','variety_type','color','client','sub_client','packhouse','container_number','sample_score'];
 
 let ROWS=[],S={tab:'ov',gran:'weekly',from:'',to:'',dateBasis:'created_date'},charts={},dataPage=0;
 // Active date column resolver. Falls back to created_date when the chosen basis is empty for a row.
