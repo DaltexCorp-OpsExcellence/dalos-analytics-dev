@@ -484,7 +484,7 @@ input,select,button{font-family:var(--font)}
   <div class="fgrp"><div class="flab">Week</div><div class="ms" data-f="wk"></div></div>
   <div class="fgrp"><div class="flab">Farm</div><div class="ms" data-f="sample_farm"></div></div>
   <div class="fgrp"><div class="flab">Country</div><div class="ms" data-f="country"></div></div>
-  <div class="fgrp"><div class="flab">Variety</div><div class="ms" data-f="variety"></div></div>
+  <div class="fgrp"><div class="flab">Variety</div><div class="ms" data-f="sample_variety"></div></div>
   <div class="fgrp"><div class="flab">Color</div><div class="ms" data-f="color"></div></div>
   <div class="fgrp"><div class="flab">Client</div><div class="ms" data-f="client"></div></div>
   <div class="fgrp"><div class="flab">Sub Client</div><div class="ms" data-f="sub_client"></div></div>
@@ -510,8 +510,8 @@ const MIN=[['blemish_skin','Blemish / Skin'],['berry_drop','Berry Drop & Shatter
 const ALLDEF=MAJ.map(d=>[d[0],d[1],'maj']).concat(MIN.map(d=>[d[0],d[1],'min']));
 const PAL=['#142850','#2563eb','#7c3aed','#0e7490','#16a34a','#d97706','#dc2626','#db2777','#64748b','#a16207','#0891b2'];
 const MAJC='#dc2626', MINC='#d97706';
-const DIMS={farm:['sample_farm','Farm'],country:['country','Country'],variety:['variety','Variety'],color:['color','Color'],client:['client','Client'],sub_client:['sub_client','Sub Client'],packhouse:['packhouse','Packhouse']};
-const MSF=['season','wk','sample_farm','country','variety','color','client','sub_client','packhouse','container_number','sample_score'];
+const DIMS={farm:['sample_farm','Farm'],country:['country','Country'],variety:['sample_variety','Variety'],color:['color','Color'],client:['client','Client'],sub_client:['sub_client','Sub Client'],packhouse:['packhouse','Packhouse']};
+const MSF=['season','wk','sample_farm','country','sample_variety','color','client','sub_client','packhouse','container_number','sample_score'];
 
 let ROWS=[],S={tab:'ov',gran:'weekly',from:'',to:'',dateBasis:'created_date'},charts={},dataPage=0;
 // Active date column resolver. Falls back to created_date when the chosen basis is empty for a row.
@@ -784,7 +784,7 @@ function openItem(el){
   var rmax=Math.max(0.0001,...reasons.map(r=>r.v));
   var g=groupBy(all,r=>norm(r[field])),peers=Object.keys(g).map(k=>({k:k,t:cavg(g[k],r=>num(r.grand_total))})).sort((a,b)=>b.t-a.t);
   var rank=peers.findIndex(p=>p.k===val)+1,share=all.length?n/all.length*100:0;
-  var sec=field==='variety'?'sample_farm':'variety',secLabel=field==='variety'?'Farm':'Variety';
+  var sec=field==='sample_variety'?'sample_farm':'sample_variety',secLabel=field==='sample_variety'?'Farm':'Variety';
   var sg=groupBy(rows,r=>norm(r[sec])),secList=Object.keys(sg).map(k=>({k:k,t:cavg(sg[k],r=>num(r.grand_total)),n:sg[k].length})).sort((a,b)=>b.t-a.t).slice(0,6);
   var smax=Math.max(0.0001,...secList.map(s=>s.t));
   var kpi=function(l,v){return '<div class="qm-kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div></div>';};
@@ -888,7 +888,8 @@ const DATACOLS_QC=[
   {id:'client',label:'Client'},
   {id:'sub_client',label:'Sub Client'},
   {id:'country',label:'Country'},
-  {id:'variety',label:'Variety'},
+  {id:'sample_variety',label:'Variety'},
+  {id:'variety',label:'Report Variety'},
   {id:'color',label:'Color'},
   {id:'sample_farm',label:'Farm'},
   {id:'sample_score',label:'Score',badge:true},
@@ -908,7 +909,7 @@ const DATACOLS_QC=[
   {id:'sunburn',label:'Sunburn',pct:true},
   {id:'dry_stems',label:'Dry Stems',pct:true},
 ];
-let visibleQCCols=new Set(['qc_report_number','created_date','container_number','packhouse','client','country','variety','sample_score','major_total','minor_total','grand_total']);
+let visibleQCCols=new Set(['qc_report_number','created_date','container_number','packhouse','client','country','sample_variety','sample_score','major_total','minor_total','grand_total']);
 
 function renderColToggleQC(){
   var el=document.getElementById('qc-col-toggle');
@@ -996,7 +997,7 @@ function renderOverview(rows){
   renderHM(rows);
   var hmSel=document.getElementById('hm-metric');if(hmSel)hmSel.value=HMM;
   // root cause
-  const rcDims=[['sample_farm','farm','Top Farms','ti-building'],['variety','variety','Top Varieties','ti-plant-2'],['sub_client','sub_client','Top Sub Clients','ti-users'],['packhouse','packhouse','Top Packhouses','ti-home-cog']];
+  const rcDims=[['sample_farm','farm','Top Farms','ti-building'],['sample_variety','variety','Top Varieties','ti-plant-2'],['sub_client','sub_client','Top Sub Clients','ti-users'],['packhouse','packhouse','Top Packhouses','ti-home-cog']];
   let rcHtml=rcDims.map(d=>{
     const g=groupBy(rows,r=>norm(r[d[0]]));
     const top=Object.keys(g).map(k=>({k,v:cavg(g[k],r=>num(r.major_total)),n:g[k].length})).sort((a,b)=>b.v-a.v).slice(0,5);
@@ -1008,7 +1009,7 @@ function renderOverview(rows){
 
   // ── AUTO INSIGHTS ──
   var worstFarm=Object.entries(groupBy(rows,function(r){return r.sample_farm||'';})).map(function(e){return {k:e[0],v:cavg(e[1],function(r){return num(r.major_total);})};}).filter(function(x){return x.k;}).sort(function(a,b){return b.v-a.v;})[0];
-  var worstVar=Object.entries(groupBy(rows,function(r){return r.variety||'';})).map(function(e){return {k:e[0],v:cavg(e[1],function(r){return num(r.major_total);})};}).filter(function(x){return x.k;}).sort(function(a,b){return b.v-a.v;})[0];
+  var worstVar=Object.entries(groupBy(rows,function(r){return r.sample_variety||'';})).map(function(e){return {k:e[0],v:cavg(e[1],function(r){return num(r.major_total);})};}).filter(function(x){return x.k;}).sort(function(a,b){return b.v-a.v;})[0];
   var ovMaj=cavg(rows,function(r){return num(r.major_total);}),ovMin=cavg(rows,function(r){return num(r.minor_total);});
   var amberCount=rows.filter(function(r){var sc=r.sample_score||'';return sc.toUpperCase()==='AMBER';}).length;
   var topDefOv=ALLDEF.map(function(d){return {n:d[1],sev:d[2],v:cavg(rows,function(r){return num(r[d[0]]);})};}).sort(function(a,b){return b.v-a.v;})[0];
@@ -1035,7 +1036,7 @@ let HMM='grand_total';
 function setHM(k,btn){HMC=k;btn.parentElement.querySelectorAll('.cc-btn').forEach(b=>b.classList.toggle('on',b===btn));renderHM(F());}
 function setHMM(v){HMM=v;renderHM(F());}
 function renderHM(rows){
-  const combos={fv:['sample_farm','variety'],fc:['sample_farm','client'],vc:['variety','client'],pv:['packhouse','variety']};
+  const combos={fv:['sample_farm','sample_variety'],fc:['sample_farm','client'],vc:['sample_variety','client'],pv:['packhouse','sample_variety']};
   const [ra,rb]=combos[HMC];
   const av=[...new Set(rows.map(r=>norm(r[ra])).filter(Boolean))].sort(),bv=[...new Set(rows.map(r=>norm(r[rb])).filter(Boolean))].sort();
   // group rows per cell, then container-average the selected defect metric
@@ -1237,7 +1238,7 @@ function renderDim(rows,field,label){
              +'</div>';
          })()
          // Varieties
-         +(()=>{var vars=groupBy(o.rs||[],function(r){return r.variety||'';});var topV=Object.keys(vars).sort(function(a,b){return vars[b].length-vars[a].length;}).slice(0,3);
+         +(()=>{var vars=groupBy(o.rs||[],function(r){return r.sample_variety||'';});var topV=Object.keys(vars).sort(function(a,b){return vars[b].length-vars[a].length;}).slice(0,3);
            return '<div style="background:#fff;border:1px solid #e2e6f0;border-radius:10px;padding:12px;border-top:3px solid #16a34a">'
              +'<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#8a95b0;margin-bottom:6px">Top Varieties</div>'
              +'<div style="display:flex;flex-direction:column;gap:3px">'
@@ -1395,7 +1396,7 @@ function renderDimHM(){
 
 
 /* ---------- DATA EXTRACTION ---------- */
-const DATACOLS=[['qc_report_number','Report'],['created_date','Date'],['container_number','Container'],['sample_number','Sample'],['packhouse','Packhouse'],['client','Client'],['sub_client','Sub Client'],['country','Country'],['variety','Variety'],['sample_variety','Sample Variety'],['color','Color'],['sample_farm','Farm'],['sample_plot','Plot'],['sample_score','Score'],['major_total','Major %'],['minor_total','Minor %'],['grand_total','Total %']];
+const DATACOLS=[['qc_report_number','Report'],['created_date','Date'],['container_number','Container'],['sample_number','Sample'],['packhouse','Packhouse'],['client','Client'],['sub_client','Sub Client'],['country','Country'],['sample_variety','Variety'],['variety','Report Variety'],['color','Color'],['sample_farm','Farm'],['sample_plot','Plot'],['sample_score','Score'],['major_total','Major %'],['minor_total','Minor %'],['grand_total','Total %']];
 function renderData(rows){
   const c=document.getElementById('tab-content');
   const PAGE=50;
@@ -1465,7 +1466,7 @@ function expRecords(){
 }
 function expDefects(){
   const rows=F(),out=[['Report','Date','Container','Sample','Farm','Variety','Client','Packhouse','Severity','Defect Reason','Value %']];
-  rows.forEach(r=>ALLDEF.forEach(d=>out.push([r.qc_report_number,r.created_date,r.container_number,r.sample_number,r.sample_farm,r.variety,r.client,r.packhouse,d[2]==='maj'?'Major':'Minor',d[1],num(r[d[0]])])));
+  rows.forEach(r=>ALLDEF.forEach(d=>out.push([r.qc_report_number,r.created_date,r.container_number,r.sample_number,r.sample_farm,r.sample_variety,r.client,r.packhouse,d[2]==='maj'?'Major':'Minor',d[1],num(r[d[0]])])));
   csvDl('qc_defect_level.csv',out);
 }
 function expSummary(){
