@@ -1260,7 +1260,7 @@ function renderDim(name){
   if(vw!=='summary'){document.getElementById('pane-'+name).innerHTML=dimMatrix(rows,name,cfg,vw);return;}
   const bars=SIDE==='both'?pairedBars(data.slice(0,16),null):sideBars(data.slice(0,16),o=>(o.lbl||esc(nn(o.key)))+(o.tags||''));
   document.getElementById('pane-'+name).innerHTML=`
-    <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl}s — ${SIDE==='both'?'Budget vs Actual':SIDE==='budget'?'Budget':SIDE==='actual'?'Actual':'Variance'}</div><div class="card-s">Top 16 by budget · click for details</div></div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">${lblSeg()}${tblControls()}${metricNote()}</div></div>${bars}</div>
+    <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl.endsWith('y')?cfg.lbl.slice(0,-1)+'ies':cfg.lbl+'s'} — ${SIDE==='both'?'Budget vs Actual':SIDE==='budget'?'Budget':SIDE==='actual'?'Actual':'Variance'}</div><div class="card-s">Top 16 by budget · click for details</div></div><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">${lblSeg()}${tblControls()}${metricNote()}</div></div>${bars}</div>
     <div class="card"><div class="card-h"><div><div class="card-t">${cfg.lbl} detail</div><div class="card-s">Variance in EGP and % · click a header to sort · click a row for details</div></div></div>
     <div class="tbl-wrap"><table class="dt">
       <thead><tr><th onclick="dimSort('k')">${cfg.lbl}${arrow('k')}</th>${name==='varieties'?'<th>Product</th>':''}${SIDE!=='actual'&&SIDE!=='variance'?`<th onclick="dimSort('b')">Budget${arrow('b')}</th>`:''}${SIDE!=='budget'&&SIDE!=='variance'?`<th onclick="dimSort('a')">Actual${arrow('a')}</th>`:''}${SIDE!=='budget'&&SIDE!=='actual'?`<th onclick="dimSort('v')">Variance${arrow('v')}</th><th onclick="dimSort('vp')">Var %${arrow('vp')}</th>`:''}${SIDE==='both'?`<th onclick="dimSort('ach')">Spend %${arrow('ach')}</th>`:''}${shareValid()?`<th onclick="dimSort('sh')">Share${arrow('sh')}</th>`:''}</tr></thead>
@@ -1982,7 +1982,7 @@ function buildVCat(rows){
   for(const [k,n] of cnt){const i=k.indexOf('\u0001'),v=k.slice(0,i),c=k.slice(i+1);const cur=best.get(v);if(!cur||n>cur.n)best.set(v,{c,n});}
   const m=new Map();for(const [v,o] of best)m.set(v,o.c);return m;
 }
-function vcatSuffix(k){const c=VCAT.get(k);return c?' <span style="color:var(--text3);font-weight:500">· '+esc(c)+'</span>':'';}
+function vcatSuffix(k){const c=VPROD.get(k);return c?' <span style="color:var(--text3);font-weight:500">· '+esc(c)+'</span>':'';}
 let VPROD=new Map();
 function buildVProd(rows){
   const m=new Map();
