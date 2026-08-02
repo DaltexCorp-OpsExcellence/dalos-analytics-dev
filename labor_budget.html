@@ -938,7 +938,7 @@ function openDrill(dim, key, _fromBack){
     operation:{lbl:'Operations',key:r=>r.operation_norm||'(none)',dsp:(o)=>esc(nn(o.key))+opTag(rows,o.key)},
     plot:{lbl:'Plots',key:r=>r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot,dsp:(o)=>plotLabel(o)+plotTag(rows,o.key)},
     bucket:{lbl:'Buckets',key:r=>r.operational_bucket||'(unmapped)',dsp:(o)=>esc(nn(o.key))},
-    product:{lbl:'Categories',key:r=>r.product,dsp:(o)=>esc(nn(o.key))},
+    product:{lbl:'Products',key:r=>r.product,dsp:(o)=>esc(nn(o.key))},
     farm:{lbl:'Farms',key:r=>r.farm,dsp:(o)=>esc(nn(o.key))},
     variety:{lbl:'Varieties',key:r=>r.variety_en||'(none)',dsp:(o)=>esc(nn(o.key))+vcatSuffix(o.key)},
     month:{lbl:'Months',key:r=>r.month,dsp:(o)=>esc(nn(o.key)),isMonth:true},
