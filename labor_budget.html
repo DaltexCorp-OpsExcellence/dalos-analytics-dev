@@ -1146,8 +1146,10 @@ function renderOverview(){
         ${cardPF('✅ Best plots — under budget','Variance YTD (Budget−Actual) · Plot · Variety · Farm · click for details','best', miniList(bestPlots,o=>plotLabel(o)+plotTag(rows,o.key)))}
         ${cardPF('🔴 Worst plots — over budget','Variance YTD · Plot · Variety · Farm · click for details','worst', miniList(worstPlots,o=>plotLabel(o)+plotTag(rows,o.key)))}
       </div>
-      ${cardPF('Biggest variance contributors','Bucket × Farm · absolute Variance YTD · click for details','contrib',miniList(contrib,o=>esc(nn(o.key))))}
-      ${cardPF('Variety performance','Ranked by Variance YTD (worst first) · click for details','variety',miniList(varSorted.slice(0,12),o=>esc(nn(o.key))))}`;
+      <div class="grid2">
+        ${cardPF('Biggest variance contributors','Bucket × Farm · absolute Variance YTD · click for details','contrib',miniList(contrib,o=>esc(nn(o.key))))}
+        ${cardPF('Variety performance','Ranked by Variance YTD (worst first) · click for details','variety',miniList(varSorted.slice(0,12),o=>esc(nn(o.key))))}
+      </div>`;
   } else if(OV_SUB==='risk'){
     panels=`
       ${card('⚠ Unplanned spend spotlight','Actual cost with no budget line · Plot · Variety · Farm · click for details',miniList(unplanned,plotLabel))}
