@@ -1189,14 +1189,14 @@ function setMonDim(v){MON_DIM=v;renderAll();}
 function monthlyMatrixCard(rows){
   const keyFn={operational_bucket:r=>r.operational_bucket||'(unmapped)',product:r=>r.product,farm:r=>r.farm}[MON_DIM];
   const mdrill={operational_bucket:'bucket',product:'product',farm:'farm'}[MON_DIM];
-  const dimLbl={operational_bucket:'Bucket',product:'Category',farm:'Farm'}[MON_DIM];
+  const dimLbl={operational_bucket:'Bucket',product:'Products',farm:'Farm'}[MON_DIM];
   const cell=new Map();
   for(const r of rows){const k=keyFn(r)+'\u0001'+r.month;let o=cell.get(k);if(!o){o={b:0,a:0};cell.set(k,o);}o.b+=r.budget_amount||0;o.a+=r.actual_amount||0;}
   const totals=new Map();
   for(const r of rows){const k=keyFn(r);let o=totals.get(k);if(!o){o={b:0,a:0};totals.set(k,o);}o.b+=r.budget_amount||0;o.a+=r.actual_amount||0;}
   const dims=[...totals.entries()].sort((x,y)=>y[1].b-x[1].b||y[1].a-x[1].a).map(([k])=>k);
   const monthsPresent=MONTHS.filter(m=>rows.some(r=>r.month===m));
-  const seg=`<div class="seg">${[['operational_bucket','Buckets'],['product','Categories'],['farm','Farms']].map(([v,l])=>`<button class="${MON_DIM===v?'on':''}" onclick="setMonDim('${v}')">${l}</button>`).join('')}</div>`;
+  const seg=`<div class="seg">${[['operational_bucket','Buckets'],['product','Products'],['farm','Farms']].map(([v,l])=>`<button class="${MON_DIM===v?'on':''}" onclick="setMonDim('${v}')">${l}</button>`).join('')}</div>`;
   const vCell=(o,drillAttr,strong)=>{
     if(!o||(!o.b&&!o.a)) return `<td${drillAttr||''}><span class="cellin" style="color:var(--text3)">·</span></td>`;
     const v=o.a-o.b, vp=pct(v,o.b);
