@@ -883,7 +883,7 @@ function _curFrame(){ return DRILL_STACK[DRILL_STACK.length-1]; }
 function _persist(){ const f=_curFrame(); if(f){f.mdim=MODAL_DIM;f.measure=MODAL_MEASURE;f.prods=MODAL_PRODS.slice();f.ps=MODAL_PS;} }
 function _reopen(){const c=_curFrame();if(c)openDrill(c.dim,c.key,true);}
 function setModalDim(v){MODAL_DIM=v;_persist();_reopen();}
-function setModalMeasure(v){MODAL_MEASURE=v;_persist();_reopen();}
+function setModalMeasure(v){MODAL_MEASURE=v;const f=_curFrame();if(f)f.measureSet=true;_persist();_reopen();}
 function toggleModalProd(p){const i=MODAL_PRODS.indexOf(p);if(i>=0)MODAL_PRODS.splice(i,1);else MODAL_PRODS.push(p);_persist();_reopen();}
 function clearModalProds(){MODAL_PRODS=[];_persist();_reopen();}
 function setModalPS(v){MODAL_PS=v;_persist();_reopen();}
@@ -898,7 +898,7 @@ function drillDeeper(regIdx){ // click inside modal: accumulate context; snapsho
 function openDrill(dim, key, _fromBack){
   if(!_fromBack){
     if(document.getElementById('drill-modal').style.display!=='flex'){DRILL_STACK=[];MODAL_DIM='operation';MODAL_MEASURE='var';MODAL_PRODS=[];MODAL_PS='all';}
-    DRILL_STACK.push({dim,key,mdim:undefined,measure:undefined,prods:MODAL_PRODS.slice(),ps:MODAL_PS});
+    DRILL_STACK.push({dim,key,mdim:undefined,measure:undefined,measureSet:false,prods:MODAL_PRODS.slice(),ps:MODAL_PS});
   } else {
     // Back / re-render: restore this frame's remembered selectors, if any
     const f=_curFrame();
@@ -953,6 +953,8 @@ function openDrill(dim, key, _fromBack){
     const candidates=['operation','plot','bucket','product','farm','variety','unit','month'];
     MODAL_DIM = candidates.find(c=>!curDims.includes(c)) || 'operation';
   }
+  // Breakdown grouped by plots? default the measure to Cost/Feddan (until the user changes it on this frame)
+  { const _fm=_curFrame(); if(MODAL_DIM==='plot' && _fm && !_fm.measureSet) MODAL_MEASURE='cpf'; }
   const bd=BD[MODAL_DIM]||BD.operation;
   // remember what we actually rendered on this frame so Back can restore it
   const _fr=_curFrame(); if(_fr){_fr.mdim=MODAL_DIM;_fr.measure=MODAL_MEASURE;_fr.prods=MODAL_PRODS.slice();_fr.ps=MODAL_PS;}
