@@ -1912,7 +1912,7 @@ function perfRenderRows(node,dims,out,ancestorPath){
     out.push(`<tr class="pf-grp pf-d${k.depth}">
       <td style="padding-left:${pad}px;font-weight:700" colspan="1">
         ${expandable?`<span class="pf-tog" onclick="perfToggle('${esc(k.path).replace(/'/g,"&#39;")}')">${expanded?'▾':'▸'}</span>`:'<span class="pf-tog" style="visibility:hidden">▸</span>'}
-        <span dir="auto">${esc(k.lbl)}</span>
+        ${k.depth>1?`<span dir="auto" style="color:var(--text3);font-weight:600">${esc(nn(k.path.split('\u0001').filter(Boolean).slice(-2,-1)[0]||''))} › </span>`:''}<span dir="auto">${esc(k.lbl)}</span>
         <span style="color:var(--text3);font-size:9px;font-weight:600">${PERF_DIMS[dims[k.depth-1]].lbl}</span>
       </td>
       ${MONTHS.map(m=>`<td></td>`).join('')}<td></td>
