@@ -225,27 +225,6 @@ table.mx{border-collapse:collapse;font-size:11px}
 
 <div class="wrap">
 
-  <!-- FILTER RAIL -->
-  <div class="rail" id="rail">
-    <div class="gsearch"><i class="ti ti-search" style="color:var(--text3);font-size:15px"></i><input id="g-search" placeholder="Search bucket, operation, farm, product, variety…" oninput="onSearch()"></div>
-    <div class="fl"><label>Season</label><div class="ms" data-f="budget_season"></div></div>
-    <div class="fl"><label>Product</label><div class="ms" data-f="product"></div></div>
-    <div class="fl"><label>Farm</label><div class="ms" data-f="farm"></div></div>
-    <div class="fl"><label>Bucket</label><div class="ms" data-f="_bucket"></div></div>
-    <div class="fl"><label>Variety</label><div class="ms" data-f="_variety"></div></div>
-    <div class="fl"><label>Plot</label><div class="ms" data-f="_plot"></div></div>
-    <div class="fl"><label>Unit</label><div class="ms" data-f="unit"></div></div>
-    <div class="fl"><label>Month</label><div class="ms" data-f="month"></div></div>
-    <div class="fl"><label>Plot status</label><div class="ms" data-f="_plotstatus"></div></div>
-    <div class="fl"><label>Row status</label><div class="ms" data-f="join_status"></div></div>
-    <button class="f-reset" onclick="resetFilters()"><i class="ti ti-filter-off" style="font-size:13px"></i>Reset</button>
-    <div class="chips">
-      <span class="chip"><i class="ti ti-calendar-stats" style="color:var(--orange)"></i>Latest actuals <b id="chip-lastm">—</b></span>
-      <span class="chip"><i class="ti ti-alert-triangle" style="color:var(--warn)"></i>Unplanned <b id="chip-unpl">—</b></span>
-      <button class="chip" id="unmapped-badge" onclick="openUnmapped()" style="display:none;cursor:pointer;background:var(--badbg);border-color:#fecaca;color:var(--bad);font-weight:700"><i class="ti ti-tag-off"></i><span id="unmapped-count">0</span> unmapped</button>
-    </div>
-  </div>
-
   <!-- TABS -->
   <div class="tabs">
     <button class="tab-btn active" data-tab="overview" onclick="setTab(this)"><i class="ti ti-layout-dashboard" style="font-size:14px"></i>Overview</button>
@@ -258,6 +237,28 @@ table.mx{border-collapse:collapse;font-size:11px}
     <button class="tab-btn" data-tab="operations" onclick="setTab(this)"><i class="ti ti-tools" style="font-size:14px"></i>Operations</button>
     <button class="tab-btn" data-tab="matrix" onclick="setTab(this)"><i class="ti ti-table" style="font-size:14px"></i>Cross-Matrix</button>
     <button class="tab-btn" data-tab="data" onclick="setTab(this)"><i class="ti ti-database-export" style="font-size:14px"></i>Data</button>
+  </div>
+
+  <!-- FILTER RAIL -->
+  <div class="rail" id="rail">
+    <div class="gsearch"><i class="ti ti-search" style="color:var(--text3);font-size:15px"></i><input id="g-search" placeholder="Search bucket, operation, farm, product, variety…" oninput="onSearch()"></div>
+    <div class="fl"><label>Season</label><div class="ms" data-f="budget_season"></div></div>
+    <div class="fl"><label>Product</label><div class="ms" data-f="product"></div></div>
+    <div class="fl"><label>Farm</label><div class="ms" data-f="farm"></div></div>
+    <div class="fl"><label>Bucket</label><div class="ms" data-f="_bucket"></div></div>
+    <div class="fl"><label>Operation</label><div class="ms" data-f="operation_norm"></div></div>
+    <div class="fl"><label>Variety</label><div class="ms" data-f="_variety"></div></div>
+    <div class="fl"><label>Plot</label><div class="ms" data-f="_plot"></div></div>
+    <div class="fl"><label>Unit</label><div class="ms" data-f="unit"></div></div>
+    <div class="fl"><label>Month</label><div class="ms" data-f="month"></div></div>
+    <div class="fl"><label>Plot status</label><div class="ms" data-f="_plotstatus"></div></div>
+    <div class="fl"><label>Row status</label><div class="ms" data-f="join_status"></div></div>
+    <button class="f-reset" onclick="resetFilters()"><i class="ti ti-filter-off" style="font-size:13px"></i>Reset</button>
+    <div class="chips">
+      <span class="chip"><i class="ti ti-calendar-stats" style="color:var(--orange)"></i>Latest actuals <b id="chip-lastm">—</b></span>
+      <span class="chip"><i class="ti ti-alert-triangle" style="color:var(--warn)"></i>Unplanned <b id="chip-unpl">—</b></span>
+      <button class="chip" id="unmapped-badge" onclick="openUnmapped()" style="display:none;cursor:pointer;background:var(--badbg);border-color:#fecaca;color:var(--bad);font-weight:700"><i class="ti ti-tag-off"></i><span id="unmapped-count">0</span> unmapped</button>
+    </div>
   </div>
 
   <div id="loading" class="loading"><div class="spin"></div><span>Loading labor budget data…</span></div>
@@ -315,8 +316,8 @@ let RAW=[], METRIC='value', TAB='overview', OVM='amount', OVVAL='money'; // OVVA
 let BKVAL='money', PRVAL='money'; // per-block value mode for Overview Buckets / Products charts (independent of the monthly chart)
 let BKLBL='var', PRLBL='var';     // per-block data-label mode (Variance | B&A) for those same two charts
 let F={q:''};
-const MSF=['budget_season','product','farm','_bucket','_variety','_plot','unit','month','_plotstatus','join_status'];
-const S={budget_season:[],product:[],farm:[],_bucket:[],_variety:[],_plot:[],unit:[],month:[],_plotstatus:[],join_status:[]};
+const MSF=['budget_season','product','farm','_bucket','operation_norm','_variety','_plot','unit','month','_plotstatus','join_status'];
+const S={budget_season:[],product:[],farm:[],_bucket:[],operation_norm:[],_variety:[],_plot:[],unit:[],month:[],_plotstatus:[],join_status:[]};
 // field accessors (virtual fields prefixed _)
 // Plot-level budget: does this plot have ANY budget, in any month or operation?
 // Computed from ALL rows (never from the filtered set) so it describes the plot itself.
@@ -753,15 +754,16 @@ function aggYTD(rows,keyFn,cut){
   const m=new Map();
   for(const r of rows){
     const k=keyFn(r); if(k==null) continue;
-    let o=m.get(k); if(!o){o={key:k,b:0,a:0,bYTD:0,areaSet:new Map(),meta:{}};m.set(k,o);}
+    let o=m.get(k); if(!o){o={key:k,b:0,a:0,bYTD:0,bQty:0,aQty:0,units:new Set(),areaSet:new Map(),meta:{}};m.set(k,o);}
     o.b+=r.budget_amount||0; o.a+=r.actual_amount||0;
+    o.bQty+=r.budget_qty||0; o.aQty+=r.actual_qty||0; if(r.unit)o.units.add(r.unit);
     if(mOrd(r.month)<=cut) o.bYTD+=r.budget_amount||0;
     const pk=r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.year+'|'+r.plot;
     const ea=r.effective_area||r.net_area||0; if(ea>0)o.areaSet.set(pk,ea);
     // stash label context
     o.meta.product=r.product; o.meta.farm=r.farm; o.meta.variety=r.variety_en; o.meta.plot=r.plot;
   }
-  return [...m.values()].map(o=>({...o, vYTD:o.bYTD-o.a, v:o.b-o.a, area:[...o.areaSet.values()].reduce((s,x)=>s+x,0)}));
+  return [...m.values()].map(o=>({...o, vYTD:o.bYTD-o.a, v:o.b-o.a, area:[...o.areaSet.values()].reduce((s,x)=>s+x,0), mixedUnit:o.units.size>1}));
 }
 // plot label always shows variety + farm
 function nn(s){ const x=String(s==null?'':s).trim(); return (!x||x==='#N/A'||x==='(none)')?'Unmentioned':x; }
@@ -944,6 +946,9 @@ function openDrill(dim, key, _fromBack){
     month:{lbl:'Months',key:r=>r.month,dsp:(o)=>esc(nn(o.key)),isMonth:true},
     unit:{lbl:'Units',key:r=>r.unit||'(none)',dsp:(o)=>esc(nn(o.key))}
   };
+  // Drilling into a single plot? default the breakdown to Month (only until the user changes it on this frame)
+  { const leafDim = dim==='combo'?key[key.length-1].dim:dim; const _f0=_curFrame();
+    if(leafDim==='plot' && _f0 && _f0.mdim===undefined) MODAL_DIM='month'; }
   if(curDims.includes(MODAL_DIM)){
     const candidates=['operation','plot','bucket','product','farm','variety','unit','month'];
     MODAL_DIM = candidates.find(c=>!curDims.includes(c)) || 'operation';
@@ -973,6 +978,14 @@ function openDrill(dim, key, _fromBack){
         col:ac===null?'var(--text3)':(pct!==null&&pct>0?'var(--bad)':'var(--good)'),
         sortv:ac===null?-1:ac};
     }
+    if(MODAL_MEASURE==='qty'){
+      // Quantity — Actual (A) vs Budget (B) qty + % over/under. ⚠ if the row blends units.
+      const qv=(o.aQty||0)-(o.bQty||0);
+      return {...o,val:o.aQty||0,sortv:o.aQty||0,
+        txt:'A '+fmt(Math.round(o.aQty||0))+' · B '+fmt(Math.round(o.bQty||0))+(o.mixedUnit?' ⚠':''),
+        varPct:o.bQty>0?(qv/o.bQty*100):null,
+        col:qv>0?'var(--bad)':qv<0?'var(--good)':'var(--text3)'};
+    }
     // Variance YTD — show Actual (A) and Budget-to-date (B) absolute + variance %, like the cost/feddan view
     const vPct=o.bYTD>0?o.vYTD/o.bYTD*100:null;
     return {...o,val:o.vYTD,sortv:Math.abs(o.vYTD),varPct:vPct,txt:'A '+cmp(o.a)+' · B '+cmp(o.bYTD)};
@@ -980,12 +993,13 @@ function openDrill(dim, key, _fromBack){
   items.sort(bd.isMonth?((x,y)=>mOrd(x.key)-mOrd(y.key)):((x,y)=>y.sortv-x.sortv));
   const shownCount=items.length;   // show all rows (no top-N cap)
   for(const o of items){ if(!(bd.isMonth&&dim==='month')) o.drill=drillRef(MODAL_DIM==='month'?'month':MODAL_DIM,o.key); }
-  const measureLbl={var:'Variance YTD',ach:'Spend %',share:'Share %',cpf:'Cost / Feddan'}[MODAL_MEASURE];
+  const measureLbl={var:'Variance YTD',ach:'Spend %',share:'Share %',cpf:'Cost / Feddan',qty:'Quantity'}[MODAL_MEASURE];
   const _lg=(c,t)=>`<span class="lg"><span class="lg-dot" style="background:${c}"></span>${t}</span>`;
   const bdLegend = `<div class="legend">${
       MODAL_MEASURE==='ach'   ? _lg('var(--good)','Within plan (≤100%)')+_lg('var(--bad)','Over plan (>100%)')
     : MODAL_MEASURE==='share' ? _lg('var(--navy)','Share of actual')
     : MODAL_MEASURE==='cpf'   ? _lg('var(--good)','Actual under budget')+_lg('var(--bad)','Actual over budget')
+    : MODAL_MEASURE==='qty'   ? _lg('var(--good)','Actual under budget')+_lg('var(--bad)','Actual over budget')
     :                           _lg('var(--good)','Under budget')+_lg('var(--bad)','Over budget')
   }</div>`;
   const backBtn=DRILL_STACK.length>1?`<button onclick="drillBack()" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;margin-right:10px"><i class="ti ti-arrow-left" style="font-size:11px"></i> Back</button>`:'';
@@ -1011,7 +1025,7 @@ function openDrill(dim, key, _fromBack){
       <div class="card-h"><div><div class="card-t">Breakdown</div><div class="card-s">click any row to drill one level deeper (context accumulates)</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <select onchange="setModalDim(this.value)" style="${selStyle}">${Object.keys(BD).map(k=>`<option value="${k}"${MODAL_DIM===k?' selected':''}${curDims.includes(k)?' disabled':''}>${BD[k].lbl}</option>`).join('')}</select>
-        <select onchange="setModalMeasure(this.value)" style="${selStyle}"><option value="var"${MODAL_MEASURE==='var'?' selected':''}>Variance YTD</option><option value="ach"${MODAL_MEASURE==='ach'?' selected':''}>Spend %</option><option value="share"${MODAL_MEASURE==='share'?' selected':''}>Share %</option><option value="cpf"${MODAL_MEASURE==='cpf'?' selected':''}>Cost / Feddan</option></select>
+        <select onchange="setModalMeasure(this.value)" style="${selStyle}"><option value="var"${MODAL_MEASURE==='var'?' selected':''}>Variance YTD</option><option value="ach"${MODAL_MEASURE==='ach'?' selected':''}>Spend %</option><option value="share"${MODAL_MEASURE==='share'?' selected':''}>Share %</option><option value="cpf"${MODAL_MEASURE==='cpf'?' selected':''}>Cost / Feddan</option><option value="qty"${MODAL_MEASURE==='qty'?' selected':''}>Quantity</option></select>
       </div></div>
       <div class="card-s" style="margin:-4px 0 6px">${bd.lbl} by ${measureLbl} · showing all ${shownCount}</div>
       ${bdLegend}
