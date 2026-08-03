@@ -1504,15 +1504,62 @@ function renderData(){
   const rows=filtered(),show=rows.slice(0,500);
   document.getElementById('pane-data').innerHTML=`
     <div class="card"><div class="card-h"><div><div class="card-t">Data Extraction</div><div class="card-s">${fmt(rows.length)} rows match filters · showing first 500</div></div>
-    <button class="dl-btn" onclick="downloadCSV()"><i class="ti ti-download" style="font-size:14px"></i>Download CSV (all ${fmt(rows.length)})</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="dl-btn" onclick="downloadCSV()"><i class="ti ti-download" style="font-size:14px"></i>Full data (all ${fmt(rows.length)})</button>
+      <button class="dl-btn" style="background:var(--navy)" onclick="dlBudget()"><i class="ti ti-file-invoice" style="font-size:14px"></i>Budget file</button>
+      <button class="dl-btn" style="background:var(--navy)" onclick="dlActual()"><i class="ti ti-file-dollar" style="font-size:14px"></i>Actual file</button>
+      <button class="dl-btn" style="background:var(--warn)" onclick="dlNotMapped()"><i class="ti ti-alert-triangle" style="font-size:14px"></i>Unmapped / unplanned</button>
+      <button class="dl-btn" style="background:#0f766e" onclick="dlAreaCompare()"><i class="ti ti-ruler-2" style="font-size:14px"></i>Area: planned vs actual</button>
+    </div></div>
     <div class="tbl-wrap"><table class="dt"><thead><tr>${DATA_COLS.map(c=>`<th style="text-align:left">${c}</th>`).join('')}</tr></thead>
     <tbody>${show.map(r=>'<tr>'+DATA_COLS.map(c=>`<td dir="auto" style="text-align:left">${esc(r[c])}</td>`).join('')+'</tr>').join('')}</tbody></table></div></div>`;
 }
-function downloadCSV(){
-  const rows=filtered(),lines=[DATA_COLS.join(',')];
-  for(const r of rows)lines.push(DATA_COLS.map(c=>{let v=r[c]==null?'':String(r[c]);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(','));
-  const blob=new Blob(["\ufeff"+lines.join('\n')],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='labor_budget_vs_actual.csv';a.click();URL.revokeObjectURL(a.href);
+function toCSV(cols,rows){
+  const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const lines=[cols.join(',')];
+  for(const r of rows)lines.push(cols.map(c=>q(r[c])).join(','));
+  return "\ufeff"+lines.join('\n');
+}
+function saveCSV(name,csv){const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);}
+function downloadCSV(){ saveCSV('labor_budget_vs_actual.csv', toCSV(DATA_COLS, filtered())); }
+
+// Budget-side detail (rows that carry a budget line)
+const BUDGET_COLS=['budget_season','product','category','farm','variety_en','year','plot','operational_bucket','operation_norm','unit','month','net_area','budget_qty','budget_amount','budget_cpf'];
+function dlBudget(){ saveCSV('labor_budget_detail.csv', toCSV(BUDGET_COLS, filtered().filter(r=>(r.budget_amount||0)!==0))); }
+
+// Actual-side detail (rows that carry actual spend)
+const ACTUAL_COLS=['budget_season','product','farm','variety_en','year','plot','operational_bucket','operation_norm','unit','month','actual_net_area','actual_qty','actual_amount','actual_cpf','join_status'];
+function dlActual(){ saveCSV('labor_actual_detail.csv', toCSV(ACTUAL_COLS, filtered().filter(r=>(r.actual_amount||0)!==0))); }
+
+// Unmapped (no operational bucket) + Unplanned (spend with no budget) \u2014 one file, reason column
+function dlNotMapped(){
+  buildOpBudget(RAW);
+  const out=[];
+  for(const r of filtered()){
+    const unm = r.bucket_status==='unmapped'||!r.operational_bucket||r.operational_bucket==='(unmapped)';
+    const unpl = isTrulyUnplanned(r);
+    if(!unm&&!unpl) continue;
+    out.push({reason: unm&&unpl?'unmapped + unplanned':unm?'unmapped (no bucket)':'unplanned (no budget)',
+      product:r.product,farm:r.farm,variety_en:r.variety_en,year:r.year,plot:r.plot,
+      operational_bucket:r.operational_bucket,operation_norm:r.operation_norm,unit:r.unit,month:r.month,
+      budget_amount:r.budget_amount,actual_amount:r.actual_amount});
+  }
+  saveCSV('labor_not_mapped.csv', toCSV(['reason','product','farm','variety_en','year','plot','operational_bucket','operation_norm','unit','month','budget_amount','actual_amount'], out));
+}
+
+// Area comparison per plot: planned (budget net_area) vs actual/cloud (actual_net_area) + difference
+function dlAreaCompare(){
+  const m=new Map();
+  for(const r of filtered()){
+    const k=r.product+'|'+r.farm+'|'+r.variety_en+'|'+r.plot;
+    let o=m.get(k); if(!o){o={product:r.product,farm:r.farm,variety_en:r.variety_en,plot:r.plot,ba:0,aa:0};m.set(k,o);}
+    o.ba=Math.max(o.ba,r.net_area||0); o.aa=Math.max(o.aa,r.actual_net_area||0);
+  }
+  const out=[...m.values()].map(o=>({product:o.product,farm:o.farm,variety_en:o.variety_en,plot:o.plot,
+    budget_area_planned:+o.ba.toFixed(3),actual_area_cloud:+o.aa.toFixed(3),
+    area_diff:+(o.aa-o.ba).toFixed(3),area_diff_pct:o.ba>0?+(((o.aa/o.ba-1)*100).toFixed(1)):''}))
+    .sort((a,b)=>Math.abs(b.area_diff)-Math.abs(a.area_diff));
+  saveCSV('labor_area_planned_vs_actual.csv', toCSV(['product','farm','variety_en','plot','budget_area_planned','actual_area_cloud','area_diff','area_diff_pct'], out));
 }
 
 
