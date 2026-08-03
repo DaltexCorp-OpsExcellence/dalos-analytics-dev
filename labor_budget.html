@@ -1243,7 +1243,7 @@ function renderDim(name){
   let tb,ta;
   const RB=data.reduce((s,o)=>s+o.rawB,0),RA=data.reduce((s,o)=>s+o.rawA,0);
   const TBA=data.reduce((s,o)=>s+o.bArea,0),TAA=data.reduce((s,o)=>s+o.aArea,0);   // total budget/actual area (for cost/feddan)
-  const CPF3=['products','farms','varieties'].includes(name);                       // extra Cost/Feddan columns on these tabs
+  const CPF3=['buckets','products','farms','varieties'].includes(name);                       // extra Cost/Feddan columns on these tabs
   if(METRIC==='cpf'){const BA=data.reduce((s,o)=>s+o.bArea,0),AA=data.reduce((s,o)=>s+o.aArea,0);tb=BA>0?RB/BA:0;ta=AA>0?RA/AA:0;}
   else if(METRIC==='qty'){tb=data.reduce((s,o)=>s+o.bQty,0);ta=data.reduce((s,o)=>s+o.aQty,0);}
   else if(METRIC==='price'){const BQ=data.reduce((s,o)=>s+o.bQty,0),AQ=data.reduce((s,o)=>s+o.aQty,0);tb=BQ>0?RB/BQ:0;ta=AQ>0?RA/AQ:0;}
