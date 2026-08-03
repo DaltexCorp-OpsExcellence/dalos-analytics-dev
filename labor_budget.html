@@ -988,14 +988,15 @@ function openDrill(dim, key, _fromBack){
         varPct:o.bQty>0?(qv/o.bQty*100):null,
         col:qv>0?'var(--bad)':qv<0?'var(--good)':'var(--text3)'};
     }
-    // Variance YTD — show Actual (A) and Budget-to-date (B) absolute + variance %, like the cost/feddan view
-    const vPct=o.bYTD>0?o.vYTD/o.bYTD*100:null;
-    return {...o,val:o.vYTD,sortv:Math.abs(o.vYTD),varPct:vPct,txt:'A '+cmp(o.a)+' · B '+cmp(o.bYTD)};
+    // Variance — Actual (A) vs FULL Budget (B) for the group + variance %. (Not budget-to-date, so
+    // months/rows budgeted after the last-actuals cutoff still show their real budget, not zero.)
+    const vPct=o.b>0?o.v/o.b*100:null;
+    return {...o,val:o.v,sortv:Math.abs(o.v),varPct:vPct,txt:'A '+cmp(o.a)+' · B '+cmp(o.b)};
   });
   items.sort(bd.isMonth?((x,y)=>mOrd(x.key)-mOrd(y.key)):((x,y)=>y.sortv-x.sortv));
   const shownCount=items.length;   // show all rows (no top-N cap)
   for(const o of items){ if(!(bd.isMonth&&dim==='month')) o.drill=drillRef(MODAL_DIM==='month'?'month':MODAL_DIM,o.key); }
-  const measureLbl={var:'Variance YTD',ach:'Spend %',share:'Share %',cpf:'Cost / Feddan',qty:'Quantity'}[MODAL_MEASURE];
+  const measureLbl={var:'Variance',ach:'Spend %',share:'Share %',cpf:'Cost / Feddan',qty:'Quantity'}[MODAL_MEASURE];
   const _lg=(c,t)=>`<span class="lg"><span class="lg-dot" style="background:${c}"></span>${t}</span>`;
   const bdLegend = `<div class="legend">${
       MODAL_MEASURE==='ach'   ? _lg('var(--good)','Within plan (≤100%)')+_lg('var(--bad)','Over plan (>100%)')
@@ -1026,7 +1027,7 @@ function openDrill(dim, key, _fromBack){
       <div class="card-h"><div><div class="card-t">Breakdown</div><div class="card-s">click any row to drill one level deeper (context accumulates)</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <select onchange="setModalDim(this.value)" style="${selStyle}">${Object.keys(BD).map(k=>`<option value="${k}"${MODAL_DIM===k?' selected':''}${curDims.includes(k)?' disabled':''}>${BD[k].lbl}</option>`).join('')}</select>
-        <select onchange="setModalMeasure(this.value)" style="${selStyle}"><option value="var"${MODAL_MEASURE==='var'?' selected':''}>Variance YTD</option><option value="share"${MODAL_MEASURE==='share'?' selected':''}>Share %</option><option value="cpf"${MODAL_MEASURE==='cpf'?' selected':''}>Cost / Feddan</option><option value="qty"${MODAL_MEASURE==='qty'?' selected':''}>Quantity</option></select>
+        <select onchange="setModalMeasure(this.value)" style="${selStyle}"><option value="var"${MODAL_MEASURE==='var'?' selected':''}>Variance</option><option value="share"${MODAL_MEASURE==='share'?' selected':''}>Share %</option><option value="cpf"${MODAL_MEASURE==='cpf'?' selected':''}>Cost / Feddan</option><option value="qty"${MODAL_MEASURE==='qty'?' selected':''}>Quantity</option></select>
       </div></div>
       <div class="card-s" style="margin:-4px 0 6px">${bd.lbl} by ${measureLbl} · showing all ${shownCount}</div>
       ${bdLegend}
