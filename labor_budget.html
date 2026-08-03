@@ -314,7 +314,7 @@ const ORDER='order=product,farm,variety_en,year,plot,operational_bucket,operatio
 
 let RAW=[], METRIC='value', TAB='overview', OVM='amount', OVVAL='money'; // OVVAL: money | cpf (Overview monthly chart value mode)
 let BKVAL='money', PRVAL='money'; // per-block value mode for Overview Buckets / Products charts (independent of the monthly chart)
-let BKLBL='var', PRLBL='var';     // per-block data-label mode (Variance | B&A) for those same two charts
+let BKLBL='ba', PRLBL='ba';     // per-block data-label mode (Variance | B&A) for those same two charts — default B&A
 let F={q:''};
 const MSF=['budget_season','product','farm','_bucket','operation_norm','_variety','_plot','unit','month','_plotstatus','join_status'];
 const S={budget_season:[],product:[],farm:[],_bucket:[],operation_norm:[],_variety:[],_plot:[],unit:[],month:[],_plotstatus:[],join_status:[]};
@@ -1992,7 +1992,7 @@ function renderPerf(){
 let SIDE='both'; // both | budget | actual | variance | ach | share
 let VIEW='summary'; // summary | months | category | bucket
 function setViewSel(v){VIEW=v;renderAll();}
-let LBL='var'; // data labels on graphs: 'var' (variance) | 'ba' (Budget & Actual)
+let LBL='ba'; // data labels on graphs: 'var' (variance) | 'ba' (Budget & Actual) — default B&A
 function setLblSel(v){
   LBL=v;renderAll();
   const c=DRILL_STACK&&DRILL_STACK[DRILL_STACK.length-1];
