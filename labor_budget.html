@@ -468,6 +468,7 @@ function shareValid(){ return !METRICS[METRIC].ratio; }
 /* ============ FORMAT ============ */
 const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
 const fmt=n=>nf0.format(Math.round(n||0));
+const fmtA=n=>(Math.round((n||0)*100)/100).toLocaleString('en-US',{maximumFractionDigits:2}); // area (feddan) — keep up to 2 decimals, don't round whole
 function cmp(n){const a=Math.abs(n);if(a>=1e9)return(n/1e9).toFixed(2)+'B';if(a>=1e6)return(n/1e6).toFixed(1)+'M';if(a>=1e3)return(n/1e3).toFixed(0)+'K';return fmt(n);}
 // metric-aware display of a metric value (compact money vs plain rate)
 function mv(n){ return METRICS[METRIC].compact ? cmp(n) : fmt(n); }
@@ -657,8 +658,8 @@ function renderKPIs(rows){
     {l:'Budget · Full Season',i:'ti-target',v:cmp(tb),s:fmt(tb)+' EGP'},
     {l:'Budget · YTD',i:'ti-calendar-check',v:cmp(ytdB),s:'through '+(lm||'—')},
     {l:'Actual',i:'ti-coins',v:cmp(ta),s:fmt(ta)+' EGP'},
-    {l:'Budget Cost / Feddan',i:'ti-map-2',v:bCpf===null?'—':fmt(bCpf),s:(CPF_.bArea>0?fmt(CPF_.bArea)+' fed planned':'no planned area')},
-    {l:'Actual Cost / Feddan',i:'ti-map-pin',v:aCpf===null?'—':fmt(aCpf),s:(CPF_.aArea>0?fmt(CPF_.aArea)+' fed worked':'no area'),pill:cpfV!==null?`<span class="kpill ${cpfV>0?'p-bad':'p-good'}">${cpfV>0?'+':''}${fmt(cpfV)} vs plan</span>`:''},
+    {l:'Budget Cost / Feddan',i:'ti-map-2',v:bCpf===null?'—':fmt(bCpf),s:(CPF_.bArea>0?fmtA(CPF_.bArea)+' fed planned':'no planned area')},
+    {l:'Actual Cost / Feddan',i:'ti-map-pin',v:aCpf===null?'—':fmt(aCpf),s:(CPF_.aArea>0?fmtA(CPF_.aArea)+' fed worked':'no area'),pill:cpfV!==null?`<span class="kpill ${cpfV>0?'p-bad':'p-good'}">${cpfV>0?'+':''}${fmt(cpfV)} vs plan</span>`:''},
     {l:'Spend % vs YTD',i:'ti-percentage',v:pctTxt(ach),s:'Actual ÷ Budget YTD',pill:ach!==null?`<span class="kpill ${ach>100?'p-bad':'p-good'}">${ach>100?'over plan':'within plan'}</span>`:''},
     {l:'Variance vs YTD',i:'ti-scale',v:signTxt(vY),s:pctTxt(Math.abs(pct(vY,ytdB)))+' of YTD',pill:varPill(vY,ytdB)},
     {l:'Unplanned Spend',i:'ti-alert-triangle',v:cmp(unpl),s:pctTxt(pct(unpl,ta))+' of actual',pill:`<span class="kpill p-warn">no budget line</span>`}
@@ -1016,10 +1017,10 @@ function openDrill(dim, key, _fromBack){
       <div class="kcard"><div class="k-lbl">Variance YTD</div><div class="k-val" style="color:${vY<0?'var(--bad)':'var(--good)'}">${(vY>0?'+':'')+cmp(vY)}</div><div class="k-sub">Budget−Actual to ${lastActualMonth(base)||'—'}</div></div>
     </div>
     <div class="kgrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
-      <div class="kcard"><div class="k-lbl">Budget cost / feddan</div><div class="k-val">${bCpf===null?'—':fmt(bCpf)}</div><div class="k-sub">${TAG_.bArea>0?fmt(TAG_.bArea)+' fed planned':'no planned area'}</div></div>
-      <div class="kcard"><div class="k-lbl">Actual cost / feddan</div><div class="k-val">${aCpf===null?'—':fmt(aCpf)}</div><div class="k-sub">${TAG_.aArea>0?fmt(TAG_.aArea)+' fed worked':'no area'}</div></div>
+      <div class="kcard"><div class="k-lbl">Budget cost / feddan</div><div class="k-val">${bCpf===null?'—':fmt(bCpf)}</div><div class="k-sub">${TAG_.bArea>0?fmtA(TAG_.bArea)+' fed planned':'no planned area'}</div></div>
+      <div class="kcard"><div class="k-lbl">Actual cost / feddan</div><div class="k-val">${aCpf===null?'—':fmt(aCpf)}</div><div class="k-sub">${TAG_.aArea>0?fmtA(TAG_.aArea)+' fed worked':'no area'}</div></div>
       <div class="kcard"><div class="k-lbl">Cost / feddan variance</div><div class="k-val" style="color:${cpfVar===null?'var(--text3)':(cpfVar>0?'var(--bad)':'var(--good)')}">${cpfVar===null?'—':(cpfVar>0?'+':'')+fmt(cpfVar)}</div><div class="k-sub">${cpfVar===null?'':(bCpf>0?((cpfVar/bCpf*100>0?'+':'')+(cpfVar/bCpf*100).toFixed(1)+'% vs plan'):'')}</div></div>
-      <div class="kcard"><div class="k-lbl">Area</div><div class="k-val">${fmt(TAG_.aArea||TAG_.bArea)}</div><div class="k-sub">feddan${TAG_.bArea>0&&TAG_.aArea>0&&Math.abs(TAG_.aArea-TAG_.bArea)>0.5?' · planned '+fmt(TAG_.bArea):''}</div></div>
+      <div class="kcard"><div class="k-lbl">Area</div><div class="k-val">${fmtA(TAG_.aArea||TAG_.bArea)}</div><div class="k-sub">feddan${TAG_.bArea>0&&TAG_.aArea>0&&Math.abs(TAG_.aArea-TAG_.bArea)>0.5?' · planned '+fmtA(TAG_.bArea):''}</div></div>
     </div>
     <div class="card" style="box-shadow:none;border:1px solid var(--border)"><div class="card-h"><div class="card-t">Monthly Budget vs Actual</div>${lblSeg()}</div>${monthlySVG(rows,'amount')}
       <div class="legend"><span class="lg"><span class="lg-dot" style="background:var(--orange)"></span>Budget</span><span class="lg"><span class="lg-dot" style="background:var(--navy)"></span>Actual</span></div></div>
@@ -1335,8 +1336,8 @@ function cpfPanel(rows,name,cfg){
       <div class="card-s">Budget EGP/fed vs Actual EGP/fed · area de-duplicated per plot · click any row to drill</div></div>
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">${lblSeg()}${tblControls()}</div></div>
     <div class="kgrid" style="grid-template-columns:repeat(4,1fr);margin:0 0 14px">
-      <div class="kcard"><div class="k-lbl">Budget CPF</div><div class="k-val">${rate(oB)}</div><div class="k-sub">EGP / feddan · ${fmt(totBA)} fed planned</div></div>
-      <div class="kcard"><div class="k-lbl">Actual CPF</div><div class="k-val">${rate(oA)}</div><div class="k-sub">EGP / feddan · ${fmt(totAA)} fed worked</div></div>
+      <div class="kcard"><div class="k-lbl">Budget CPF</div><div class="k-val">${rate(oB)}</div><div class="k-sub">EGP / feddan · ${fmtA(totBA)} fed planned</div></div>
+      <div class="kcard"><div class="k-lbl">Actual CPF</div><div class="k-val">${rate(oA)}</div><div class="k-sub">EGP / feddan · ${fmtA(totAA)} fed worked</div></div>
       <div class="kcard"><div class="k-lbl">Gap</div><div class="k-val" style="color:${oGap===null?'var(--text)':(oGap>0?'var(--bad)':'var(--good)')}">${oGap===null?'—':(oGap>0?'+':'')+fmt(oGap)}</div><div class="k-sub">${(oGap!==null&&oB>0)?((oGap>0?'+':'')+(100*oGap/oB).toFixed(1)+'% vs plan'):'per feddan'}</div></div>
       <div class="kcard"><div class="k-lbl">Median CPF</div><div class="k-val">${rate(median)}</div><div class="k-sub">benchmark across ${withA.length} ${cfg.lbl.toLowerCase()}s</div></div>
     </div>
@@ -1348,7 +1349,7 @@ function cpfPanel(rows,name,cfg){
       const gcol=o.gap===null?'var(--text3)':(o.gap>0?'var(--bad)':'var(--good)');
       return `<tr style="cursor:pointer" onclick="drillGo(${drillRef(ddim,String(o.key))})">
         <td dir="auto" style="text-align:left">${cfg.disp?cfg.disp(o.key):esc(nn(o.key))}${flag(o)}</td>
-        <td>${fmt(o.bArea||o.aArea)}</td>
+        <td>${fmtA(o.bArea||o.aArea)}</td>
         <td>${rate(o.bCpf)}</td>
         <td>${rate(o.aCpf)}</td>
         <td style="color:${gcol};font-weight:700">${o.gap===null?'—':(o.gap>0?'+':'')+fmt(o.gap)}</td>
