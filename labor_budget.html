@@ -1132,7 +1132,7 @@ function renderOverview(){
   // ---- top block (always) ----
   const top=`
     <div class="card">
-      <div class="card-h"><div><div class="card-t">Monthly Budget vs Actual</div><div class="card-s">Fiscal year Oct → Sep · label = Actual − Budget · click a bar's bucket below to drill</div></div>
+      <div class="card-h"><div><div class="card-t">Monthly Budget vs Actual</div><div class="card-s">Fiscal year Oct → Sep · label = Actual − Budget</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${lblSeg()}${METRIC==='value'?`<div class="seg" id="ov-val"><button class="${OVVAL==='money'?'on':''}" data-v="money" onclick="ovVal(this)">Cost (EGP)</button><button class="${OVVAL==='cpf'?'on':''}" data-v="cpf" onclick="ovVal(this)">Cost / Feddan</button></div>`:''}<div class="seg" id="ov-mode"><button class="${OVM==='amount'?'on':''}" data-m="amount" onclick="ovMode(this)">Monthly</button><button class="${OVM==='cum'?'on':''}"${OVVAL==='cpf'?' disabled style="opacity:.4;cursor:not-allowed"':''} data-m="cum" onclick="ovMode(this)">Cumulative</button></div></div></div>
       ${monthlySVG(rows,OVM,OVVAL)}
       <div class="legend"><span class="lg"><span class="lg-dot" style="background:var(--orange)"></span>Budget</span><span class="lg"><span class="lg-dot" style="background:var(--navy)"></span>Actual</span></div>
