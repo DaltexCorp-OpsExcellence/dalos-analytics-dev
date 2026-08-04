@@ -33,6 +33,8 @@
       if(wsRole.toLowerCase()==='admin'){
         var dsa=document.getElementById('dc-shipments');
         if(dsa){dsa.classList.remove('locked');dsa.setAttribute('href','pom_overview.html');}
+        var dba=document.getElementById('dc-budget');
+        if(dba){dba.classList.remove('locked');dba.setAttribute('href','labor_budget.html?product=Pomegranate');}
         return;
       }
 
@@ -59,7 +61,8 @@
       // QC / Harvest / Budget remain Coming Soon (dashboards not built yet) — their
       // permission plumbing is ready; when the files exist, give them ids
       // dc-qc / dc-harvest and add to this map.
-      var LIVE={shipments:{id:'dc-shipments',href:'pom_overview.html',name:'Shipments'}};
+      var LIVE={shipments:{id:'dc-shipments',href:'pom_overview.html',name:'Shipments'},
+                budget:{id:'dc-budget',href:'labor_budget.html?product=Pomegranate',name:'Budgeting'}};
 
       Object.keys(LIVE).forEach(function(db){
         var meta=LIVE[db];var card=document.getElementById(meta.id);
@@ -311,17 +314,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     </div>
 
     <!-- BUDGETING — COMING SOON -->
-    <div class="dash-card coming">
+    <a class="dash-card" id="dc-budget" href="labor_budget.html?product=Pomegranate">
       <div class="dc-stripe" style="background:linear-gradient(90deg,#142850,#DC6428)"></div>
       <div class="dc-body">
         <div class="dc-header">
           <div class="dc-icon" style="background:#fef2f2">💰</div>
-          <span class="dc-badge badge-coming">Coming Soon</span>
+          <span class="dc-open">Open<i class="ti ti-arrow-right"></i></span>
         </div>
         <div class="dc-name">Budgeting</div>
-        <div class="dc-desc">Revenue forecasting, cost per container, margin analysis and season-over-season financial performance tracking.</div>
+        <div class="dc-desc">Labor budget vs actual for Pomegranate — cost per feddan, buckets, operations, and monthly tracking.</div>
+        <div class="dc-footer"><div class="dc-footer-left"><span class="dc-tag">Cost/Feddan</span><span class="dc-tag">Buckets</span><span class="dc-tag">Operations</span></div></div>
       </div>
-    </div>
+    </a>
 
   </div>
 </div>

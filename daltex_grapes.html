@@ -264,26 +264,26 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     </a>
 
     <!-- BUDGETING — COMING SOON -->
-    <div class="dash-card coming">
-      <div class="dc-stripe" style="background:#e2e6f0"></div>
+    <a class="dash-card locked" id="dc-budget" href="labor_budget.html?product=Grapes">
+      <div class="dc-stripe" style="background:linear-gradient(90deg,#142850,#DC6428)"></div>
       <div class="dc-body">
         <div class="dc-header">
           <div class="dc-icon" style="background:#f4f6fb">💰</div>
-          <span class="dc-badge badge-coming">Coming Soon</span>
+          <span class="dc-open">Open<i class="ti ti-arrow-right"></i></span>
         </div>
         <div class="dc-name">Budgeting</div>
-        <div class="dc-desc">Revenue forecasting, cost per container, margin analysis and season-over-season financial performance tracking.</div>
+        <div class="dc-desc">Labor budget vs actual for Grapes — cost per feddan, buckets, operations, and monthly tracking.</div>
         <div class="dc-tags">
-          <span class="dc-tag">Revenue</span>
-          <span class="dc-tag">Cost</span>
-          <span class="dc-tag">Margins</span>
-          <span class="dc-tag">Forecast</span>
+          <span class="dc-tag">Cost/Feddan</span>
+          <span class="dc-tag">Buckets</span>
+          <span class="dc-tag">Operations</span>
+          <span class="dc-tag">Monthly</span>
         </div>
       </div>
       <div class="dc-footer">
-        <div class="dc-footer-left">Not yet available</div>
+        <div class="dc-footer-left">Labor budget</div>
       </div>
-    </div>
+    </a>
 
   </div>
 </div>
@@ -426,6 +426,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
         var ds=document.getElementById('dc-shipments');if(ds)ds.setAttribute('href','grapes_overview_branded.html');
         var dq=document.getElementById('dc-qc');if(dq)dq.setAttribute('href','daltex_qc.html');
         var dh=document.getElementById('dc-harvest');if(dh)dh.setAttribute('href','daltex_harvest_funnel.html');
+        var db2=document.getElementById('dc-budget');if(db2){db2.classList.remove('locked');db2.setAttribute('href','labor_budget.html?product=Grapes');}
         return;
       }
 
@@ -453,8 +454,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       }
 
       // Map dashboard ids to card element ids
-      var dbMap={shipments:'dc-shipments',qc:'dc-qc',harvest:'dc-harvest'};
-      var dbNames={shipments:'Shipments',qc:'Quality Control',harvest:'Harvest Funnel'};
+      var dbMap={shipments:'dc-shipments',qc:'dc-qc',harvest:'dc-harvest',budget:'dc-budget'};
+      var dbNames={shipments:'Shipments',qc:'Quality Control',harvest:'Harvest Funnel',budget:'Budgeting'};
 
       // Explicitly re-lock all cards first (clean slate for non-admin)
       Object.values(dbMap).forEach(function(id){
@@ -482,6 +483,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
           if(db==='shipments') card.setAttribute('href','grapes_overview_branded.html');
           if(db==='qc') card.setAttribute('href','daltex_qc.html');
           if(db==='harvest') card.setAttribute('href','daltex_harvest_funnel.html');
+          if(db==='budget') card.setAttribute('href','labor_budget.html?product=Grapes');
           // Color this dashboard's tab chips green to signal access
           card.querySelectorAll('.dc-tag').forEach(function(t){t.classList.add('has-access');});
         } else {

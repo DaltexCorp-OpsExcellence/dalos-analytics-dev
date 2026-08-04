@@ -581,8 +581,15 @@ function refreshFilterOptions(){
 }
 function resetFilters(){
   for(const f of MSF) S[f]=[];
+  if(window.__PRODUCT_LOCK) S['product']=[window.__PRODUCT_LOCK];   // preserve embed lock
   F.q=''; document.getElementById('g-search').value='';
   document.querySelectorAll('.ms[data-f]').forEach(el=>{
+    const f=el.dataset.f;
+    if(f==='product' && window.__PRODUCT_LOCK){
+      el.querySelectorAll('input[data-v]').forEach(i=>i.checked=(i.dataset.v===window.__PRODUCT_LOCK));
+      const all=el.querySelector('.ms-all input'); if(all) all.checked=false;
+      syncMS(el,f); return;
+    }
     el.querySelectorAll('input[data-v]').forEach(i=>i.checked=false);
     const all=el.querySelector('.ms-all input'); if(all) all.checked=true;
     syncMS(el,el.dataset.f);
@@ -2082,6 +2089,34 @@ function renderAll(){
     }
     buildPlotBudget();
     buildFilters();
+    // ---- Product lock (embed mode): ?product=Grapes locks the whole dashboard to one product ----
+    (function applyProductLock(){
+      try{
+        const qp=new URLSearchParams(window.location.search);
+        let want=(qp.get('product')||'').trim();
+        if(!want) return;
+        // crosswalk / case-insensitive match against actual product values present
+        const prods=[...new Set(RAW.map(r=>r.product).filter(Boolean))];
+        const XW={'olives':'olive'};
+        const norm=s=>String(s||'').trim().toLowerCase();
+        const wn=XW[norm(want)]||norm(want);
+        const hit=prods.find(p=>norm(p)===wn) || prods.find(p=>norm(p).startsWith(wn));
+        if(!hit) return;                 // unknown product -> leave unlocked
+        S['product']=[hit];
+        window.__PRODUCT_LOCK=hit;
+        // reflect the lock in the product multiselect control, then hide it
+        const el=document.querySelector('.ms[data-f="product"]');
+        if(el){
+          el.querySelectorAll('input[data-v]').forEach(i=>i.checked=(i.dataset.v===hit));
+          const all=el.querySelector('.ms-all input'); if(all) all.checked=false;
+          syncMS(el,'product');
+          const wrap=el.closest('.fl')||el; wrap.style.display='none';   // hide the whole product filter field
+        }
+        // badge so the user knows it's scoped
+        const bar=document.querySelector('#g-search')?document.querySelector('#g-search').closest('div'):null;
+        document.title='Labor Budget — '+nn(hit);
+      }catch(e){/* non-fatal: leave unlocked */}
+    })();
     await detectMapPermission();
     refreshUnmappedBadge();
     document.getElementById('loading').style.display='none';
