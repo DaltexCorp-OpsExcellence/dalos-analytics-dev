@@ -2116,8 +2116,13 @@ function renderAll(){
           const wrap=el.closest('.fl')||el; wrap.style.display='none';   // hide the whole product filter field
         }
         // badge so the user knows it's scoped
-        const bar=document.querySelector('#g-search')?document.querySelector('#g-search').closest('div'):null;
         document.title='Labor Budget — '+nn(hit);
+        // reflect the product in the page title + breadcrumb (matches how Shipments shows the product name)
+        const heroT=document.querySelector('.hero-t'); if(heroT) heroT.innerHTML='<i class="ti ti-cash-banknote"></i> '+esc(nn(hit))+' · Labor Budget';
+        const HUB={Grapes:'daltex_grapes.html',Mango:'mango_hub.html',Pomegranate:'pom_hub.html'};
+        const crumb=document.querySelector('.tb-crumb[href="finance_hub.html"]');
+        if(crumb){ crumb.textContent=nn(hit); if(HUB[hit]) crumb.setAttribute('href',HUB[hit]); }
+        const here=document.querySelector('.tb-here'); if(here) here.textContent='Labor Budget';
       }catch(e){/* non-fatal: leave unlocked */}
     })();
     await detectMapPermission();
