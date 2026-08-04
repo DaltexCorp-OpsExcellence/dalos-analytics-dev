@@ -271,7 +271,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
           <div class="dc-icon" style="background:#f4f6fb">💰</div>
           <span class="dc-open">Open<i class="ti ti-arrow-right"></i></span>
         </div>
-        <div class="dc-name">Budgeting</div>
+        <div class="dc-name">Labor Budget</div>
         <div class="dc-desc">Labor budget vs actual for Grapes — cost per feddan, buckets, operations, and monthly tracking.</div>
         <div class="dc-tags">
           <span class="dc-tag">Cost/Feddan</span>
@@ -455,7 +455,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
       // Map dashboard ids to card element ids
       var dbMap={shipments:'dc-shipments',qc:'dc-qc',harvest:'dc-harvest',budget:'dc-budget'};
-      var dbNames={shipments:'Shipments',qc:'Quality Control',harvest:'Harvest Funnel',budget:'Budgeting'};
+      var dbNames={shipments:'Shipments',qc:'Quality Control',harvest:'Harvest Funnel',budget:'Labor Budget'};
 
       // Explicitly re-lock all cards first (clean slate for non-admin)
       Object.values(dbMap).forEach(function(id){

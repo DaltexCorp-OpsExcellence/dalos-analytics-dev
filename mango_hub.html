@@ -62,7 +62,7 @@
       // permission plumbing is ready; when the files exist, give them ids
       // dc-qc / dc-harvest and add to this map.
       var LIVE={shipments:{id:'dc-shipments',href:'mango_overview.html',name:'Shipments'},
-                budget:{id:'dc-budget',href:'labor_budget.html?product=Mango',name:'Budgeting'}};
+                budget:{id:'dc-budget',href:'labor_budget.html?product=Mango',name:'Labor Budget'}};
 
       Object.keys(LIVE).forEach(function(db){
         var meta=LIVE[db];var card=document.getElementById(meta.id);
@@ -321,7 +321,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
           <div class="dc-icon" style="background:#fef2f2">💰</div>
           <span class="dc-open">Open<i class="ti ti-arrow-right"></i></span>
         </div>
-        <div class="dc-name">Budgeting</div>
+        <div class="dc-name">Labor Budget</div>
         <div class="dc-desc">Labor budget vs actual for Mango — cost per feddan, buckets, operations, and monthly tracking.</div>
         <div class="dc-footer"><div class="dc-footer-left"><span class="dc-tag">Cost/Feddan</span><span class="dc-tag">Buckets</span><span class="dc-tag">Operations</span></div></div>
       </div>
