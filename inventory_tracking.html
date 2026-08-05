@@ -258,12 +258,12 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <div class="sec-sub">Headline inventory position and season movement</div>
     <div class="kpis" id="kpiRow"></div>
     <div class="grid g2" style="margin-bottom:14px">
-      <div class="card"><h3><i class="ti ti-chart-bar"></i>Season 26 · Stock Value / Month (M EGP)</h3><div class="chart-box"><canvas id="c-season"></canvas></div></div>
+      <div class="card"><h3><i class="ti ti-chart-bar"></i><span id="h-season">Season 26 · Stock Value / Month (M EGP)</span></h3><div class="chart-box"><canvas id="c-season"></canvas></div></div>
       <div class="card"><h3><i class="ti ti-chart-donut"></i>Category Share of On-Hand Value</h3><div class="chart-box"><canvas id="c-share"></canvas></div></div>
     </div>
     <div class="grid g2">
-      <div class="card"><h3><i class="ti ti-arrows-exchange"></i>Inbound vs Outbound by Category (Season, M EGP)</h3><div class="chart-box"><canvas id="c-io-cat"></canvas></div></div>
-      <div class="card"><h3><i class="ti ti-calendar-stats"></i>Inbound vs Outbound Monthly (M EGP)</h3><div class="chart-box"><canvas id="c-io-month"></canvas></div></div>
+      <div class="card"><h3><i class="ti ti-arrows-exchange"></i><span id="h-iocat">Inbound vs Outbound by Category (Season, M EGP)</span></h3><div class="chart-box"><canvas id="c-io-cat"></canvas></div></div>
+      <div class="card"><h3><i class="ti ti-calendar-stats"></i><span id="h-iomonth">Inbound vs Outbound Monthly (M EGP)</span></h3><div class="chart-box"><canvas id="c-io-month"></canvas></div></div>
     </div>
   </div>
 
@@ -290,8 +290,8 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
       <div class="card"><h3><i class="ti ti-chart-bar"></i>On-Hand Value by Category (M EGP)</h3><div class="chart-box"><canvas id="c-cat-oh"></canvas></div></div>
       <div class="card"><h3><i class="ti ti-chart-donut"></i>Category Share</h3><div class="chart-box"><canvas id="c-cat-share"></canvas></div></div>
     </div>
-    <div class="card"><h3><i class="ti ti-chart-line"></i>Total On-Hand Value — Monthly Trend (M EGP)</h3><div class="chart-box tall"><canvas id="c-cat-trend"></canvas></div></div>
-    <div class="card" style="margin-top:14px"><h3><i class="ti ti-chart-bar"></i>Stock Value / Month — Per Category (M EGP)</h3><div class="chart-box tall"><canvas id="c-cat-monthly"></canvas></div></div>
+    <div class="card"><h3><i class="ti ti-chart-line"></i><span id="h-cattrend">Total On-Hand Value — Monthly Trend (M EGP)</span></h3><div class="chart-box tall"><canvas id="c-cat-trend"></canvas></div></div>
+    <div class="card" style="margin-top:14px"><h3><i class="ti ti-chart-bar"></i><span id="h-catmonthly">Stock Value / Month — Per Category (M EGP)</span></h3><div class="chart-box tall"><canvas id="c-cat-monthly"></canvas></div></div>
     <div class="card" style="margin-top:14px"><h3><i class="ti ti-arrows-up-down"></i>Month-over-Month Stock Value Variance (M EGP · Δ and %)</h3><div style="overflow-x:auto"><table class="mom" id="momTable"></table></div></div>
   </div>
 
@@ -318,7 +318,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <div class="sec-sub">Top brands by on-hand value and by issues this season</div>
     <div class="grid g2" style="margin-bottom:14px">
       <div class="card"><h3><i class="ti ti-trophy"></i>Top 12 Brands by On-Hand Value (M EGP)</h3><div class="chart-box tall"><canvas id="c-brand-oh"></canvas></div></div>
-      <div class="card"><h3><i class="ti ti-arrow-up-circle"></i>Top 10 Brands by Issues — Season (M EGP)</h3><div class="chart-box tall"><canvas id="c-brand-iss"></canvas></div></div>
+      <div class="card"><h3><i class="ti ti-arrow-up-circle"></i><span id="h-brandiss">Top 10 Brands by Issues — Season (M EGP)</span></h3><div class="chart-box tall"><canvas id="c-brand-iss"></canvas></div></div>
     </div>
     <div class="card"><h3><i class="ti ti-table"></i>Top Brands — On-Hand Value &amp; Share</h3><div style="overflow-x:auto"><table class="dtable" id="brandTable"></table></div></div>
   </div>
@@ -327,10 +327,10 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
   <div class="panel" id="movement">
     <div class="sec-title">Movement</div>
     <div class="sec-sub">Inbound (Or Ty 1P/2P/FF) vs Outbound (Do Ty #) over the season</div>
-    <div class="card" style="margin-bottom:14px"><h3><i class="ti ti-arrows-exchange"></i>Monthly Inbound vs Outbound (M EGP)</h3><div class="chart-box tall"><canvas id="c-mv-month"></canvas></div></div>
+    <div class="card" style="margin-bottom:14px"><h3><i class="ti ti-arrows-exchange"></i><span id="h-mvmonth">Monthly Inbound vs Outbound (M EGP)</span></h3><div class="chart-box tall"><canvas id="c-mv-month"></canvas></div></div>
     <div class="grid g2">
-      <div class="card"><h3><i class="ti ti-arrow-down-circle" style="color:var(--green)"></i>Inbound by Category — Season (M EGP)</h3><div class="chart-box sm"><canvas id="c-mv-in"></canvas></div></div>
-      <div class="card"><h3><i class="ti ti-arrow-up-circle" style="color:var(--red)"></i>Outbound by Category — Season (M EGP)</h3><div class="chart-box sm"><canvas id="c-mv-out"></canvas></div></div>
+      <div class="card"><h3><i class="ti ti-arrow-down-circle" style="color:var(--green)"></i><span id="h-mvin">Inbound by Category — Season (M EGP)</span></h3><div class="chart-box sm"><canvas id="c-mv-in"></canvas></div></div>
+      <div class="card"><h3><i class="ti ti-arrow-up-circle" style="color:var(--red)"></i><span id="h-mvout">Outbound by Category — Season (M EGP)</span></h3><div class="chart-box sm"><canvas id="c-mv-out"></canvas></div></div>
     </div>
   </div>
 
@@ -577,7 +577,23 @@ function drawBreakdowns(vw){
   barChart('c-status-cnt',TL,[{label:'Items',data:TS.map(t=>num(vw.statusCnt[t])),backgroundColor:TC,borderRadius:5,datalabels:dl('#333')}],
     {indexAxis:'y',scales:{x:{grid:{color:'#eef1f6'}},y:{grid:{display:false}}}});
 }
+function gWord(g){return g==='day'?'Day':g==='week'?'Week':'Month';}
+function gAdv(g){return g==='day'?'Daily':g==='week'?'Weekly':'Monthly';}
+function setTitle(id,t){var e=document.getElementById(id);if(e)e.textContent=t;}
+function updateTitles(vw){
+  var R=vw.rangeActive,G=gWord(vw.grain),A=gAdv(vw.grain),SP=R?vw.rowsLabel:'Season';
+  setTitle('h-season',(R?'':'Season 26 · ')+'Stock Value / '+G+' (M EGP)');
+  setTitle('h-iomonth','Inbound vs Outbound '+A+' (M EGP)');
+  setTitle('h-iocat','Inbound vs Outbound by Category ('+SP+', M EGP)');
+  setTitle('h-cattrend','Total On-Hand Value — '+A+' Trend (M EGP)');
+  setTitle('h-catmonthly','Stock Value / '+G+' — Per Category (M EGP)');
+  setTitle('h-mvmonth',A+' Inbound vs Outbound (M EGP)');
+  setTitle('h-mvin','Inbound by Category — '+SP+' (M EGP)');
+  setTitle('h-mvout','Outbound by Category — '+SP+' (M EGP)');
+  setTitle('h-brandiss','Top 10 Brands by Issues — '+SP+' (M EGP)');
+}
 function renderWindow(vw){
+  updateTitles(vw);
   drawSnapshot(vw); drawKpis(vw);
   drawSeason(vw); drawIoCat(vw); drawIoMonth(vw);
   drawCatTrend(vw); drawCatMonthly(vw);
