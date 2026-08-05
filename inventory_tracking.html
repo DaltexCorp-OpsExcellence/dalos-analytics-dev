@@ -239,7 +239,21 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <button class="f-reset" onclick="resetFilters()"><i class="ti ti-filter-off" style="font-size:13px"></i>Reset</button>
     <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-list-search" style="color:var(--orange);font-size:13px"></i><b id="filterState" style="color:var(--navy)">All items</b></span></div>
   </div>
-  <div class="sec-sub" style="margin:-6px 0 16px">Filters drive the <b>KPIs, Category, Brand, Health &amp; Explorer</b>. Site map and monthly/inbound-outbound trends currently show all periods.</div>
+
+  <!-- DATE RANGE BAR (day / week / month · rescopes flows, trends & as-of on-hand) -->
+  <div class="rail" id="dateRange">
+    <div class="fl"><label>From day</label><input type="date" id="dFrom" class="fsel"></div>
+    <div class="fl"><label>To day</label><input type="date" id="dTo" class="fsel"></div>
+    <div class="fl"><label>View trend by</label><div class="chips" id="grainChips">
+      <span class="chip" data-g="day">Day</span><span class="chip on" data-g="week">Week</span><span class="chip" data-g="month">Month</span>
+    </div></div>
+    <div class="fl"><label>Quick pick</label><div class="chips" id="presetChips">
+      <span class="chip" data-p="7d">Last 7 days</span><span class="chip" data-p="tw">This week</span><span class="chip" data-p="lw">Last week</span><span class="chip" data-p="tm">This month</span><span class="chip" data-p="season">Full period</span>
+    </div></div>
+    <button class="f-reset" id="clearRangeBtn"><i class="ti ti-x" style="font-size:13px"></i>Clear dates</button>
+    <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-calendar-stats" style="color:var(--orange);font-size:13px"></i><b id="rangeState" style="color:var(--navy)">Full period</b></span></div>
+  </div>
+  <div class="sec-sub" style="margin:-6px 0 16px">Item filters drive the <b>KPIs, Category, Brand, Health &amp; Explorer</b>. The <b>date range</b> (day/week/month) rescopes <b>inbound/outbound &amp; trends</b>, with <b>on-hand shown as of the end day</b>.</div>
 
   <!-- OVERVIEW -->
   <div class="panel active" id="overview">
@@ -416,6 +430,221 @@ function donut(id,labels,vals,colors){ killChart(id);
     options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right'},
       datalabels:{display:true,color:'#fff',font:{size:11,weight:'700'},formatter:(v,c)=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);const p=100*v/t;return p>4?p.toFixed(0)+'%':''}}}}});
 }
+
+/* ================= DATE-RANGE ENGINE (day / week / month) ================= */
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const RANGE={active:false,from:null,to:null,grain:'week'};
+function num(x){return (x==null||isNaN(x))?0:+x;}
+function bLabel(k,grain){var p=(''+k).split('-');if(grain==='month')return MON[(+p[1])-1]+'-'+p[0].slice(2);var mo=MON[(+p[1])-1];return (grain==='week'?'w/o ':'')+(+p[2])+' '+mo;}
+
+/* ---- build a normalized "view" (same shape) for full period or a date range ---- */
+function buildFullVW(){
+  const s={rangeActive:false,flowLabel:'Season',grain:'month'};
+  s.asof=(DATA.meta&&DATA.meta.asOf)||'—'; s.asofLabel='Across all sites'; s.rowsLabel=s.asof;
+  s.onhandTotal=DATA.kpi.onhandTotal; s.sku=DATA.kpi.totalSku; s.active=DATA.kpi.activeItems;
+  s.activeRate=DATA.kpi.activeRate; s.sp=DATA.kpi.spDominance; s.invest=num(DATA.onhandByCat.Invest);
+  s.rangeIn=seasonIn; s.rangeOut=seasonOut;
+  s.onhandByCat=DATA.onhandByCat; s.onhandBySite=DATA.onhandBySite; s.heat=DATA.heat;
+  s.statusVal=DATA.statusVal; s.statusCnt=DATA.statusCnt;
+  s.onhandByBrand=BRAND.onhandByBrand; s.issueByBrand=BRAND.issueSeasonByBrand;
+  s.inByCat=DATA.inboundByCatSeason; s.outByCat=DATA.outboundByCatSeason;
+  s.sLabels=seasonMonths.map(mLabel);
+  s.sIn=seasonMonths.map(m=>num(DATA.inboundByMonth[m]));
+  s.sOut=seasonMonths.map(m=>num(DATA.outboundByMonth[m]));
+  s.sOnhand=seasonMonths.map(m=>num(DATA.monthlyOnhand[m]));
+  const tms=Object.keys(DATA.monthlyOnhand).filter(m=>m>='2024-09').sort();
+  s.trendLabels=tms.slice(); s.trendOnhand=tms.map(m=>num(DATA.monthlyOnhand[m]));
+  s.catLabels=seasonMonths.map(mLabel);
+  s.catData={}; CAT.forEach(c=>s.catData[c]=seasonMonths.map(m=>num(DATA.monthlyOnhandByCat[c]?DATA.monthlyOnhandByCat[c][m]:0)));
+  return s;
+}
+function buildRangeVW(p){
+  const g=p.meta.grain, ser=p.series||[];
+  const s={rangeActive:true,flowLabel:'Range',grain:g};
+  s.asof=p.meta.to; s.asofLabel='as of '+p.meta.to; s.rowsLabel=p.meta.from+' → '+p.meta.to;
+  s.onhandTotal=num(p.kpi.onhandTotal); s.sku=num(p.kpi.totalSku); s.active=num(p.kpi.activeItems);
+  s.activeRate=num(p.kpi.activeRate); s.sp=num(p.kpi.spDominance); s.invest=num((p.onhandByCat||{}).Invest);
+  s.rangeIn=num(p.rangeInbound); s.rangeOut=Math.abs(num(p.rangeOutbound));
+  s.onhandByCat=p.onhandByCat||{}; s.onhandBySite=p.onhandBySite||{}; s.heat=p.heat||{};
+  s.statusVal=p.statusVal||{}; s.statusCnt=p.statusCnt||{};
+  s.onhandByBrand=p.onhandByBrand||{}; s.issueByBrand=p.issueSeasonByBrand||{};
+  s.inByCat=p.inboundByCatSeason||{}; s.outByCat=p.outboundByCatSeason||{};
+  s.sLabels=ser.map(x=>bLabel(x.k,g)); s.sIn=ser.map(x=>num(x.inb)); s.sOut=ser.map(x=>num(x.outb)); s.sOnhand=ser.map(x=>num(x.onhand));
+  s.trendLabels=s.sLabels.slice(); s.trendOnhand=s.sOnhand.slice(); s.catLabels=s.sLabels.slice();
+  const ks=ser.map(x=>x.k), sc=p.seriesByCat||{};
+  s.catData={}; CAT.forEach(c=>s.catData[c]=ks.map(k=>num(sc[c]?sc[c][k]:0)));
+  return s;
+}
+
+/* ---- re-callable renderers (read from a view) ---- */
+function drawSnapshot(vw){
+  document.getElementById('s-onhand').textContent='EGP '+vw.onhandTotal+'M';
+  document.getElementById('s-sku').textContent=(+vw.sku).toLocaleString();
+  document.getElementById('s-sp').textContent=vw.sp+'%';
+  document.getElementById('s-rows').textContent=vw.rowsLabel||'—';
+}
+function drawKpis(vw){
+  const turnover=vw.onhandTotal?(vw.rangeOut/vw.onhandTotal):0;
+  const kpis=[
+    {v:'EGP '+vw.onhandTotal+'M',l:'Total On-Hand Value',s:vw.rangeActive?vw.asofLabel:'Across all sites',c:''},
+    {v:(+vw.active).toLocaleString(),l:'Active Moving Items',s:vw.activeRate+'% active rate',c:'k-teal'},
+    {v:(+vw.sku).toLocaleString(),l:'Total SKUs',s:'qty > 0',c:'k-orange'},
+    {v:vw.sp+'%',l:'Spare Parts Dominance',s:'of total value',c:''},
+    {v:'EGP '+fmtM(vw.rangeIn)+'M',l:vw.flowLabel+' Inbound',s:'Or Ty 1P/2P/FF',c:'k-in'},
+    {v:'EGP '+fmtM(vw.rangeOut)+'M',l:vw.flowLabel+' Outbound',s:'Do Ty # (issues)',c:'k-out'},
+    {v:turnover.toFixed(1)+'×',l:'Inventory Turnover',s:vw.flowLabel.toLowerCase()+' out / on-hand',c:'k-teal'},
+    {v:(+vw.invest).toFixed(0)+'M',l:'Invest Category',s:'reclassified items',c:'k-orange'}
+  ];
+  document.getElementById('kpiRow').innerHTML=kpis.map(k=>`<div class="kpi ${k.c}"><div class="kpi-val">${k.v}</div><div class="kpi-lbl">${k.l}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
+}
+function drawSeason(vw){ killChart('c-season');
+  CH['c-season']=new Chart(document.getElementById('c-season'),{data:{labels:vw.sLabels,datasets:[
+    {type:'bar',label:'On-hand',data:vw.sOnhand,backgroundColor:NAVY,borderRadius:4,datalabels:dl('#fff',v=>v.toFixed(0)+'M')},
+    {type:'line',label:'Trend',data:vw.sOnhand,borderColor:ORANGE,backgroundColor:ORANGE,tension:.35,pointRadius:0,borderWidth:2.5,datalabels:{display:false}}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#eef1f6'}},x:{grid:{display:false}}}}});
+}
+function drawIoCat(vw){ barChart('c-io-cat',CAT,[
+  {label:'Inbound',data:CAT.map(c=>+num(vw.inByCat[c]).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dl(NAVY,v=>v.toFixed(1))},
+  {label:'Outbound',data:CAT.map(c=>+Math.abs(num(vw.outByCat[c])).toFixed(1)),backgroundColor:ORANGE,borderRadius:4,datalabels:dl(ORANGE,v=>v.toFixed(1))}
+]); }
+function drawIoMonth(vw){ barChart('c-io-month',vw.sLabels,[
+  {label:'Inbound',data:vw.sIn.map(v=>+v.toFixed(1)),backgroundColor:NAVY,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:NAVY,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}},
+  {label:'Outbound',data:vw.sOut.map(v=>+Math.abs(v).toFixed(1)),backgroundColor:ORANGE,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:ORANGE,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}}
+]); }
+function drawCatTrend(vw){ killChart('c-cat-trend');
+  CH['c-cat-trend']=new Chart(document.getElementById('c-cat-trend'),{data:{labels:vw.trendLabels,datasets:[
+    {type:'bar',label:'On-hand',data:vw.trendOnhand,backgroundColor:NAVY,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:'#4a5778',font:{size:7,weight:'600'},formatter:v=>v.toFixed(0)}},
+    {type:'line',label:'Trend',data:vw.trendOnhand,borderColor:ORANGE,tension:.35,pointRadius:0,borderWidth:2.5,datalabels:{display:false}}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#eef1f6'}},x:{grid:{display:false},ticks:{maxRotation:60,minRotation:60,font:{size:9}}}}}});
+}
+function drawCatMonthly(vw){
+  barChart('c-cat-monthly',vw.catLabels,CAT.map(c=>({label:c,data:vw.catData[c],backgroundColor:CATCOLOR[c],borderRadius:3})));
+  const L=vw.catLabels,D=vw.catData;
+  const val=(c,i)=> c==='Total'? CAT.reduce((s,x)=>s+num(D[x][i]),0) : num(D[c][i]);
+  const cats=[...CAT,'Total']; let html='<tr><th>Category</th>';
+  for(let i=1;i<L.length;i++){ html+=`<th>${(''+L[i-1]).slice(0,7)}→${(''+L[i]).slice(0,7)}</th>`; }
+  html+='</tr>';
+  cats.forEach(c=>{ html+=`<tr><td>${c}</td>`;
+    for(let i=1;i<L.length;i++){ const d=val(c,i)-val(c,i-1),base=val(c,i-1),pct=base?d/base*100:0;
+      const cls=d>0.05?'up':d<-0.05?'dn':'',arr=d>0.05?'▲':d<-0.05?'▼':'■';
+      html+=`<td class="${cls}">${arr} ${d>=0?'+':''}${d.toFixed(1)}<br><span style="font-size:9px;opacity:.75">${pct>=0?'+':''}${pct.toFixed(1)}%</span></td>`; }
+    html+='</tr>'; });
+  document.getElementById('momTable').innerHTML= L.length>1?html:('<tr><td style="padding:14px;color:var(--text3)">Pick a range spanning at least two '+(vw.grain||'period')+'s to see variance.</td></tr>');
+}
+function drawSite(vw){
+  const sites=Object.entries(vw.onhandBySite).filter(([s,v])=>v>0.05).sort((a,b)=>b[1]-a[1]);
+  barChart('c-site',sites.map(s=>s[0]),[{label:'On-hand',data:sites.map(s=>+(+s[1]).toFixed(1)),backgroundColor:sites.map((s,i)=>i<5?NAVY:SLATE),borderRadius:4,datalabels:dl('#333',v=>v.toFixed(1))}],
+    {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
+  const tot=sites.reduce((s,x)=>s+x[1],0)||1, top2=sites.slice(0,2).reduce((s,x)=>s+x[1],0), top5=sites.slice(0,5).reduce((s,x)=>s+x[1],0);
+  document.getElementById('concPanel').innerHTML=`<h4>Concentration Analysis</h4>
+    <div class="conc-item"><div class="v">${(100*top2/tot).toFixed(0)}%</div><div class="l">Top 2 sites share</div></div>
+    <div class="conc-item"><div class="v">${(100*top5/tot).toFixed(0)}%</div><div class="l">Top 5 sites share</div></div>
+    <div class="conc-item"><div class="v">EGP ${(sites[0]?sites[0][1]:0).toFixed(1)}M</div><div class="l">${sites[0]?sites[0][0]:'—'} (largest)</div></div>
+    <div class="conc-item"><div class="v">EGP ${(tot-top5).toFixed(1)}M</div><div class="l">Remaining ${Math.max(0,sites.length-5)} sites</div></div>`;
+}
+function drawHeat(vw){
+  const sites=Object.keys(vw.onhandBySite).filter(s=>vw.onhandBySite[s]>0.05).sort((a,b)=>vw.onhandBySite[b]-vw.onhandBySite[a]);
+  const band=v=>v>80?'#7f1d1d':v>20?'#dc2626':v>5?'#d97706':v>0?'#2563eb':'#1b2a44';
+  let html='<tr><th>Location</th>'+CAT.map(c=>`<th>${c} (M)</th>`).join('')+'<th>Total (M)</th></tr>';
+  sites.forEach(s=>{ let row=`<tr><td>${s}</td>`,tot=0;
+    CAT.forEach(c=>{const v=num(vw.heat[`${s}|${c}`]);tot+=v;row+=`<td style="background:${band(v)}">${v>0?v.toFixed(1):'–'}</td>`;});
+    row+=`<td style="background:${band(tot)}">${tot.toFixed(1)}</td></tr>`; html+=row;});
+  document.getElementById('heatTable').innerHTML=html;
+}
+function drawMovement(vw){
+  barChart('c-mv-month',vw.sLabels,[
+    {label:'Inbound',data:vw.sIn.map(v=>+v.toFixed(1)),backgroundColor:NAVY,borderRadius:3,datalabels:dl(NAVY,v=>v.toFixed(1))},
+    {label:'Outbound',data:vw.sOut.map(v=>+Math.abs(v).toFixed(1)),backgroundColor:ORANGE,borderRadius:3,datalabels:dl(ORANGE,v=>v.toFixed(1))}
+  ]);
+  barChart('c-mv-in',CAT,[{label:'Inbound',data:CAT.map(c=>+num(vw.inByCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]);
+  barChart('c-mv-out',CAT,[{label:'Outbound',data:CAT.map(c=>+Math.abs(num(vw.outByCat[c])).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]);
+}
+function drawBrand(vw){
+  const oh=Object.entries(vw.onhandByBrand).filter(([b,v])=>b!=='(Unbranded)'&&b!==''&&v>0).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  barChart('c-brand-oh',oh.map(e=>e[0]),[{label:'On-hand',data:oh.map(e=>+(+e[1]).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dl('#333',v=>v.toFixed(1))}],
+    {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
+  const iss=Object.entries(vw.issueByBrand).filter(([b,v])=>b!=='(Unbranded)'&&b!==''&&v>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  barChart('c-brand-iss',iss.map(e=>e[0]),[{label:'Issues',data:iss.map(e=>+(e[1]/1e6).toFixed(2)),backgroundColor:ORANGE,borderRadius:4,datalabels:dl('#333',v=>v.toFixed(2))}],
+    {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
+  const grand=oh.reduce((s,e)=>s+e[1],0)||1;
+  let html='<tr><th>#</th><th>Brand</th><th class="n">M EGP</th><th class="n">Share</th></tr>';
+  oh.forEach((e,i)=>{html+=`<tr><td>${i+1}</td><td class="b">${e[0]}</td><td class="n">${(+e[1]).toFixed(1)}</td><td class="n">${(100*e[1]/grand).toFixed(1)}%</td></tr>`;});
+  document.getElementById('brandTable').innerHTML=html;
+}
+function drawBreakdowns(vw){
+  donut('c-share',CAT,CAT.map(c=>num(vw.onhandByCat[c])),CAT.map(c=>CATCOLOR[c]));
+  barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>+num(vw.onhandByCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1)+'M')}]);
+  donut('c-cat-share',CAT,CAT.map(c=>num(vw.onhandByCat[c])),CAT.map(c=>CATCOLOR[c]));
+  const TL=['Fast (<3m)','Normal (3-12m)','Slow (12-18m)','Deadstock (>18m)'],TS=['Fast','Normal','Slow','Dead'],TC=['#16a34a','#2563eb','#d97706','#dc2626'];
+  donut('c-status-val',TL,TS.map(t=>num(vw.statusVal[t])),TC);
+  barChart('c-status-cnt',TL,[{label:'Items',data:TS.map(t=>num(vw.statusCnt[t])),backgroundColor:TC,borderRadius:5,datalabels:dl('#333')}],
+    {indexAxis:'y',scales:{x:{grid:{color:'#eef1f6'}},y:{grid:{display:false}}}});
+}
+function renderWindow(vw){
+  drawSnapshot(vw); drawKpis(vw);
+  drawSeason(vw); drawIoCat(vw); drawIoMonth(vw);
+  drawCatTrend(vw); drawCatMonthly(vw);
+  drawSite(vw); drawHeat(vw);
+  drawMovement(vw); drawBrand(vw);
+}
+
+/* ---- date-range apply / clear + controls ---- */
+function ymd(d){var m=(''+(d.getMonth()+1)).padStart(2,'0'),day=(''+d.getDate()).padStart(2,'0');return d.getFullYear()+'-'+m+'-'+day;}
+function asOfDate(){return new Date(((DATA.meta&&DATA.meta.asOf)||'2026-07-11')+'T00:00:00');}
+function mondayOf(d){var x=new Date(d);var wd=(x.getDay()+6)%7;x.setDate(x.getDate()-wd);return x;}
+function syncRangeInputs(){document.getElementById('dFrom').value=RANGE.from||'';document.getElementById('dTo').value=RANGE.to||'';}
+function rpcRange(){
+  var H={apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'};
+  var body=JSON.stringify({p_from:RANGE.from,p_to:RANGE.to,p_grain:RANGE.grain});
+  return fetch(SB+'/rest/v1/rpc/inv_range',{method:'POST',headers:H,body:body}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(r.status+': '+t.slice(0,140));});return r.json();});
+}
+function applyRange(){
+  if(!RANGE.from||!RANGE.to)return;
+  if(RANGE.from>RANGE.to){var t=RANGE.from;RANGE.from=RANGE.to;RANGE.to=t;syncRangeInputs();}
+  document.getElementById('rangeState').textContent='Loading…';
+  rpcRange().then(function(p){
+    if(!p||!p.kpi)throw new Error((p&&p.message)||'no data for range');
+    RANGE.active=true;
+    var vw=buildRangeVW(p); renderWindow(vw); drawBreakdowns(vw);
+    document.getElementById('filterState').textContent='Date '+p.meta.from+' → '+p.meta.to;
+    document.getElementById('rangeState').textContent=p.meta.from+' → '+p.meta.to+' · by '+p.meta.grain;
+  }).catch(function(e){document.getElementById('rangeState').textContent='Error: '+((e&&e.message)||e);});
+}
+function clearRange(){
+  RANGE.active=false; RANGE.from=null; RANGE.to=null;
+  var f=document.getElementById('dFrom'),t=document.getElementById('dTo'); if(f)f.value=''; if(t)t.value='';
+  document.querySelectorAll('#presetChips .chip').forEach(c=>c.classList.remove('on'));
+  document.getElementById('rangeState').textContent='Full period';
+  renderWindow(buildFullVW()); renderX();
+}
+function setPreset(p){
+  if(p==='season'){clearRange();return;}
+  var to=asOfDate(),from=new Date(to);
+  if(p==='7d'){from=new Date(to);from.setDate(to.getDate()-6);}
+  else if(p==='tw'){from=mondayOf(to);}
+  else if(p==='lw'){var lm=mondayOf(to);lm.setDate(lm.getDate()-7);from=lm;to=new Date(lm);to.setDate(lm.getDate()+6);}
+  else if(p==='tm'){from=new Date(to.getFullYear(),to.getMonth(),1);}
+  RANGE.from=ymd(from);RANGE.to=ymd(to);syncRangeInputs();applyRange();
+}
+function wireRangeControls(){
+  var mx=(DATA.meta&&DATA.meta.asOf)||''; var dt=document.getElementById('dTo'),df=document.getElementById('dFrom');
+  if(dt)dt.max=mx; if(df)df.max=mx;
+  document.querySelectorAll('#grainChips .chip').forEach(function(ch){ch.onclick=function(){
+    document.querySelectorAll('#grainChips .chip').forEach(c=>c.classList.toggle('on',c===ch));
+    RANGE.grain=ch.dataset.g; if(RANGE.active&&RANGE.from&&RANGE.to)applyRange();
+  };});
+  document.querySelectorAll('#presetChips .chip').forEach(function(ch){ch.onclick=function(){
+    document.querySelectorAll('#presetChips .chip').forEach(c=>c.classList.toggle('on',c===ch));
+    setPreset(ch.dataset.p);
+  };});
+  ['dFrom','dTo'].forEach(function(id){var el=document.getElementById(id);if(el)el.onchange=function(){
+    RANGE.from=document.getElementById('dFrom').value||null; RANGE.to=document.getElementById('dTo').value||null;
+    document.querySelectorAll('#presetChips .chip').forEach(c=>c.classList.remove('on'));
+    if(RANGE.from&&RANGE.to)applyRange(); else if(!RANGE.from&&!RANGE.to)clearRange();
+  };});
+  var cb=document.getElementById('clearRangeBtn'); if(cb)cb.onclick=clearRange;
+}
+
 donut('c-share',CAT,CAT.map(c=>DATA.onhandByCat[c]),CAT.map(c=>CATCOLOR[c]));
 // inbound vs outbound by category — real Season 26 figures
 barChart('c-io-cat',CAT,[
@@ -574,9 +803,9 @@ function xdraw(id,cfg){if(XCH[id])XCH[id].destroy();XCH[id]=new Chart(document.g
 const XM=v=>v/1e6;
 function renderX(){
   const rows=ITEMS.items.filter(passesX);
-  renderFiltered(rows);
+  if(!RANGE.active)renderFiltered(rows);
   const nActive=(S.cat.length||S.dept.length||S.tier.length||S.lm.length||GQ)?1:0;
-  document.getElementById('filterState').textContent=nActive?(rows.length.toLocaleString()+' items match'):'All items';
+  if(!RANGE.active)document.getElementById('filterState').textContent=nActive?(rows.length.toLocaleString()+' items match'):'All items';
   const val=rows.reduce((s,i)=>s+i.v,0), qsum=rows.reduce((s,i)=>s+i.q,0), dead=rows.filter(i=>i.t==='Dead').reduce((s,i)=>s+i.v,0);
   document.getElementById('expKpis').innerHTML=[
     {v:rows.length.toLocaleString(),l:'Items',s:'in current filter',c:''},
@@ -601,7 +830,7 @@ function renderX(){
 }
 (function(){ const sb=document.getElementById('fSearch'); if(sb){ let qt; sb.oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{GQ=e.target.value.trim().toLowerCase();renderX();},180);}; }
   document.addEventListener('click',e=>{if(!e.target.closest('.ms'))document.querySelectorAll('.ms-dd').forEach(d=>d.classList.remove('open'));});
-  buildFilters(); renderX();
+  wireRangeControls(); buildFilters(); renderX();
 })();
 
 /* env-aware staging badge (shared convention) — visible only on -dev/ paths */
