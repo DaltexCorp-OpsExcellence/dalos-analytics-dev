@@ -1,0 +1,4 @@
+# Raw source data & local working files — never published to the site
+data/
+inventory_tracking_embedded_backup.html
+*.csv
