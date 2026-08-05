@@ -185,6 +185,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .badge-live{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
 .badge-coming{background:#f4f6fb;color:#8a95b0;border:1px solid var(--border)}
 .badge-beta{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.badge-new{background:#DC6428;color:#fff;border:1px solid #DC6428}
 .dc-name{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px}
 .dc-desc{font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:16px}
 .dc-tags{display:flex;gap:6px;flex-wrap:wrap}
@@ -273,7 +274,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       <div class="dc-body">
         <div class="dc-header">
           <div class="dc-icon" style="background:#f0fdf4">👷</div>
-          <span class="dc-badge badge-live"><i class="ti ti-circle-dot" style="font-size:9px"></i> Live</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="dc-badge badge-new"><i class="ti ti-sparkles" style="font-size:9px"></i> New</span>
+            <span class="dc-badge badge-live"><i class="ti ti-circle-dot" style="font-size:9px"></i> Live</span>
+          </div>
         </div>
         <div class="dc-name">Orchards · Labor Budget</div>
         <div class="dc-desc">Labor cost budget vs actual across all products — operational buckets, farms, varieties and operations, with variance in EGP and %. FY 2025/26 loaded and validated.</div>
@@ -340,5 +344,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 })();
 </script>
 <script src="switcher.js" defer></script>
+<script>
+/* Auto-expire the "New" badge 15 days after launch (2026-08-05 → 2026-08-20) */
+(function(){
+  var expires=new Date('2026-08-20T23:59:59');
+  if(new Date()>expires){document.querySelectorAll('.badge-new').forEach(function(b){b.remove();});}
+})();
+</script>
 </body>
 </html>

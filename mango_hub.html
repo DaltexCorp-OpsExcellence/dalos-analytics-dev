@@ -188,6 +188,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .badge-live{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
 .badge-coming{background:#f4f6fb;color:#8a95b0;border:1px solid var(--border)}
 .badge-beta{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.badge-new{background:#DC6428;color:#fff;border:1px solid #DC6428}
 .dc-name{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px}
 .dc-desc{font-size:12px;color:var(--text3);line-height:1.6;margin-bottom:16px}
 .dc-tags{display:flex;gap:6px;flex-wrap:wrap}
@@ -256,8 +257,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       <div class="hero-title">Mango Dashboards</div>
       <div class="hero-sub">Export shipments, quality control and harvest planning for Daltex mango operations.</div>
       <div class="hero-stats">
-        <div class="hstat"><div class="hstat-val">1</div><div class="hstat-lbl">Live</div></div>
-        <div class="hstat"><div class="hstat-val">3</div><div class="hstat-lbl">Coming Soon</div></div>
+        <div class="hstat"><div class="hstat-val">2</div><div class="hstat-lbl">Live</div></div>
+        <div class="hstat"><div class="hstat-val">2</div><div class="hstat-lbl">Coming Soon</div></div>
       </div>
     </div>
   </div>
@@ -319,7 +320,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       <div class="dc-body">
         <div class="dc-header">
           <div class="dc-icon" style="background:#fef2f2">💰</div>
-          <span class="dc-open">Open<i class="ti ti-arrow-right"></i></span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="dc-badge badge-new"><i class="ti ti-sparkles" style="font-size:9px"></i> New</span>
+            <span class="dc-open">Open<i class="ti ti-arrow-right"></i></span>
+          </div>
         </div>
         <div class="dc-name">Labor Budget</div>
         <div class="dc-desc">Labor budget vs actual for Mango — cost per feddan, buckets, operations, and monthly tracking.</div>
@@ -331,5 +335,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 </div>
 
 <script src="switcher.js" defer></script>
+<script>
+/* Auto-expire the "New" badge 15 days after launch (2026-08-05 → 2026-08-20) */
+(function(){
+  var expires=new Date('2026-08-20T23:59:59');
+  if(new Date()>expires){document.querySelectorAll('.badge-new').forEach(function(b){b.remove();});}
+})();
+</script>
 </body>
 </html>
