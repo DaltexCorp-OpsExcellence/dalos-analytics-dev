@@ -97,6 +97,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .pc-info{flex:1;min-width:0}
 .pc-name{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:3px}
 .pc-desc{font-size:12px;color:var(--text3);line-height:1.5}
+.pc-counts{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.pc-count{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;background:var(--bg);color:var(--text2);border:1px solid var(--border)}
+.pc-count i{font-size:9px}
+.pc-count.live{background:#f0fdf4;color:#16a34a;border-color:#bbf7d0}
 .pc-badge{position:absolute;top:14px;right:14px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .badge-live{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
 .badge-coming{background:#f4f6fb;color:#8a95b0;border:1px solid var(--border)}
@@ -118,6 +122,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .dept-name{font-size:13px;font-weight:600;color:var(--navy)}
 .dept-sub{font-size:11px;color:var(--text3);margin-top:2px}
 .dept-badge{margin-left:auto;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:#f4f6fb;color:#8a95b0;border:1px solid var(--border);flex-shrink:0}
+.badge-new{background:#DC6428;color:#fff;border-color:#DC6428}
 
 /* ── RECENT ACTIVITY ── */
 .activity-list{display:flex;flex-direction:column;gap:10px}
@@ -344,7 +349,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     <div class="hero-title">Welcome to<br><span style="color:#fff">Dal</span><span style="color:#DC6428">OS</span><span style="color:#fff"> Analytics</span></div>
     <div class="hero-sub">Your central hub for data-driven decisions across products, operations, and departments. Select a product or department below to explore its dashboards.</div>
     <div class="hero-stats">
-      <div class="hstat"><div class="hstat-val">1</div><div class="hstat-lbl">Live Product</div></div>
+      <div class="hstat"><div class="hstat-val">3</div><div class="hstat-lbl">Live Products</div></div>
       <div class="hstat"><div class="hstat-val">4</div><div class="hstat-lbl">Products Planned</div></div>
       <div class="hstat"><div class="hstat-val" id="h-nw-top">—</div><div class="hstat-lbl">Season NW</div></div>
       <div class="hstat"><div class="hstat-val">2025/26</div><div class="hstat-lbl">Active Season</div></div>
@@ -373,6 +378,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
         <div class="pc-info">
           <div class="pc-name">Grapes</div>
           <div class="pc-desc">Export shipments, variety analysis, market performance and supply chain tracking.</div>
+          <div class="pc-counts">
+            <span class="pc-count live"><i class="ti ti-circle-dot"></i>4 Live</span>
+          </div>
         </div>
       </div>
       <div class="pc-divider"></div>
@@ -396,6 +404,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
         <div class="pc-info">
           <div class="pc-name">Citrus</div>
           <div class="pc-desc">Orange, lemon and grapefruit export tracking, quality control and market analytics.</div>
+          <div class="pc-counts">
+            <span class="pc-count"><i class="ti ti-clock"></i>3 Coming Soon</span>
+          </div>
         </div>
       </div>
       <div class="pc-divider"></div>
@@ -410,11 +421,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
     <!-- MANGO -->
     <div class="product-card" id="pc-mango" onclick="window.location='mango_hub.html'">
+      <span class="pc-badge badge-live"><i class="ti ti-circle-dot" style="font-size:9px"></i> Live</span>
       <div class="pc-header">
         <div class="pc-icon" style="background:#fffbeb">🥭</div>
         <div class="pc-info">
           <div class="pc-name">Mango</div>
           <div class="pc-desc">Mango export performance, seasonal analysis and destination market insights.</div>
+          <div class="pc-counts">
+            <span class="pc-count live"><i class="ti ti-circle-dot"></i>2 Live</span>
+            <span class="pc-count"><i class="ti ti-clock"></i>2 Coming Soon</span>
+          </div>
         </div>
       </div>
       <div class="pc-divider"></div>
@@ -423,7 +439,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
           <span class="pc-dash-chip live" data-db="shipments">Shipments</span>
           <span class="pc-dash-chip" data-db="qc">QC</span>
           <span class="pc-dash-chip" data-db="harvest">Harvest</span>
-          <span class="pc-dash-chip" data-db="budget">Budgeting</span>
+          <span class="pc-dash-chip live" data-db="budget">Budgeting</span>
         </div>
         <div class="pc-arrow"><i class="ti ti-arrow-right"></i></div>
       </div>
@@ -431,11 +447,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 
     <!-- POMEGRANATE -->
     <div class="product-card" id="pc-pomegranate" onclick="window.location='pom_hub.html'">
+      <span class="pc-badge badge-live"><i class="ti ti-circle-dot" style="font-size:9px"></i> Live</span>
       <div class="pc-header">
         <div class="pc-icon" style="background:#fdf2f8">🍎</div>
         <div class="pc-info">
           <div class="pc-name">Pomegranate</div>
           <div class="pc-desc">Pomegranate export tracking and quality benchmarking across seasons.</div>
+          <div class="pc-counts">
+            <span class="pc-count live"><i class="ti ti-circle-dot"></i>2 Live</span>
+            <span class="pc-count"><i class="ti ti-clock"></i>2 Coming Soon</span>
+          </div>
         </div>
       </div>
       <div class="pc-divider"></div>
@@ -444,7 +465,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
           <span class="pc-dash-chip live" data-db="shipments">Shipments</span>
           <span class="pc-dash-chip" data-db="qc">QC</span>
           <span class="pc-dash-chip" data-db="harvest">Harvest</span>
-          <span class="pc-dash-chip" data-db="budget">Budgeting</span>
+          <span class="pc-dash-chip live" data-db="budget">Budgeting</span>
         </div>
         <div class="pc-arrow"><i class="ti ti-arrow-right"></i></div>
       </div>
@@ -469,7 +490,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     <div class="dept-card" onclick="window.location='finance_hub.html'" style="cursor:pointer;opacity:1" onmouseover="this.style.boxShadow='var(--shadow2)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
       <div class="dept-icon" style="background:#f0fdf4"><i class="ti ti-currency-dollar" style="color:#16a34a;font-size:20px"></i></div>
       <div><div class="dept-name">Finance</div><div class="dept-sub">Budget vs actual · Labor</div></div>
-      <span class="dept-badge" style="background:#f0fdf4;color:#16a34a;border-color:#bbf7d0">Live</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+        <span class="dept-badge badge-new" style="margin-left:0">New</span>
+        <span class="dept-badge" style="background:#f0fdf4;color:#16a34a;border-color:#bbf7d0;margin-left:0">Live</span>
+      </div>
     </div>
     <div class="dept-card">
       <div class="dept-icon" style="background:#fff7ed"><i class="ti ti-users" style="color:#c2410c;font-size:20px"></i></div>
@@ -1765,5 +1789,12 @@ updateDate();
 })();
 </script>
 <script src="switcher.js" defer></script>
+<script>
+/* Auto-expire the "New" badge 15 days after launch (2026-08-05 → 2026-08-20) */
+(function(){
+  var expires=new Date('2026-08-20T23:59:59');
+  if(new Date()>expires){document.querySelectorAll('.badge-new').forEach(function(b){b.remove();});}
+})();
+</script>
 </body>
 </html>
