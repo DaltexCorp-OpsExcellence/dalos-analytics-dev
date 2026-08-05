@@ -236,21 +236,13 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <div class="fl"><label>Department</label><div class="ms" data-f="dept"></div></div>
     <div class="fl"><label>Movement tier</label><div class="ms" data-f="tier"></div></div>
     <div class="fl"><label>Last move (month)</label><div class="ms" data-f="lm"></div></div>
+    <div class="fl"><label>From day</label><input type="date" id="dFrom" class="fsel"></div>
+    <div class="fl"><label>To day</label><input type="date" id="dTo" class="fsel"></div>
     <button class="f-reset" onclick="resetFilters()"><i class="ti ti-filter-off" style="font-size:13px"></i>Reset</button>
     <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-list-search" style="color:var(--orange);font-size:13px"></i><b id="filterState" style="color:var(--navy)">All items</b></span></div>
   </div>
 
-  <!-- DATE RANGE BAR (day / week / month · rescopes flows, trends & as-of on-hand) -->
-  <div class="rail" id="dateRange">
-    <div class="fl"><label>From day</label><input type="date" id="dFrom" class="fsel"></div>
-    <div class="fl"><label>To day</label><input type="date" id="dTo" class="fsel"></div>
-    <div class="fl"><label>View trend by</label><div class="chips" id="grainChips">
-      <span class="chip" data-g="day">Day</span><span class="chip on" data-g="week">Week</span><span class="chip" data-g="month">Month</span>
-    </div></div>
-    <button class="f-reset" id="clearRangeBtn"><i class="ti ti-x" style="font-size:13px"></i>Clear dates</button>
-    <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-calendar-stats" style="color:var(--orange);font-size:13px"></i><b id="rangeState" style="color:var(--navy)">Full period</b></span></div>
-  </div>
-  <div class="sec-sub" style="margin:-6px 0 16px">Item filters drive the <b>KPIs, Category, Brand, Health &amp; Explorer</b>. The <b>date range</b> (day/week/month) rescopes <b>inbound/outbound &amp; trends</b>, with <b>on-hand shown as of the end day</b>.</div>
+  <div class="sec-sub" style="margin:-6px 0 16px">Item filters drive the <b>KPIs, Category, Brand, Health &amp; Explorer</b>. Setting a <b>From / To day</b> rescopes <b>inbound/outbound &amp; trends</b> for that window, with <b>on-hand shown as of the To day</b>.</div>
 
   <!-- OVERVIEW -->
   <div class="panel active" id="overview">
@@ -611,36 +603,31 @@ function rpcRange(){
   var body=JSON.stringify({p_from:RANGE.from,p_to:RANGE.to,p_grain:RANGE.grain});
   return fetch(SB+'/rest/v1/rpc/inv_range',{method:'POST',headers:H,body:body}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(r.status+': '+t.slice(0,140));});return r.json();});
 }
+function autoGrain(from,to){ var d=(new Date(to+'T00:00:00')-new Date(from+'T00:00:00'))/86400000; return d<=21?'day':d<=182?'week':'month'; }
 function applyRange(){
   if(!RANGE.from||!RANGE.to)return;
   if(RANGE.from>RANGE.to){var t=RANGE.from;RANGE.from=RANGE.to;RANGE.to=t;syncRangeInputs();}
-  document.getElementById('rangeState').textContent='Loading…';
+  RANGE.grain=autoGrain(RANGE.from,RANGE.to);
+  document.getElementById('filterState').textContent='Loading…';
   rpcRange().then(function(p){
     if(!p||!p.kpi)throw new Error((p&&p.message)||'no data for range');
     RANGE.active=true;
     var vw=buildRangeVW(p); renderWindow(vw); drawBreakdowns(vw);
-    document.getElementById('filterState').textContent='Date '+p.meta.from+' → '+p.meta.to;
-    document.getElementById('rangeState').textContent=p.meta.from+' → '+p.meta.to+' · by '+p.meta.grain;
-  }).catch(function(e){document.getElementById('rangeState').textContent='Error: '+((e&&e.message)||e);});
+    document.getElementById('filterState').textContent=p.meta.from+' → '+p.meta.to+' · by '+p.meta.grain;
+  }).catch(function(e){document.getElementById('filterState').textContent='Range error: '+((e&&e.message)||e);});
 }
 function clearRange(){
   RANGE.active=false; RANGE.from=null; RANGE.to=null;
   var f=document.getElementById('dFrom'),t=document.getElementById('dTo'); if(f)f.value=''; if(t)t.value='';
-  document.getElementById('rangeState').textContent='Full period';
   renderWindow(buildFullVW()); renderX();
 }
 function wireRangeControls(){
   var mx=ymd(new Date()); var dt=document.getElementById('dTo'),df=document.getElementById('dFrom');
   if(dt)dt.max=mx; if(df)df.max=mx;
-  document.querySelectorAll('#grainChips .chip').forEach(function(ch){ch.onclick=function(){
-    document.querySelectorAll('#grainChips .chip').forEach(c=>c.classList.toggle('on',c===ch));
-    RANGE.grain=ch.dataset.g; if(RANGE.active&&RANGE.from&&RANGE.to)applyRange();
-  };});
   ['dFrom','dTo'].forEach(function(id){var el=document.getElementById(id);if(el)el.onchange=function(){
     RANGE.from=document.getElementById('dFrom').value||null; RANGE.to=document.getElementById('dTo').value||null;
     if(RANGE.from&&RANGE.to)applyRange(); else if(!RANGE.from&&!RANGE.to)clearRange();
   };});
-  var cb=document.getElementById('clearRangeBtn'); if(cb)cb.onclick=clearRange;
 }
 
 donut('c-share',CAT,CAT.map(c=>DATA.onhandByCat[c]),CAT.map(c=>CATCOLOR[c]));
@@ -794,7 +781,9 @@ function filterMS(input){const q=input.value.toLowerCase().trim();input.closest(
 function msPick(f){const el=document.querySelector('.ms[data-f="'+f+'"]');S[f]=[...el.querySelectorAll('input[data-v]:checked')].map(i=>i.dataset.v);el.querySelector('.ms-all input').checked=S[f].length===0;syncMS(el,f);renderX();}
 function msAll(f,cb){const el=document.querySelector('.ms[data-f="'+f+'"]');el.querySelectorAll('input[data-v]').forEach(i=>i.checked=false);cb.checked=true;S[f]=[];syncMS(el,f);renderX();}
 function syncMS(el,f){const n=S[f].length,lbl=el.querySelector('.ms-lbl'),cnt=el.querySelector('.cnt');if(n===0){lbl.textContent='All';cnt.style.display='none';}else if(n===1){lbl.textContent=S[f][0];cnt.style.display='none';}else{lbl.textContent='Multiple';cnt.style.display='';cnt.textContent=n;}}
-function resetFilters(){S.cat=[];S.dept=[];S.tier=[];S.lm=[];GQ='';const sb=document.getElementById('fSearch');if(sb)sb.value='';buildFilters();renderX();}
+function resetFilters(){S.cat=[];S.dept=[];S.tier=[];S.lm=[];GQ='';const sb=document.getElementById('fSearch');if(sb)sb.value='';
+  RANGE.active=false;RANGE.from=null;RANGE.to=null;var df=document.getElementById('dFrom'),dtt=document.getElementById('dTo');if(df)df.value='';if(dtt)dtt.value='';
+  buildFilters();renderWindow(buildFullVW());renderX();}
 function toggleX(f,v){const idx=S[f].indexOf(v);if(idx>=0)S[f].splice(idx,1);else S[f].push(v);const el=document.querySelector('.ms[data-f="'+f+'"]');el.querySelectorAll('input[data-v]').forEach(i=>i.checked=S[f].includes(i.dataset.v));el.querySelector('.ms-all input').checked=S[f].length===0;syncMS(el,f);renderX();}
 function passesX(i){ if(S.cat.length&&!S.cat.includes(i.c))return false; if(S.dept.length&&!S.dept.includes(i.d))return false; if(S.tier.length&&!S.tier.includes(i.t))return false; if(S.lm.length&&!S.lm.includes(i.lm))return false; if(GQ&&!((''+(i.b||'')).toLowerCase().includes(GQ)||(''+i.n).includes(GQ)||(''+(i.dsc||'')).toLowerCase().includes(GQ)))return false; return true; }
 function xdraw(id,cfg){if(XCH[id])XCH[id].destroy();XCH[id]=new Chart(document.getElementById(id),cfg);}
