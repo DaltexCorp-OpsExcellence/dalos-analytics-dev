@@ -247,9 +247,6 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <div class="fl"><label>View trend by</label><div class="chips" id="grainChips">
       <span class="chip" data-g="day">Day</span><span class="chip on" data-g="week">Week</span><span class="chip" data-g="month">Month</span>
     </div></div>
-    <div class="fl"><label>Quick pick</label><div class="chips" id="presetChips">
-      <span class="chip" data-p="7d">Last 7 days</span><span class="chip" data-p="tw">This week</span><span class="chip" data-p="lw">Last week</span><span class="chip" data-p="tm">This month</span><span class="chip" data-p="season">Full period</span>
-    </div></div>
     <button class="f-reset" id="clearRangeBtn"><i class="ti ti-x" style="font-size:13px"></i>Clear dates</button>
     <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-calendar-stats" style="color:var(--orange);font-size:13px"></i><b id="rangeState" style="color:var(--navy)">Full period</b></span></div>
   </div>
@@ -613,18 +610,8 @@ function applyRange(){
 function clearRange(){
   RANGE.active=false; RANGE.from=null; RANGE.to=null;
   var f=document.getElementById('dFrom'),t=document.getElementById('dTo'); if(f)f.value=''; if(t)t.value='';
-  document.querySelectorAll('#presetChips .chip').forEach(c=>c.classList.remove('on'));
   document.getElementById('rangeState').textContent='Full period';
   renderWindow(buildFullVW()); renderX();
-}
-function setPreset(p){
-  if(p==='season'){clearRange();return;}
-  var to=new Date(),from=new Date(to);
-  if(p==='7d'){from=new Date(to);from.setDate(to.getDate()-6);}
-  else if(p==='tw'){from=mondayOf(to);}
-  else if(p==='lw'){var lm=mondayOf(to);lm.setDate(lm.getDate()-7);from=lm;to=new Date(lm);to.setDate(lm.getDate()+6);}
-  else if(p==='tm'){from=new Date(to.getFullYear(),to.getMonth(),1);}
-  RANGE.from=ymd(from);RANGE.to=ymd(to);syncRangeInputs();applyRange();
 }
 function wireRangeControls(){
   var mx=ymd(new Date()); var dt=document.getElementById('dTo'),df=document.getElementById('dFrom');
@@ -633,13 +620,8 @@ function wireRangeControls(){
     document.querySelectorAll('#grainChips .chip').forEach(c=>c.classList.toggle('on',c===ch));
     RANGE.grain=ch.dataset.g; if(RANGE.active&&RANGE.from&&RANGE.to)applyRange();
   };});
-  document.querySelectorAll('#presetChips .chip').forEach(function(ch){ch.onclick=function(){
-    document.querySelectorAll('#presetChips .chip').forEach(c=>c.classList.toggle('on',c===ch));
-    setPreset(ch.dataset.p);
-  };});
   ['dFrom','dTo'].forEach(function(id){var el=document.getElementById(id);if(el)el.onchange=function(){
     RANGE.from=document.getElementById('dFrom').value||null; RANGE.to=document.getElementById('dTo').value||null;
-    document.querySelectorAll('#presetChips .chip').forEach(c=>c.classList.remove('on'));
     if(RANGE.from&&RANGE.to)applyRange(); else if(!RANGE.from&&!RANGE.to)clearRange();
   };});
   var cb=document.getElementById('clearRangeBtn'); if(cb)cb.onclick=clearRange;
