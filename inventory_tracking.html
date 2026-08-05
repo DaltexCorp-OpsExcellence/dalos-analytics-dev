@@ -619,7 +619,7 @@ function clearRange(){
 }
 function setPreset(p){
   if(p==='season'){clearRange();return;}
-  var to=asOfDate(),from=new Date(to);
+  var to=new Date(),from=new Date(to);
   if(p==='7d'){from=new Date(to);from.setDate(to.getDate()-6);}
   else if(p==='tw'){from=mondayOf(to);}
   else if(p==='lw'){var lm=mondayOf(to);lm.setDate(lm.getDate()-7);from=lm;to=new Date(lm);to.setDate(lm.getDate()+6);}
@@ -627,7 +627,7 @@ function setPreset(p){
   RANGE.from=ymd(from);RANGE.to=ymd(to);syncRangeInputs();applyRange();
 }
 function wireRangeControls(){
-  var mx=(DATA.meta&&DATA.meta.asOf)||''; var dt=document.getElementById('dTo'),df=document.getElementById('dFrom');
+  var mx=ymd(new Date()); var dt=document.getElementById('dTo'),df=document.getElementById('dFrom');
   if(dt)dt.max=mx; if(df)df.max=mx;
   document.querySelectorAll('#grainChips .chip').forEach(function(ch){ch.onclick=function(){
     document.querySelectorAll('#grainChips .chip').forEach(c=>c.classList.toggle('on',c===ch));
