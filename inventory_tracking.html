@@ -799,8 +799,8 @@ drawCatTurn(buildFullVW());
 
 /* ===== MOVEMENT ===== */
 barChart('c-mv-month',seasonMonths.map(mLabel),[
-  {label:'Inbound',data:seasonMonths.map(m=>+(DATA.inboundByMonth[m]||0).toFixed(1)),backgroundColor:NAVY,borderRadius:3,datalabels:dl(NAVY,v=>v.toFixed(1))},
-  {label:'Outbound',data:seasonMonths.map(m=>+Math.abs(DATA.outboundByMonth[m]||0).toFixed(1)),backgroundColor:ORANGE,borderRadius:3,datalabels:dl(ORANGE,v=>v.toFixed(1))}
+  {label:'Inbound',data:seasonMonths.map(m=>+(DATA.inboundByMonth[m]||0).toFixed(1)),backgroundColor:NAVY,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:NAVY,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}},
+  {label:'Outbound',data:seasonMonths.map(m=>+Math.abs(DATA.outboundByMonth[m]||0).toFixed(1)),backgroundColor:ORANGE,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:ORANGE,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}}
 ]);
 barChart('c-mv-in',CAT,[{label:'Inbound',data:CAT.map(c=>+(DATA.inboundByCatSeason[c]||0).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]);
 barChart('c-mv-out',CAT,[{label:'Outbound',data:CAT.map(c=>+Math.abs(DATA.outboundByCatSeason[c]||0).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]);
