@@ -289,6 +289,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
       <div class="card"><h3><i class="ti ti-chart-bar"></i>On-Hand Value by Category (M EGP)</h3><div class="chart-box"><canvas id="c-cat-oh"></canvas></div></div>
       <div class="card"><h3><i class="ti ti-chart-donut"></i>Category Share</h3><div class="chart-box"><canvas id="c-cat-share"></canvas></div></div>
     </div>
+    <div class="card" style="margin-bottom:14px"><h3><i class="ti ti-rotate-clockwise"></i>Inventory Turnover by Category (× · season outbound ÷ on-hand)</h3><div class="chart-box sm"><canvas id="c-cat-turn"></canvas></div></div>
     <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-line"></i><span id="h-cattrend">Total On-Hand Value — Monthly Trend (M EGP)</span></span><span class="gtoggle" data-chart="cattrend"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box tall"><canvas id="c-cat-trend"></canvas></div></div>
     <div class="card" style="margin-top:14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-catmonthly">Stock Value / Month — Per Category (M EGP)</span></span><span class="gtoggle" data-chart="catmonthly"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box tall"><canvas id="c-cat-monthly"></canvas></div></div>
     <div class="card" style="margin-top:14px"><h3><i class="ti ti-arrows-up-down"></i>Month-over-Month Stock Value Variance (M EGP · Δ and %)</h3><div style="overflow-x:auto"><table class="mom" id="momTable"></table></div></div>
@@ -535,6 +536,10 @@ function drawCatMonthly(vw){
     html+='</tr>'; });
   document.getElementById('momTable').innerHTML= L.length>1?html:('<tr><td style="padding:14px;color:var(--text3)">Pick a range spanning at least two '+(vw.grain||'period')+'s to see variance.</td></tr>');
 }
+function drawCatTurn(vw){
+  const t=CAT.map(c=>{ const oh=num(vw.onhandByCat[c]), out=Math.abs(num(vw.outByCat[c])); return oh>0?+(out/oh).toFixed(2):0; });
+  barChart('c-cat-turn',CAT,[{label:'Turnover',data:t,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(2)+'×')}]);
+}
 function drawSite(vw){
   const sites=Object.entries(vw.onhandBySite).filter(([s,v])=>v>0.05).sort((a,b)=>b[1]-a[1]);
   barChart('c-site',sites.map(s=>s[0]),[{label:'On-hand',data:sites.map(s=>+(+s[1]).toFixed(1)),backgroundColor:sites.map((s,i)=>i<5?NAVY:SLATE),borderRadius:4,datalabels:dl('#333',v=>v.toFixed(1))}],
@@ -631,7 +636,7 @@ function renderWindow(vw){
   updateTitles(vw);
   drawSnapshot(vw); drawKpis(vw);
   drawSeason(vw); drawIoCat(vw); drawIoMonth(vw);
-  drawCatTrend(vw); drawCatMonthly(vw);
+  drawCatTrend(vw); drawCatMonthly(vw); drawCatTurn(vw);
   drawSite(vw); drawHeat(vw);
   drawMovement(vw); drawBrand(vw);
 }
@@ -747,6 +752,7 @@ barChart('c-io-month',seasonMonths.map(mLabel),[
 /* ===== CATEGORY ===== */
 barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>+DATA.onhandByCat[c].toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1)+'M')}]);
 donut('c-cat-share',CAT,CAT.map(c=>DATA.onhandByCat[c]),CAT.map(c=>CATCOLOR[c]));
+drawCatTurn(buildFullVW());
 (()=>{ const ms=Object.keys(DATA.monthlyOnhand).filter(m=>m>='2024-09');
   new Chart(document.getElementById('c-cat-trend'),{data:{labels:ms.map(m=>m.replace('2024-','').replace('2025-','').replace('2026-','')&&m),
     datasets:[{type:'bar',label:'On-hand',data:ms.map(m=>DATA.monthlyOnhand[m]),backgroundColor:NAVY,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:'#4a5778',font:{size:7,weight:'600'},formatter:v=>v.toFixed(0)}},
