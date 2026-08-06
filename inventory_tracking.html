@@ -422,7 +422,7 @@ function barChart(id,labels,datasets,opts={}){ killChart(id);
   CH[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets},options:Object.assign({
     responsive:true,maintainAspectRatio:false,
     plugins:{legend:{display:datasets.length>1,position:'bottom'}},
-    scales:{y:{beginAtZero:true,grid:{color:'#eef1f6'}},x:{grid:{display:false}}}
+    scales:{y:{beginAtZero:true,grace:'8%',grid:{color:'#eef1f6'}},x:{grid:{display:false}}}
   },opts)});
 }
 
