@@ -509,8 +509,8 @@ function drawSeason(vw){ killChart('c-season');
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#eef1f6'}},x:{grid:{display:false}}}}});
 }
 function drawIoCat(vw){ barChart('c-io-cat',CAT,[
-  {label:'Inbound',data:CAT.map(c=>+num(vw.inByCat[c]).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dl(NAVY,v=>v.toFixed(1))},
-  {label:'Outbound',data:CAT.map(c=>+Math.abs(num(vw.outByCat[c])).toFixed(1)),backgroundColor:ORANGE,borderRadius:4,datalabels:dl(ORANGE,v=>v.toFixed(1))}
+  {label:'Inbound',data:CAT.map(c=>+num(vw.inByCat[c]).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:{display:true,anchor:'end',align:'top',color:NAVY,font:{size:10,weight:'700'},formatter:v=>v>0?v.toFixed(1):''}},
+  {label:'Outbound',data:CAT.map(c=>+Math.abs(num(vw.outByCat[c])).toFixed(1)),backgroundColor:ORANGE,borderRadius:4,datalabels:{display:true,anchor:'end',align:'top',color:ORANGE,font:{size:10,weight:'700'},formatter:v=>v>0?v.toFixed(1):''}}
 ]); }
 function drawIoMonth(vw){ barChart('c-io-month',vw.sLabels,[
   {label:'Inbound',data:vw.sIn.map(v=>+v.toFixed(1)),backgroundColor:NAVY,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:NAVY,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}},
@@ -562,8 +562,8 @@ function drawHeat(vw){
 }
 function drawMvMonth(vw){
   barChart('c-mv-month',vw.sLabels,[
-    {label:'Inbound',data:vw.sIn.map(v=>+v.toFixed(1)),backgroundColor:NAVY,borderRadius:3,datalabels:dl(NAVY,v=>v.toFixed(1))},
-    {label:'Outbound',data:vw.sOut.map(v=>+Math.abs(v).toFixed(1)),backgroundColor:ORANGE,borderRadius:3,datalabels:dl(ORANGE,v=>v.toFixed(1))}
+    {label:'Inbound',data:vw.sIn.map(v=>+v.toFixed(1)),backgroundColor:NAVY,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:NAVY,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}},
+    {label:'Outbound',data:vw.sOut.map(v=>+Math.abs(v).toFixed(1)),backgroundColor:ORANGE,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:ORANGE,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}}
   ]);
 }
 function drawMovement(vw){
@@ -740,8 +740,8 @@ function wireRangeControls(){
 donut('c-share',CAT,CAT.map(c=>DATA.onhandByCat[c]),CAT.map(c=>CATCOLOR[c]));
 // inbound vs outbound by category — real Season 26 figures
 barChart('c-io-cat',CAT,[
-  {label:'Inbound',data:CAT.map(c=>+(DATA.inboundByCatSeason[c]||0).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dl(NAVY,v=>v.toFixed(1))},
-  {label:'Outbound',data:CAT.map(c=>+Math.abs(DATA.outboundByCatSeason[c]||0).toFixed(1)),backgroundColor:ORANGE,borderRadius:4,datalabels:dl(ORANGE,v=>v.toFixed(1))}
+  {label:'Inbound',data:CAT.map(c=>+(DATA.inboundByCatSeason[c]||0).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:{display:true,anchor:'end',align:'top',color:NAVY,font:{size:10,weight:'700'},formatter:v=>v>0?v.toFixed(1):''}},
+  {label:'Outbound',data:CAT.map(c=>+Math.abs(DATA.outboundByCatSeason[c]||0).toFixed(1)),backgroundColor:ORANGE,borderRadius:4,datalabels:{display:true,anchor:'end',align:'top',color:ORANGE,font:{size:10,weight:'700'},formatter:v=>v>0?v.toFixed(1):''}}
 ]);
 // inbound vs outbound monthly
 barChart('c-io-month',seasonMonths.map(mLabel),[
