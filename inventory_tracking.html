@@ -415,6 +415,8 @@ document.getElementById('kpiRow').innerHTML=kpis.map(k=>
 
 /* ---- helpers ---- */
 const dl = (color,fmt)=>({display:true,color:color||'#374151',font:{size:10,weight:'700'},formatter:fmt||(v=>v)});
+const dlv = fmt=>({display:true,anchor:'end',align:'top',color:'#374151',font:{size:10,weight:'700'},clamp:true,formatter:fmt||(v=>v)});   /* vertical bars: label above */
+const dlh = fmt=>({display:true,anchor:'end',align:'right',color:'#374151',font:{size:10,weight:'700'},clip:false,formatter:fmt||(v=>v)}); /* horizontal bars: label past end */
 const CH={}; function killChart(id){ if(CH[id]){try{CH[id].destroy();}catch(e){} delete CH[id];} try{var _ex=Chart.getChart(id); if(_ex)_ex.destroy();}catch(e){} }
 function barChart(id,labels,datasets,opts={}){ killChart(id);
   CH[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets},options:Object.assign({
@@ -542,11 +544,11 @@ function drawCatMonthly(vw){
 }
 function drawCatTurn(vw){
   const t=CAT.map(c=>{ const oh=num(vw.onhandByCat[c]), out=Math.abs(num(vw.outByCat[c])); return oh>0?+(out/oh).toFixed(2):0; });
-  barChart('c-cat-turn',CAT,[{label:'Turnover',data:t,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(2)+'×')}]);
+  barChart('c-cat-turn',CAT,[{label:'Turnover',data:t,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>v.toFixed(2)+'×')}]);
 }
 function drawSite(vw){
   const sites=Object.entries(vw.onhandBySite).filter(([s,v])=>v>0.05).sort((a,b)=>b[1]-a[1]);
-  barChart('c-site',sites.map(s=>s[0]),[{label:'On-hand',data:sites.map(s=>+(+s[1]).toFixed(1)),backgroundColor:sites.map((s,i)=>i<5?NAVY:SLATE),borderRadius:4,datalabels:dl('#333',v=>v.toFixed(1))}],
+  barChart('c-site',sites.map(s=>s[0]),[{label:'On-hand',data:sites.map(s=>+(+s[1]).toFixed(1)),backgroundColor:sites.map((s,i)=>i<5?NAVY:SLATE),borderRadius:4,datalabels:dlh(v=>v.toFixed(1))}],
     {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const tot=sites.reduce((s,x)=>s+x[1],0)||1, top2=sites.slice(0,2).reduce((s,x)=>s+x[1],0), top5=sites.slice(0,5).reduce((s,x)=>s+x[1],0);
   document.getElementById('concPanel').innerHTML=`<h4>Concentration Analysis</h4>
@@ -572,15 +574,15 @@ function drawMvMonth(vw){
 }
 function drawMovement(vw){
   drawMvMonth(vw);
-  barChart('c-mv-in',CAT,[{label:'Inbound',data:CAT.map(c=>+num(vw.inByCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]);
-  barChart('c-mv-out',CAT,[{label:'Outbound',data:CAT.map(c=>+Math.abs(num(vw.outByCat[c])).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]);
+  barChart('c-mv-in',CAT,[{label:'Inbound',data:CAT.map(c=>+num(vw.inByCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>v.toFixed(1))}]);
+  barChart('c-mv-out',CAT,[{label:'Outbound',data:CAT.map(c=>+Math.abs(num(vw.outByCat[c])).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>v.toFixed(1))}]);
 }
 function drawBrand(vw){
   const oh=Object.entries(vw.onhandByBrand).filter(([b,v])=>b!=='(Unbranded)'&&b!==''&&v>0).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  barChart('c-brand-oh',oh.map(e=>e[0]),[{label:'On-hand',data:oh.map(e=>+(+e[1]).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dl('#333',v=>v.toFixed(1))}],
+  barChart('c-brand-oh',oh.map(e=>e[0]),[{label:'On-hand',data:oh.map(e=>+(+e[1]).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dlh(v=>v.toFixed(1))}],
     {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const iss=Object.entries(vw.issueByBrand).filter(([b,v])=>b!=='(Unbranded)'&&b!==''&&v>0).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  barChart('c-brand-iss',iss.map(e=>e[0]),[{label:'Issues',data:iss.map(e=>+(e[1]/1e6).toFixed(2)),backgroundColor:ORANGE,borderRadius:4,datalabels:dl('#333',v=>v.toFixed(2))}],
+  barChart('c-brand-iss',iss.map(e=>e[0]),[{label:'Issues',data:iss.map(e=>+(e[1]/1e6).toFixed(2)),backgroundColor:ORANGE,borderRadius:4,datalabels:dlh(v=>v.toFixed(2))}],
     {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const grand=oh.reduce((s,e)=>s+e[1],0)||1;
   let html='<tr><th>#</th><th>Brand</th><th class="n">M EGP</th><th class="n">Share</th></tr>';
@@ -589,7 +591,7 @@ function drawBrand(vw){
 }
 function drawBreakdowns(vw){
   donut('c-share',CAT,CAT.map(c=>num(vw.onhandByCat[c])),CAT.map(c=>CATCOLOR[c]));
-  barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>+num(vw.onhandByCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1)+'M')}]);
+  barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>+num(vw.onhandByCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>v.toFixed(1)+'M')}]);
   donut('c-cat-share',CAT,CAT.map(c=>num(vw.onhandByCat[c])),CAT.map(c=>CATCOLOR[c]));
   paintHealth(vw.statusVal,vw.statusCnt);
 }
@@ -601,7 +603,7 @@ function paintHealth(sv,sc){
   const v=t=>num(sv&&sv[t]), c=t=>num(sc&&sc[t]);
   const totV=TS.reduce((s,t)=>s+v(t),0)||1, totC=TS.reduce((s,t)=>s+c(t),0)||1;
   donut('c-status-val',TL,TS.map(v),TC);
-  barChart('c-status-cnt',TL,[{label:'Items',data:TS.map(c),backgroundColor:TC,borderRadius:5,datalabels:dl('#333')}],
+  barChart('c-status-cnt',TL,[{label:'Items',data:TS.map(c),backgroundColor:TC,borderRadius:5,datalabels:dlh()}],
     {indexAxis:'y',scales:{x:{grid:{color:'#eef1f6'}},y:{grid:{display:false}}}});
   const tiles=document.getElementById('healthTiles');
   if(tiles)tiles.innerHTML=TS.map((t,i)=>`<div class="kpi k-${t.toLowerCase()}"><div class="kpi-val">EGP ${v(t).toFixed(1)}M</div><div class="kpi-lbl">${TL[i]}</div><div class="kpi-sub">${c(t).toLocaleString()} items · ${(100*v(t)/totV).toFixed(0)}% of value</div></div>`).join('');
@@ -754,7 +756,7 @@ barChart('c-io-month',seasonMonths.map(mLabel),[
 ]);
 
 /* ===== CATEGORY ===== */
-barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>+DATA.onhandByCat[c].toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1)+'M')}]);
+barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>+DATA.onhandByCat[c].toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>v.toFixed(1)+'M')}]);
 donut('c-cat-share',CAT,CAT.map(c=>DATA.onhandByCat[c]),CAT.map(c=>CATCOLOR[c]));
 drawCatTurn(buildFullVW());
 (()=>{ const ms=Object.keys(DATA.monthlyOnhand).filter(m=>m>='2024-09');
@@ -781,7 +783,7 @@ drawCatTurn(buildFullVW());
 
 /* ===== SITE ===== */
 (()=>{ const sites=Object.entries(DATA.onhandBySite).filter(([s,v])=>v>0.05).sort((a,b)=>b[1]-a[1]);
-  barChart('c-site',sites.map(s=>s[0]),[{label:'On-hand',data:sites.map(s=>+s[1].toFixed(1)),backgroundColor:sites.map((s,i)=>i<5?NAVY:SLATE),borderRadius:4,datalabels:dl('#333',v=>v.toFixed(1))}],
+  barChart('c-site',sites.map(s=>s[0]),[{label:'On-hand',data:sites.map(s=>+s[1].toFixed(1)),backgroundColor:sites.map((s,i)=>i<5?NAVY:SLATE),borderRadius:4,datalabels:dlh(v=>v.toFixed(1))}],
     {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const tot=sites.reduce((s,x)=>s+x[1],0);
   const top2=sites.slice(0,2).reduce((s,x)=>s+x[1],0), top5=sites.slice(0,5).reduce((s,x)=>s+x[1],0);
@@ -806,8 +808,8 @@ barChart('c-mv-month',seasonMonths.map(mLabel),[
   {label:'Inbound',data:seasonMonths.map(m=>+(DATA.inboundByMonth[m]||0).toFixed(1)),backgroundColor:NAVY,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:NAVY,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}},
   {label:'Outbound',data:seasonMonths.map(m=>+Math.abs(DATA.outboundByMonth[m]||0).toFixed(1)),backgroundColor:ORANGE,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:ORANGE,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}}
 ]);
-barChart('c-mv-in',CAT,[{label:'Inbound',data:CAT.map(c=>+(DATA.inboundByCatSeason[c]||0).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]);
-barChart('c-mv-out',CAT,[{label:'Outbound',data:CAT.map(c=>+Math.abs(DATA.outboundByCatSeason[c]||0).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]);
+barChart('c-mv-in',CAT,[{label:'Inbound',data:CAT.map(c=>+(DATA.inboundByCatSeason[c]||0).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>v.toFixed(1))}]);
+barChart('c-mv-out',CAT,[{label:'Outbound',data:CAT.map(c=>+Math.abs(DATA.outboundByCatSeason[c]||0).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>v.toFixed(1))}]);
 
 /* ===== HEALTH ===== */
 paintHealth(DATA.statusVal,DATA.statusCnt);
@@ -815,10 +817,10 @@ paintHealth(DATA.statusVal,DATA.statusCnt);
 /* ===== BY BRAND ===== */
 (()=>{ if(typeof BRAND==='undefined')return;
   const oh=Object.entries(BRAND.onhandByBrand).filter(([b,v])=>b!=='(Unbranded)'&&b!=='' &&v>0).slice(0,12);
-  barChart('c-brand-oh',oh.map(e=>e[0]),[{label:'On-hand',data:oh.map(e=>+e[1].toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dl('#333',v=>v.toFixed(1))}],
+  barChart('c-brand-oh',oh.map(e=>e[0]),[{label:'On-hand',data:oh.map(e=>+e[1].toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dlh(v=>v.toFixed(1))}],
     {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const iss=Object.entries(BRAND.issueSeasonByBrand).filter(([b,v])=>b!=='(Unbranded)'&&b!==''&&v>0).slice(0,10);
-  barChart('c-brand-iss',iss.map(e=>e[0]),[{label:'Issues',data:iss.map(e=>+(e[1]/1e6).toFixed(2)),backgroundColor:ORANGE,borderRadius:4,datalabels:dl('#333',v=>v.toFixed(2))}],
+  barChart('c-brand-iss',iss.map(e=>e[0]),[{label:'Issues',data:iss.map(e=>+(e[1]/1e6).toFixed(2)),backgroundColor:ORANGE,borderRadius:4,datalabels:dlh(v=>v.toFixed(2))}],
     {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const grand=oh.reduce((s,e)=>s+e[1],0);
   let html='<tr><th>#</th><th>Brand</th><th class="n">M EGP</th><th class="n">Share</th></tr>';
@@ -853,11 +855,11 @@ function renderFiltered(rows){
   renderKPIs(rows);
   const byCat={}; CAT.forEach(c=>byCat[c]=0); rows.forEach(i=>{ if(byCat[i.c]!=null)byCat[i.c]+=i.v; });
   donut('c-share',CAT,CAT.map(c=>byCat[c]),CAT.map(c=>CATCOLOR[c]));
-  barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>+M(byCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1)+'M')}]);
+  barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>+M(byCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>v.toFixed(1)+'M')}]);
   donut('c-cat-share',CAT,CAT.map(c=>byCat[c]),CAT.map(c=>CATCOLOR[c]));
   const bb={}; rows.forEach(i=>{ if(i.b&&i.b!=='(Unbranded)')bb[i.b]=(bb[i.b]||0)+i.v; });
   const topB=Object.entries(bb).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  barChart('c-brand-oh',topB.map(e=>e[0]),[{label:'On-hand',data:topB.map(e=>+M(e[1]).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dl('#333',v=>v.toFixed(1))}],
+  barChart('c-brand-oh',topB.map(e=>e[0]),[{label:'On-hand',data:topB.map(e=>+M(e[1]).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dlh(v=>v.toFixed(1))}],
     {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const TS=['Fast','Normal','Slow','Dead'];
   const tv={},tcnt={}; TS.forEach(t=>{tv[t]=0;tcnt[t]=0;}); rows.forEach(i=>{ if(tv[i.t]!=null){tv[i.t]+=i.v;tcnt[i.t]++;} });
@@ -907,10 +909,10 @@ function renderX(){
     {v:'EGP '+XM(dead).toFixed(1)+'M',l:'Deadstock Value',s:'>18m no move',c:'k-out'}
   ].map(k=>`<div class="kpi ${k.c}"><div class="kpi-val">${k.v}</div><div class="kpi-lbl">${k.l}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
   const byCat={}; CAT.forEach(c=>byCat[c]=0); rows.forEach(i=>{if(byCat[i.c]==null)byCat[i.c]=0;byCat[i.c]+=i.v;});
-  xdraw('c-exp-cat',{type:'bar',data:{labels:CAT,datasets:[{data:CAT.map(c=>+XM(byCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]},options:{responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleX('cat',CAT[el[0].index]);},plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#eef1f6'}},x:{grid:{display:false}}}}});
+  xdraw('c-exp-cat',{type:'bar',data:{labels:CAT,datasets:[{data:CAT.map(c=>+XM(byCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>v.toFixed(1))}]},options:{responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleX('cat',CAT[el[0].index]);},plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#eef1f6'}},x:{grid:{display:false}}}}});
   const byDept={}; DEPTS.forEach(d=>byDept[d]=0); rows.forEach(i=>byDept[i.d]+=i.v);
   const ds=DEPTS.slice().sort((a,b)=>byDept[b]-byDept[a]);
-  xdraw('c-exp-dept',{type:'bar',data:{labels:ds,datasets:[{data:ds.map(d=>+XM(byDept[d]).toFixed(1)),backgroundColor:NAVY,borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleX('dept',ds[el[0].index]);},plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false}}}}});
+  xdraw('c-exp-dept',{type:'bar',data:{labels:ds,datasets:[{data:ds.map(d=>+XM(byDept[d]).toFixed(1)),backgroundColor:NAVY,borderRadius:5,datalabels:dlh(v=>v.toFixed(1))}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleX('dept',ds[el[0].index]);},plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false}}}}});
   const tc={}; CAT.forEach(c=>{tc[c]={};TIERS.forEach(t=>tc[c][t]=0);}); rows.forEach(i=>{if(tc[i.c])tc[i.c][i.t]+=i.v;});
   xdraw('c-exp-tier',{type:'bar',data:{labels:CAT,datasets:TIERS.map(t=>({label:t,data:CAT.map(c=>+XM(tc[c][t]).toFixed(1)),backgroundColor:TIERCOLOR[t],borderRadius:3,datalabels:{display:true,color:'#fff',font:{size:9,weight:'700'},formatter:v=>v>=3?v.toFixed(0):''}}))},options:{responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleX('cat',CAT[el[0].index]);},plugins:{legend:{position:'bottom'}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'#eef1f6'}}}}});
   const sorted=rows.slice().sort((a,b)=>((a[sortKey]>b[sortKey])?1:(a[sortKey]<b[sortKey])?-1:0)*sortDir).slice(0,200);
