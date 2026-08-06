@@ -511,7 +511,7 @@ function drawCatTrend(vw){ killChart('c-cat-trend');
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#eef1f6'}},x:{grid:{display:false},ticks:{maxRotation:60,minRotation:60,font:{size:9}}}}}});
 }
 function drawCatMonthly(vw){
-  barChart('c-cat-monthly',vw.catLabels,CAT.map(c=>({label:c,data:vw.catData[c],backgroundColor:CATCOLOR[c],borderRadius:3})));
+  barChart('c-cat-monthly',vw.catLabels,CAT.map(c=>({label:c,data:vw.catData[c],backgroundColor:CATCOLOR[c],borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:CATCOLOR[c],font:{size:7,weight:'700'},formatter:v=>v>=5?v.toFixed(0):''}})));
   const L=vw.catLabels,D=vw.catData;
   const val=(c,i)=> c==='Total'? CAT.reduce((s,x)=>s+num(D[x][i]),0) : num(D[c][i]);
   const cats=[...CAT,'Total']; let html='<tr><th>Category</th>';
@@ -665,7 +665,7 @@ donut('c-cat-share',CAT,CAT.map(c=>DATA.onhandByCat[c]),CAT.map(c=>CATCOLOR[c]))
 })();
 /* per-category monthly bars + MoM variance table */
 (()=>{ const ms=seasonMonths;
-  barChart('c-cat-monthly',ms.map(mLabel),CAT.map(c=>({label:c,data:ms.map(m=>DATA.monthlyOnhandByCat[c][m]),backgroundColor:CATCOLOR[c],borderRadius:3})));
+  barChart('c-cat-monthly',ms.map(mLabel),CAT.map(c=>({label:c,data:ms.map(m=>DATA.monthlyOnhandByCat[c][m]),backgroundColor:CATCOLOR[c],borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:CATCOLOR[c],font:{size:7,weight:'700'},formatter:v=>v>=5?v.toFixed(0):''}})));
   const val=(c,m)=> c==='Total'? CAT.reduce((s,x)=>s+(DATA.monthlyOnhandByCat[x][m]||0),0) : (DATA.monthlyOnhandByCat[c][m]||0);
   const cats=[...CAT,'Total'];
   let html='<tr><th>Category</th>';
@@ -818,7 +818,7 @@ function renderX(){
   const ds=DEPTS.slice().sort((a,b)=>byDept[b]-byDept[a]);
   xdraw('c-exp-dept',{type:'bar',data:{labels:ds,datasets:[{data:ds.map(d=>+XM(byDept[d]).toFixed(1)),backgroundColor:NAVY,borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleX('dept',ds[el[0].index]);},plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false}}}}});
   const tc={}; CAT.forEach(c=>{tc[c]={};TIERS.forEach(t=>tc[c][t]=0);}); rows.forEach(i=>{if(tc[i.c])tc[i.c][i.t]+=i.v;});
-  xdraw('c-exp-tier',{type:'bar',data:{labels:CAT,datasets:TIERS.map(t=>({label:t,data:CAT.map(c=>+XM(tc[c][t]).toFixed(1)),backgroundColor:TIERCOLOR[t],borderRadius:3}))},options:{responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleX('cat',CAT[el[0].index]);},plugins:{legend:{position:'bottom'}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'#eef1f6'}}}}});
+  xdraw('c-exp-tier',{type:'bar',data:{labels:CAT,datasets:TIERS.map(t=>({label:t,data:CAT.map(c=>+XM(tc[c][t]).toFixed(1)),backgroundColor:TIERCOLOR[t],borderRadius:3,datalabels:{display:true,color:'#fff',font:{size:9,weight:'700'},formatter:v=>v>=3?v.toFixed(0):''}}))},options:{responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleX('cat',CAT[el[0].index]);},plugins:{legend:{position:'bottom'}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true,grid:{color:'#eef1f6'}}}}});
   const sorted=rows.slice().sort((a,b)=>((a[sortKey]>b[sortKey])?1:(a[sortKey]<b[sortKey])?-1:0)*sortDir).slice(0,200);
   document.getElementById('itCount').textContent=rows.length.toLocaleString();
   const cols=[['n','Item'],['dsc','Description'],['c','Type'],['d','Dept'],['b','Brand'],['s','Site'],['t','Tier'],['v','On-Hand'],['q','Qty']];
