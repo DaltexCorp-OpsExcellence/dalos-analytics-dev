@@ -255,12 +255,12 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <div class="sec-sub">Headline inventory position and season movement</div>
     <div class="kpis" id="kpiRow"></div>
     <div class="grid g2" style="margin-bottom:14px">
-      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-season">Season 26 · Stock Value / Month (M EGP)</span></span><span class="gtoggle" id="seasonGrain"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box"><canvas id="c-season"></canvas></div></div>
+      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-season">Season 26 · Stock Value / Month (M EGP)</span></span><span class="gtoggle" data-chart="season"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box"><canvas id="c-season"></canvas></div></div>
       <div class="card"><h3><i class="ti ti-chart-donut"></i>Category Share of On-Hand Value</h3><div class="chart-box"><canvas id="c-share"></canvas></div></div>
     </div>
     <div class="grid g2">
       <div class="card"><h3><i class="ti ti-arrows-exchange"></i><span id="h-iocat">Inbound vs Outbound by Category (Season, M EGP)</span></h3><div class="chart-box"><canvas id="c-io-cat"></canvas></div></div>
-      <div class="card"><h3><i class="ti ti-calendar-stats"></i><span id="h-iomonth">Inbound vs Outbound Monthly (M EGP)</span></h3><div class="chart-box"><canvas id="c-io-month"></canvas></div></div>
+      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-calendar-stats"></i><span id="h-iomonth">Inbound vs Outbound Monthly (M EGP)</span></span><span class="gtoggle" data-chart="iomonth"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box"><canvas id="c-io-month"></canvas></div></div>
     </div>
   </div>
 
@@ -287,8 +287,8 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
       <div class="card"><h3><i class="ti ti-chart-bar"></i>On-Hand Value by Category (M EGP)</h3><div class="chart-box"><canvas id="c-cat-oh"></canvas></div></div>
       <div class="card"><h3><i class="ti ti-chart-donut"></i>Category Share</h3><div class="chart-box"><canvas id="c-cat-share"></canvas></div></div>
     </div>
-    <div class="card"><h3><i class="ti ti-chart-line"></i><span id="h-cattrend">Total On-Hand Value — Monthly Trend (M EGP)</span></h3><div class="chart-box tall"><canvas id="c-cat-trend"></canvas></div></div>
-    <div class="card" style="margin-top:14px"><h3><i class="ti ti-chart-bar"></i><span id="h-catmonthly">Stock Value / Month — Per Category (M EGP)</span></h3><div class="chart-box tall"><canvas id="c-cat-monthly"></canvas></div></div>
+    <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-line"></i><span id="h-cattrend">Total On-Hand Value — Monthly Trend (M EGP)</span></span><span class="gtoggle" data-chart="cattrend"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box tall"><canvas id="c-cat-trend"></canvas></div></div>
+    <div class="card" style="margin-top:14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-catmonthly">Stock Value / Month — Per Category (M EGP)</span></span><span class="gtoggle" data-chart="catmonthly"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box tall"><canvas id="c-cat-monthly"></canvas></div></div>
     <div class="card" style="margin-top:14px"><h3><i class="ti ti-arrows-up-down"></i>Month-over-Month Stock Value Variance (M EGP · Δ and %)</h3><div style="overflow-x:auto"><table class="mom" id="momTable"></table></div></div>
   </div>
 
@@ -324,7 +324,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
   <div class="panel" id="movement">
     <div class="sec-title">Movement</div>
     <div class="sec-sub">Inbound (Or Ty 1P/2P/FF) vs Outbound (Do Ty #) over the season</div>
-    <div class="card" style="margin-bottom:14px"><h3><i class="ti ti-arrows-exchange"></i><span id="h-mvmonth">Monthly Inbound vs Outbound (M EGP)</span></h3><div class="chart-box tall"><canvas id="c-mv-month"></canvas></div></div>
+    <div class="card" style="margin-bottom:14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrows-exchange"></i><span id="h-mvmonth">Monthly Inbound vs Outbound (M EGP)</span></span><span class="gtoggle" data-chart="mvmonth"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box tall"><canvas id="c-mv-month"></canvas></div></div>
     <div class="grid g2">
       <div class="card"><h3><i class="ti ti-arrow-down-circle" style="color:var(--green)"></i><span id="h-mvin">Inbound by Category — Season (M EGP)</span></h3><div class="chart-box sm"><canvas id="c-mv-in"></canvas></div></div>
       <div class="card"><h3><i class="ti ti-arrow-up-circle" style="color:var(--red)"></i><span id="h-mvout">Outbound by Category — Season (M EGP)</span></h3><div class="chart-box sm"><canvas id="c-mv-out"></canvas></div></div>
@@ -553,11 +553,14 @@ function drawHeat(vw){
     row+=`<td style="background:${band(tot)}">${tot.toFixed(1)}</td></tr>`; html+=row;});
   document.getElementById('heatTable').innerHTML=html;
 }
-function drawMovement(vw){
+function drawMvMonth(vw){
   barChart('c-mv-month',vw.sLabels,[
     {label:'Inbound',data:vw.sIn.map(v=>+v.toFixed(1)),backgroundColor:NAVY,borderRadius:3,datalabels:dl(NAVY,v=>v.toFixed(1))},
     {label:'Outbound',data:vw.sOut.map(v=>+Math.abs(v).toFixed(1)),backgroundColor:ORANGE,borderRadius:3,datalabels:dl(ORANGE,v=>v.toFixed(1))}
   ]);
+}
+function drawMovement(vw){
+  drawMvMonth(vw);
   barChart('c-mv-in',CAT,[{label:'Inbound',data:CAT.map(c=>+num(vw.inByCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]);
   barChart('c-mv-out',CAT,[{label:'Outbound',data:CAT.map(c=>+Math.abs(num(vw.outByCat[c])).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]);
 }
@@ -642,29 +645,65 @@ function rpcRange(){
   return fetch(SB+'/rest/v1/rpc/inv_range',{method:'POST',headers:H,body:body}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(r.status+': '+t.slice(0,140));});return r.json();});
 }
 function autoGrain(from,to){ var d=(new Date(to+'T00:00:00')-new Date(from+'T00:00:00'))/86400000; return d<=21?'day':d<=182?'week':'month'; }
-function reflectGrain(g){var t=document.getElementById('seasonGrain');if(t)t.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.g===g);});}
+/* ---- per-chart grain (each trend chart toggles Week/Month independently) ---- */
+const FULL_FROM='2023-01-01';
+const CG={season:'month',iomonth:'month',cattrend:'month',catmonthly:'month',mvmonth:'month'};
+const RGCACHE={};
+function curWin(){ return RANGE.active?{from:RANGE.from,to:RANGE.to}:{from:FULL_FROM,to:(DATA.meta&&DATA.meta.asOf)}; }
+function fetchGrain(from,to,grain){
+  var k=from+'|'+to+'|'+grain; if(RGCACHE[k])return Promise.resolve(RGCACHE[k]);
+  var H={apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'};
+  return fetch(SB+'/rest/v1/rpc/inv_range',{method:'POST',headers:H,body:JSON.stringify({p_from:from,p_to:to,p_grain:grain})})
+    .then(function(r){return r.ok?r.json():r.text().then(function(t){throw new Error(r.status+': '+t.slice(0,120));});})
+    .then(function(p){RGCACHE[k]=p;return p;});
+}
+function spanStart(key){ if(RANGE.active)return null; var ss=(DATA.meta&&DATA.meta.seasonStart)?DATA.meta.seasonStart+'-01':'2025-10-01'; return key==='cattrend'?'2024-09-01':ss; }
+function payloadVW(p,key){
+  var g=p.meta.grain, from=spanStart(key);
+  var ser=(p.series||[]).filter(function(x){return !from||x.k>=from;});
+  var vw={grain:g,rangeActive:RANGE.active};
+  vw.sLabels=ser.map(function(x){return bLabel(x.k,g);}); vw.sIn=ser.map(function(x){return num(x.inb);}); vw.sOut=ser.map(function(x){return num(x.outb);}); vw.sOnhand=ser.map(function(x){return num(x.onhand);});
+  vw.trendLabels=vw.sLabels.slice(); vw.trendOnhand=vw.sOnhand.slice(); vw.catLabels=vw.sLabels.slice();
+  var ks=ser.map(function(x){return x.k;}), sc=p.seriesByCat||{};
+  vw.catData={}; CAT.forEach(function(c){vw.catData[c]=ks.map(function(k){return num(sc[c]?sc[c][k]:0);});});
+  return vw;
+}
+function drawOne(key,vw){ if(key==='season')drawSeason(vw); else if(key==='iomonth')drawIoMonth(vw); else if(key==='cattrend')drawCatTrend(vw); else if(key==='catmonthly')drawCatMonthly(vw); else if(key==='mvmonth')drawMvMonth(vw); }
+function chartTitle(key,g){ var G=gWord(g),A=gAdv(g);
+  if(key==='season')setTitle('h-season',(RANGE.active?'':'Season 26 · ')+'Stock Value / '+G+' (M EGP)');
+  else if(key==='iomonth')setTitle('h-iomonth','Inbound vs Outbound '+A+' (M EGP)');
+  else if(key==='cattrend')setTitle('h-cattrend','Total On-Hand Value — '+A+' Trend (M EGP)');
+  else if(key==='catmonthly')setTitle('h-catmonthly','Stock Value / '+G+' — Per Category (M EGP)');
+  else if(key==='mvmonth')setTitle('h-mvmonth',A+' Inbound vs Outbound (M EGP)');
+}
+function reflectChartToggle(key){var t=document.querySelector('.gtoggle[data-chart="'+key+'"]');if(t)t.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.g===CG[key]);});}
+function reflectAllToggles(){Object.keys(CG).forEach(reflectChartToggle);}
+function setChartGrain(key,g){
+  CG[key]=g; reflectChartToggle(key);
+  var w=curWin(); if(!w.to)return;
+  var tog=document.querySelector('.gtoggle[data-chart="'+key+'"]'); if(tog)tog.style.opacity=.5;
+  fetchGrain(w.from,w.to,g).then(function(p){ drawOne(key,payloadVW(p,key)); chartTitle(key,g); if(tog)tog.style.opacity=1; })
+    .catch(function(e){ if(tog)tog.style.opacity=1; console.warn('grain fetch failed',e); });
+}
 function applyRange(){
   if(!RANGE.from||!RANGE.to)return;
   if(RANGE.from>RANGE.to){var t=RANGE.from;RANGE.from=RANGE.to;RANGE.to=t;syncRangeInputs();}
-  RANGE.grain=RANGE.grainOverride||autoGrain(RANGE.from,RANGE.to);
+  RANGE.grain=autoGrain(RANGE.from,RANGE.to);
   document.getElementById('filterState').textContent='Loading…';
   rpcRange().then(function(p){
     if(!p||!p.kpi)throw new Error((p&&p.message)||'no data for range');
-    RANGE.active=true;
+    RANGE.active=true; RGCACHE[RANGE.from+'|'+RANGE.to+'|'+RANGE.grain]=p;
     var vw=buildRangeVW(p); renderWindow(vw); drawBreakdowns(vw);
-    reflectGrain(p.meta.grain);
+    Object.keys(CG).forEach(function(k){CG[k]=RANGE.grain;}); reflectAllToggles();
     document.getElementById('filterState').textContent=p.meta.from+' → '+p.meta.to+' · by '+p.meta.grain;
   }).catch(function(e){document.getElementById('filterState').textContent='Range error: '+((e&&e.message)||e);});
 }
-function setGrain(g){
-  RANGE.grainOverride=g;
-  if(RANGE.from&&RANGE.to){ applyRange(); }
-  else { var ss=(DATA.meta&&DATA.meta.seasonStart)||'2025-10'; RANGE.from=ss+'-01'; RANGE.to=(DATA.meta&&DATA.meta.asOf)||ymd(new Date()); syncRangeInputs(); applyRange(); }
-}
 function clearRange(){
-  RANGE.active=false; RANGE.from=null; RANGE.to=null; RANGE.grainOverride=null;
+  RANGE.active=false; RANGE.from=null; RANGE.to=null;
+  for(var kk in RGCACHE)delete RGCACHE[kk];
+  Object.keys(CG).forEach(function(k){CG[k]='month';});
   var f=document.getElementById('dFrom'),t=document.getElementById('dTo'); if(f)f.value=''; if(t)t.value='';
-  renderWindow(buildFullVW()); reflectGrain('month'); renderX();
+  renderWindow(buildFullVW()); reflectAllToggles(); renderX();
 }
 function wireRangeControls(){
   var mx=ymd(new Date()); var dt=document.getElementById('dTo'),df=document.getElementById('dFrom');
@@ -673,7 +712,10 @@ function wireRangeControls(){
     RANGE.from=document.getElementById('dFrom').value||null; RANGE.to=document.getElementById('dTo').value||null;
     if(RANGE.from&&RANGE.to)applyRange(); else if(!RANGE.from&&!RANGE.to)clearRange();
   };});
-  var sg=document.getElementById('seasonGrain'); if(sg)sg.querySelectorAll('button').forEach(function(b){b.onclick=function(){setGrain(b.dataset.g);};});
+  document.querySelectorAll('.gtoggle[data-chart]').forEach(function(tg){ var key=tg.dataset.chart;
+    tg.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ setChartGrain(key,b.dataset.g); }; });
+    reflectChartToggle(key);
+  });
 }
 
 donut('c-share',CAT,CAT.map(c=>DATA.onhandByCat[c]),CAT.map(c=>CATCOLOR[c]));
@@ -821,8 +863,8 @@ function msPick(f){const el=document.querySelector('.ms[data-f="'+f+'"]');S[f]=[
 function msAll(f,cb){const el=document.querySelector('.ms[data-f="'+f+'"]');el.querySelectorAll('input[data-v]').forEach(i=>i.checked=false);cb.checked=true;S[f]=[];syncMS(el,f);renderX();}
 function syncMS(el,f){const n=S[f].length,lbl=el.querySelector('.ms-lbl'),cnt=el.querySelector('.cnt');if(n===0){lbl.textContent='All';cnt.style.display='none';}else if(n===1){lbl.textContent=S[f][0];cnt.style.display='none';}else{lbl.textContent='Multiple';cnt.style.display='';cnt.textContent=n;}}
 function resetFilters(){S.cat=[];S.dept=[];S.tier=[];S.lm=[];GQ='';const sb=document.getElementById('fSearch');if(sb)sb.value='';
-  RANGE.active=false;RANGE.from=null;RANGE.to=null;RANGE.grainOverride=null;var df=document.getElementById('dFrom'),dtt=document.getElementById('dTo');if(df)df.value='';if(dtt)dtt.value='';
-  buildFilters();renderWindow(buildFullVW());reflectGrain('month');renderX();}
+  RANGE.active=false;RANGE.from=null;RANGE.to=null;for(var kk in RGCACHE)delete RGCACHE[kk];Object.keys(CG).forEach(function(k){CG[k]='month';});var df=document.getElementById('dFrom'),dtt=document.getElementById('dTo');if(df)df.value='';if(dtt)dtt.value='';
+  buildFilters();renderWindow(buildFullVW());reflectAllToggles();renderX();}
 function toggleX(f,v){const idx=S[f].indexOf(v);if(idx>=0)S[f].splice(idx,1);else S[f].push(v);const el=document.querySelector('.ms[data-f="'+f+'"]');el.querySelectorAll('input[data-v]').forEach(i=>i.checked=S[f].includes(i.dataset.v));el.querySelector('.ms-all input').checked=S[f].length===0;syncMS(el,f);renderX();}
 function passesX(i){ if(S.cat.length&&!S.cat.includes(i.c))return false; if(S.dept.length&&!S.dept.includes(i.d))return false; if(S.tier.length&&!S.tier.includes(i.t))return false; if(S.lm.length&&!S.lm.includes(i.lm))return false; if(GQ&&!((''+(i.b||'')).toLowerCase().includes(GQ)||(''+i.n).includes(GQ)||(''+(i.dsc||'')).toLowerCase().includes(GQ)))return false; return true; }
 function xdraw(id,cfg){if(XCH[id])XCH[id].destroy();XCH[id]=new Chart(document.getElementById(id),cfg);}
