@@ -81,6 +81,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--navy)}
 .kpi.k-in::before{background:var(--green)}.kpi.k-out::before{background:var(--red)}
 .kpi.k-orange::before{background:var(--orange)}.kpi.k-teal::before{background:var(--irr)}
+.kpi.k-fast::before{background:#16a34a}.kpi.k-normal::before{background:#2563eb}.kpi.k-slow::before{background:#d97706}.kpi.k-dead::before{background:#dc2626}
 .kpi-val{font-family:var(--mono);font-size:23px;font-weight:700;color:var(--navy);letter-spacing:-.5px}
 .kpi-lbl{font-size:12px;color:var(--text2);margin-top:5px;font-weight:600}
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:2px}
@@ -340,11 +341,19 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
   <!-- HEALTH -->
   <div class="panel" id="health">
     <div class="sec-title">Inventory Health</div>
-    <div class="sec-sub">Movement status by value and item count</div>
-    <div class="note"><i class="ti ti-info-circle"></i>Tiers by months since the item's last transaction: <b>Fast</b> &lt;3m · <b>Normal</b> 3–12m · <b>Slow</b> 12–18m · <b>Deadstock</b> &gt;18m.</div>
-    <div class="grid g2">
+    <div class="sec-sub">Stock health by movement tier — value, item count and concentration of risk</div>
+    <div class="kpis" id="healthTiles"></div>
+    <div class="grid g2" style="margin-bottom:14px">
       <div class="card"><h3><i class="ti ti-chart-donut"></i>Value by Movement Status (M EGP)</h3><div class="chart-box"><canvas id="c-status-val"></canvas></div></div>
       <div class="card"><h3><i class="ti ti-list-numbers"></i>Item Count by Status</h3><div class="chart-box"><canvas id="c-status-cnt"></canvas></div></div>
+    </div>
+    <div class="grid g3">
+      <div class="card">
+        <h3><i class="ti ti-table"></i>Tier Breakdown</h3>
+        <div style="overflow-x:auto"><table class="dtable" id="healthTable"></table></div>
+        <div class="note" style="margin:14px 0 0"><i class="ti ti-info-circle"></i>Tiers by months since each item's last transaction: <b>Fast</b> &lt;3m · <b>Normal</b> 3–12m · <b>Slow</b> 12–18m · <b>Deadstock</b> &gt;18m.</div>
+      </div>
+      <div class="conc" id="healthPanel"></div>
     </div>
   </div>
 
@@ -568,10 +577,35 @@ function drawBreakdowns(vw){
   donut('c-share',CAT,CAT.map(c=>num(vw.onhandByCat[c])),CAT.map(c=>CATCOLOR[c]));
   barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>+num(vw.onhandByCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1)+'M')}]);
   donut('c-cat-share',CAT,CAT.map(c=>num(vw.onhandByCat[c])),CAT.map(c=>CATCOLOR[c]));
-  const TL=['Fast (<3m)','Normal (3-12m)','Slow (12-18m)','Deadstock (>18m)'],TS=['Fast','Normal','Slow','Dead'],TC=['#16a34a','#2563eb','#d97706','#dc2626'];
-  donut('c-status-val',TL,TS.map(t=>num(vw.statusVal[t])),TC);
-  barChart('c-status-cnt',TL,[{label:'Items',data:TS.map(t=>num(vw.statusCnt[t])),backgroundColor:TC,borderRadius:5,datalabels:dl('#333')}],
+  paintHealth(vw.statusVal,vw.statusCnt);
+}
+/* Health tab: charts + stat tiles + tier table + insight panel (sv in M EGP, sc counts) */
+function paintHealth(sv,sc){
+  const TS=['Fast','Normal','Slow','Dead'],
+        TL=['Fast (<3m)','Normal (3-12m)','Slow (12-18m)','Deadstock (>18m)'],
+        TC=['#16a34a','#2563eb','#d97706','#dc2626'];
+  const v=t=>num(sv&&sv[t]), c=t=>num(sc&&sc[t]);
+  const totV=TS.reduce((s,t)=>s+v(t),0)||1, totC=TS.reduce((s,t)=>s+c(t),0)||1;
+  donut('c-status-val',TL,TS.map(v),TC);
+  barChart('c-status-cnt',TL,[{label:'Items',data:TS.map(c),backgroundColor:TC,borderRadius:5,datalabels:dl('#333')}],
     {indexAxis:'y',scales:{x:{grid:{color:'#eef1f6'}},y:{grid:{display:false}}}});
+  const tiles=document.getElementById('healthTiles');
+  if(tiles)tiles.innerHTML=TS.map((t,i)=>`<div class="kpi k-${t.toLowerCase()}"><div class="kpi-val">EGP ${v(t).toFixed(1)}M</div><div class="kpi-lbl">${TL[i]}</div><div class="kpi-sub">${c(t).toLocaleString()} items · ${(100*v(t)/totV).toFixed(0)}% of value</div></div>`).join('');
+  const tbl=document.getElementById('healthTable');
+  if(tbl){ let h='<tr><th>Tier</th><th class="n">Value (M)</th><th class="n">Items</th><th class="n">% Value</th><th class="n">% Items</th><th class="n">Avg / item (K)</th></tr>';
+    TS.forEach((t,i)=>{ const avg=c(t)?(v(t)*1000/c(t)):0;
+      h+=`<tr><td class="b"><span class="tier-pill" style="background:${TC[i]}">${t}</span></td><td class="n">${v(t).toFixed(1)}</td><td class="n">${c(t).toLocaleString()}</td><td class="n">${(100*v(t)/totV).toFixed(1)}%</td><td class="n">${(100*c(t)/totC).toFixed(1)}%</td><td class="n">${avg.toFixed(1)}</td></tr>`; });
+    h+=`<tr><td class="b">Total</td><td class="n">${totV.toFixed(1)}</td><td class="n">${totC.toLocaleString()}</td><td class="n">100%</td><td class="n">100%</td><td class="n">${(totV*1000/totC).toFixed(1)}</td></tr>`;
+    tbl.innerHTML=h;
+  }
+  const panel=document.getElementById('healthPanel');
+  if(panel){ const healthyV=v('Fast')+v('Normal'), riskV=v('Slow')+v('Dead'), deadV=v('Dead'), movingC=c('Fast')+c('Normal');
+    panel.innerHTML=`<h4>Health Signals</h4>
+      <div class="conc-item"><div class="v">${(100*healthyV/totV).toFixed(0)}%</div><div class="l">Healthy value (Fast + Normal)</div></div>
+      <div class="conc-item"><div class="v">EGP ${riskV.toFixed(1)}M</div><div class="l">At-risk value (Slow + Deadstock)</div></div>
+      <div class="conc-item"><div class="v">EGP ${deadV.toFixed(1)}M</div><div class="l">Deadstock · ${(100*deadV/totV).toFixed(0)}% of value · ${c('Dead').toLocaleString()} items</div></div>
+      <div class="conc-item"><div class="v">${(100*movingC/totC).toFixed(0)}%</div><div class="l">Items moved within 12 months</div></div>`;
+  }
 }
 function gWord(g){return g==='day'?'Day':g==='week'?'Week':'Month';}
 function gAdv(g){return g==='day'?'Daily':g==='week'?'Weekly':'Monthly';}
@@ -710,12 +744,7 @@ barChart('c-mv-in',CAT,[{label:'Inbound',data:CAT.map(c=>+(DATA.inboundByCatSeas
 barChart('c-mv-out',CAT,[{label:'Outbound',data:CAT.map(c=>+Math.abs(DATA.outboundByCatSeason[c]||0).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#333',v=>v.toFixed(1))}]);
 
 /* ===== HEALTH ===== */
-const stKeys=['Fast','Normal','Slow','Dead'];
-const stLabels=['Fast (<3m)','Normal (3-12m)','Slow (12-18m)','Deadstock (>18m)'];
-const stColors=['#16a34a','#2563eb','#d97706','#dc2626'];
-donut('c-status-val',stLabels,stKeys.map(k=>DATA.statusVal[k]),stColors);
-barChart('c-status-cnt',stLabels,[{label:'Items',data:stKeys.map(k=>DATA.statusCnt[k]),backgroundColor:stColors,borderRadius:5,datalabels:dl('#333')}],
-  {indexAxis:'y',scales:{x:{grid:{color:'#eef1f6'}},y:{grid:{display:false}}}});
+paintHealth(DATA.statusVal,DATA.statusCnt);
 
 /* ===== BY BRAND ===== */
 (()=>{ if(typeof BRAND==='undefined')return;
@@ -764,11 +793,9 @@ function renderFiltered(rows){
   const topB=Object.entries(bb).sort((a,b)=>b[1]-a[1]).slice(0,12);
   barChart('c-brand-oh',topB.map(e=>e[0]),[{label:'On-hand',data:topB.map(e=>+M(e[1]).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dl('#333',v=>v.toFixed(1))}],
     {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
-  const TS=['Fast','Normal','Slow','Dead'], TL=['Fast (<3m)','Normal (3-12m)','Slow (12-18m)','Deadstock (>18m)'], TC=['#16a34a','#2563eb','#d97706','#dc2626'];
+  const TS=['Fast','Normal','Slow','Dead'];
   const tv={},tcnt={}; TS.forEach(t=>{tv[t]=0;tcnt[t]=0;}); rows.forEach(i=>{ if(tv[i.t]!=null){tv[i.t]+=i.v;tcnt[i.t]++;} });
-  donut('c-status-val',TL,TS.map(t=>+M(tv[t]).toFixed(1)),TC);
-  barChart('c-status-cnt',TL,[{label:'Items',data:TS.map(t=>tcnt[t]),backgroundColor:TC,borderRadius:5,datalabels:dl('#333')}],
-    {indexAxis:'y',scales:{x:{grid:{color:'#eef1f6'}},y:{grid:{display:false}}}});
+  const svM={}; TS.forEach(t=>svM[t]=M(tv[t])); paintHealth(svM,tcnt);
 }
 
 /* ===== EXPLORER (filters + drill-through) ===== */
