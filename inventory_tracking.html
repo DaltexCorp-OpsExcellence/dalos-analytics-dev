@@ -81,7 +81,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--navy)}
 .kpi.k-in::before{background:var(--green)}.kpi.k-out::before{background:var(--red)}
 .kpi.k-orange::before{background:var(--orange)}.kpi.k-teal::before{background:var(--irr)}
-.kpi.k-fast::before{background:#16a34a}.kpi.k-normal::before{background:#2563eb}.kpi.k-slow::before{background:#d97706}.kpi.k-dead::before{background:#dc2626}
+.kpi.k-fast::before{background:#142850}.kpi.k-normal::before{background:#2563eb}.kpi.k-slow::before{background:#DC6428}.kpi.k-dead::before{background:#dc2626}
 .kpi-val{font-family:var(--mono);font-size:23px;font-weight:700;color:var(--navy);letter-spacing:-.5px}
 .kpi-lbl{font-size:12px;color:var(--text2);margin-top:5px;font-weight:600}
 .kpi-sub{font-size:11px;color:var(--text3);margin-top:2px}
@@ -583,7 +583,7 @@ function drawBreakdowns(vw){
 function paintHealth(sv,sc){
   const TS=['Fast','Normal','Slow','Dead'],
         TL=['Fast (<3m)','Normal (3-12m)','Slow (12-18m)','Deadstock (>18m)'],
-        TC=['#16a34a','#2563eb','#d97706','#dc2626'];
+        TC=['#142850','#2563eb','#DC6428','#dc2626'];
   const v=t=>num(sv&&sv[t]), c=t=>num(sc&&sc[t]);
   const totV=TS.reduce((s,t)=>s+v(t),0)||1, totC=TS.reduce((s,t)=>s+c(t),0)||1;
   donut('c-status-val',TL,TS.map(v),TC);
@@ -800,7 +800,7 @@ function renderFiltered(rows){
 
 /* ===== EXPLORER (filters + drill-through) ===== */
 const TIERS=['Fast','Normal','Slow','Dead'];
-const TIERCOLOR={Fast:'#16a34a',Normal:'#2563eb',Slow:'#d97706',Dead:'#dc2626'};
+const TIERCOLOR={Fast:'#142850',Normal:'#2563eb',Slow:'#DC6428',Dead:'#dc2626'};
 const DEPTS=[...new Set(ITEMS.items.map(i=>i.d))].sort((a,b)=>(''+a).localeCompare(''+b));
 const MONTHS=[...new Set(ITEMS.items.map(i=>i.lm).filter(Boolean))].sort();
 const S={cat:[],dept:[],tier:[],lm:[]}; let GQ=''; const XCH={}; let sortKey='v',sortDir=-1;
