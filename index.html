@@ -264,13 +264,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .sm-matrix{border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .sm-mx-head{display:flex;align-items:center;background:var(--bg);border-bottom:1px solid var(--border);padding:8px 11px;font-size:11px;font-weight:700;color:var(--muted)}
 .sm-mx-prod{flex:0 0 120px;display:flex;align-items:center;gap:5px}
-.sm-mx-dbs{flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center}
+.sm-mx-dbs{flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;text-align:center}
 .sm-mx-dbh{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
 .sm-mxrow{display:flex;align-items:center;padding:8px 11px;border-bottom:1px solid var(--border);transition:background .1s}
 .sm-mxrow:last-of-type{border-bottom:none}
 .sm-mxrow.on{background:#eff6ff}
 .sm-mx-pcell{flex:0 0 120px;display:flex;align-items:center;gap:8px;cursor:pointer}
-.sm-mx-dcells{flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;justify-items:center}
+.sm-mx-dcells{flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;justify-items:center}
 .sm-mx-dchk{width:20px;height:20px;border:1px solid var(--border2);border-radius:5px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:transparent;transition:all .12s}
 .sm-mx-dchk.on{background:var(--orange);border-color:var(--orange);color:#fff}
 .sm-mx-dchk.disabled{opacity:.3;cursor:not-allowed;background:var(--bg)}
@@ -677,6 +677,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
               <span class="sm-mx-dbh">Harvest</span>
               <span class="sm-mx-dbh">Budget</span>
               <span class="sm-mx-dbh">Inventory</span>
+              <span class="sm-mx-dbh">Board Review</span>
             </div>
           </div>
           <div id="sm-matrix-rows"></div>
@@ -1230,17 +1231,17 @@ function smFilterU(q){
 let smStep=1,smUser=null,smRole=null,smAllTabs=true;
 const smTabs=['overview','markets','farms','varieties','clients','extract'];
 const smTabSt={};smTabs.forEach(t=>smTabSt[t]=true);
-const smDbs=['shipments','qc','harvest','budget','inventory'];
+const smDbs=['shipments','qc','harvest','budget','inventory','board_review'];
 const smDbSt={};smDbs.forEach(d=>smDbSt[d]=true);
 const smProds=['grapes','citrus','mango','pomegranate','potatoes','finance','operations'];
 // ── per-product-per-dashboard access state ──
 // smAccess[product] = {shipments:bool, qc:bool, harvest:bool, budget:bool}
 const smProdLabels={grapes:'Grapes',citrus:'Citrus',mango:'Mango',pomegranate:'Pomegranate',potatoes:'Potatoes',finance:'Finance (Dept)',operations:'Project Management'};
 let smAccess={};
-function smBlankAccess(){var o={};smProds.forEach(function(p){o[p]={shipments:false,qc:false,harvest:false,budget:false,inventory:false};});return o;}
+function smBlankAccess(){var o={};smProds.forEach(function(p){o[p]={shipments:false,qc:false,harvest:false,budget:false,inventory:false,board_review:false};});return o;}
 /* Which dashboard columns apply to a given product (finance=budget only, operations=inventory only, else the 4 grapes-style). */
-function smProdDbs(p){return p==='finance'?['budget']:(p==='operations'?['inventory']:['shipments','qc','harvest','budget']);}
-function smProdOn(p){var a=smAccess[p];return !!(a&&(a.shipments||a.qc||a.harvest||a.budget||a.inventory));}
+function smProdDbs(p){return p==='finance'?['budget','board_review']:(p==='operations'?['inventory']:['shipments','qc','harvest','budget']);}
+function smProdOn(p){var a=smAccess[p];return !!(a&&(a.shipments||a.qc||a.harvest||a.budget||a.inventory||a.board_review));}
 // Build the matrix rows UI from smAccess
 function smRenderMatrix(){
   var host=document.getElementById('sm-matrix-rows');if(!host)return;
@@ -1250,14 +1251,14 @@ function smRenderMatrix(){
     var pchk='<div class="sm-chk'+(on?' on':'')+'" >'+(on?'<i class=\'ti ti-check\' style=\'font-size:10px\'></i>':'')+'</div>';
     return '<div class="sm-mxrow'+(on?' on':'')+'" data-prod="'+p+'">'+
       '<div class="sm-mx-pcell" onclick="smMxTogProd(\''+p+'\')">'+pchk+'<span class="sm-pname">'+smProdLabels[p]+'</span></div>'+
-      '<div class="sm-mx-dcells">'+['shipments','qc','harvest','budget','inventory'].map(function(db){return smProdDbs(p).indexOf(db)>-1?cell(db):'<div style="visibility:hidden" class="sm-mx-dchk"></div>';}).join('')+'</div>'+
+      '<div class="sm-mx-dcells">'+['shipments','qc','harvest','budget','inventory','board_review'].map(function(db){return smProdDbs(p).indexOf(db)>-1?cell(db):'<div style="visibility:hidden" class="sm-mx-dchk"></div>';}).join('')+'</div>'+
     '</div>';
   }).join('');
 }
 // Toggle a single product-dashboard cell
-function smMxTog(el){var p=el.dataset.prod,db=el.dataset.db;if(!smAccess[p])smAccess[p]={shipments:false,qc:false,harvest:false,budget:false,inventory:false};smAccess[p][db]=!smAccess[p][db];smRenderMatrix();}
+function smMxTog(el){var p=el.dataset.prod,db=el.dataset.db;if(!smAccess[p])smAccess[p]={shipments:false,qc:false,harvest:false,budget:false,inventory:false,board_review:false};smAccess[p][db]=!smAccess[p][db];smRenderMatrix();}
 // Toggle a whole product row: if any on -> turn all off; if all off -> turn all on
-function smMxTogProd(p){var on=smProdOn(p);var v=!on;smAccess[p]={shipments:false,qc:false,harvest:false,budget:false,inventory:false};smProdDbs(p).forEach(function(d){smAccess[p][d]=v;});smRenderMatrix();}
+function smMxTogProd(p){var on=smProdOn(p);var v=!on;smAccess[p]={shipments:false,qc:false,harvest:false,budget:false,inventory:false,board_review:false};smProdDbs(p).forEach(function(d){smAccess[p][d]=v;});smRenderMatrix();}
 // Convert smAccess -> compact map {product:[dbs]} for saving; also legacy flat arrays for back-compat
 function smAccessToConfig(){
   var access={},prods=[],dbsSet={};
