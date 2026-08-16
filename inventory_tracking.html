@@ -140,6 +140,16 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
 .gtoggle button{font-family:var(--font);font-size:10.5px;font-weight:700;color:var(--text2);background:var(--white);border:none;padding:4px 12px;cursor:pointer;transition:.12s}
 .gtoggle button:hover{background:var(--bg)}
 .gtoggle button.on{background:var(--navy);color:#fff}
+/* compare tiles */
+.cmp-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.cmp-tile{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);padding:16px 18px}
+.cmp-tile .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)}
+.cmp-tile .a{font-family:var(--mono);font-size:23px;font-weight:700;color:var(--navy);margin-top:6px;letter-spacing:-.5px}
+.cmp-tile .b{font-size:11.5px;color:var(--text2);margin-top:4px}
+.cmp-tile .d{font-weight:700;font-family:var(--mono)}
+.cmp-up{color:#16a34a}.cmp-dn{color:#dc2626}.cmp-flat{color:var(--text3)}
+@media(max-width:1100px){.cmp-tiles{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.cmp-tiles{grid-template-columns:1fr}}
 .fsel,.fsearch{font-family:inherit;font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r);background:var(--white);color:var(--text);height:32px}
 .fsearch{min-width:190px}
 .freset{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:7px 12px;border-radius:var(--r);border:1px solid var(--orange);color:var(--orange);background:#fff;cursor:pointer;font-family:inherit;height:32px}
@@ -232,6 +242,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <button class="tab-btn" data-tab="site" onclick="setTab(this)"><i class="ti ti-map-pin"></i>By Site</button>
     <button class="tab-btn" data-tab="brand" onclick="setTab(this)"><i class="ti ti-tags"></i>By Brand</button>
     <button class="tab-btn" data-tab="movement" onclick="setTab(this)"><i class="ti ti-arrows-exchange"></i>Movement</button>
+    <button class="tab-btn" data-tab="compare" onclick="setTab(this)"><i class="ti ti-git-compare"></i>Compare</button>
     <button class="tab-btn" data-tab="forecast" onclick="setTab(this)"><i class="ti ti-chart-line"></i>Forecast<span class="soon">soon</span></button>
     <button class="tab-btn" data-tab="health" onclick="setTab(this)"><i class="ti ti-heartbeat"></i>Health</button>
   </div>
@@ -339,6 +350,24 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     </div>
   </div>
 
+  <!-- COMPARE -->
+  <div class="panel" id="compare">
+    <div class="sec-title">Compare Periods</div>
+    <div class="sec-sub">Week-over-week, month-over-month or season-over-season — against the previous period or the same period last year. Uses the filters above.</div>
+    <div class="rail" style="margin-bottom:14px">
+      <div class="fl"><label>Compare by</label><div class="chips" id="cmpGran"><span class="chip on" data-g="month">Month</span><span class="chip" data-g="week">Week</span><span class="chip" data-g="season">Season</span></div></div>
+      <div class="fl"><label>Base period</label><select id="cmpBase" class="fsel" style="min-width:150px"></select></div>
+      <div class="fl"><label>Compare to</label><div class="chips" id="cmpMode"><span class="chip on" data-m="prev">Previous</span><span class="chip" data-m="ly">Same period last year</span></div></div>
+      <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-git-compare" style="color:var(--orange);font-size:13px"></i><b id="cmpState" style="color:var(--navy)">—</b></span></div>
+    </div>
+    <div class="cmp-tiles" id="cmpTiles"></div>
+    <div class="grid g2" style="margin-bottom:14px">
+      <div class="card"><h3><i class="ti ti-arrows-exchange"></i>Inbound · Outbound · Net (M EGP)</h3><div class="chart-box"><canvas id="cmp-flow"></canvas></div></div>
+      <div class="card"><h3><i class="ti ti-stack-2"></i>On-Hand by Category — period end (M EGP)</h3><div class="chart-box"><canvas id="cmp-cat"></canvas></div></div>
+    </div>
+    <div class="card"><h3><i class="ti ti-table"></i>By Category — Inbound &amp; Outbound</h3><div style="overflow-x:auto"><table class="dtable" id="cmpTable"></table></div></div>
+  </div>
+
   <!-- FORECAST -->
   <div class="panel" id="forecast">
     <div class="sec-title">Forecast</div>
@@ -389,6 +418,7 @@ function setTab(btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b===btn));
   const t=btn.dataset.tab;
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===t));
+  if(t==='compare')cmpInit();
 }
 
 /* ---- snapshot ---- */
@@ -742,6 +772,87 @@ function wireRangeControls(){
     tg.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ setChartGrain(key,b.dataset.g); }; });
     reflectChartToggle(key);
   });
+}
+
+/* ================= COMPARE (period vs period) ================= */
+const CMP={gran:'month',base:null,mode:'prev'};
+function addFilters(b){ if(S.cat.length)b.p_cat=S.cat; if(S.dept.length)b.p_dept=S.dept; if(S.tier.length)b.p_tier=S.tier; if(S.lm.length)b.p_lm=S.lm; if(S.brand.length)b.p_brand=S.brand; if(GQ)b.p_search=GQ; return b; }
+function invFor(from,to){ var b=addFilters({p_from:from,p_to:to,p_grain:'month'}); var k='CMP'+JSON.stringify(b); if(RGCACHE[k])return Promise.resolve(RGCACHE[k]);
+  var H={apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'};
+  return fetch(SB+'/rest/v1/rpc/inv_range',{method:'POST',headers:H,body:JSON.stringify(b)}).then(function(r){return r.ok?r.json():r.text().then(function(t){throw new Error(r.status+': '+t.slice(0,120));});}).then(function(p){RGCACHE[k]=p;return p;});
+}
+function d2(n){return (''+n).padStart(2,'0');}
+function addDays(iso,n){var d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return ymd(d);}
+function monthWin(y,m){ var last=new Date(y,m,0).getDate(); return {from:y+'-'+d2(m)+'-01', to:y+'-'+d2(m)+'-'+d2(last)}; }
+function mLabelYM(ym){var p=ym.split('-');return MON[(+p[1])-1]+' '+p[0];}
+function seasonWin(y){ return {from:y+'-10-01', to:(y+1)+'-09-30'}; }
+function seasonLabel(y){ return 'Season '+(''+(y+1)).slice(2); }
+function cmpBaseOptions(){
+  var sel=document.getElementById('cmpBase'); if(!sel)return; var opts='', asof=asOfStr(), ay=+asof.slice(0,4), am=+asof.slice(5,7);
+  if(CMP.gran==='month'){
+    var list=[]; for(var y=2023;y<=ay;y++){ var mmax=(y===ay)?am:12; for(var m=1;m<=mmax;m++) list.push(y+'-'+d2(m)); }
+    list.reverse().forEach(function(ym){ opts+='<option value="'+ym+'">'+mLabelYM(ym)+'</option>'; });
+  } else if(CMP.gran==='week'){
+    var mon=new Date(asof+'T00:00:00'); var wd=(mon.getDay()+6)%7; mon.setDate(mon.getDate()-wd);
+    for(var i=0;i<130;i++){ var wkey=ymd(mon); if(wkey<'2023-01-01')break; var p=wkey.split('-'); opts+='<option value="'+wkey+'">w/o '+(+p[2])+' '+MON[(+p[1])-1]+' '+p[0].slice(2)+'</option>'; mon.setDate(mon.getDate()-7); }
+  } else {
+    var sy0=(am>=10)?ay:ay-1;
+    for(var sy=sy0; sy>=2023; sy--){ opts+='<option value="'+sy+'">'+seasonLabel(sy)+'</option>'; }
+  }
+  sel.innerHTML=opts; CMP.base=sel.value;
+}
+function cmpWindows(){
+  var g=CMP.gran, base=CMP.base, A,B,al,bl;
+  if(g==='month'){ var y=+base.slice(0,4),m=+base.slice(5,7); A=monthWin(y,m); al=mLabelYM(base);
+    if(CMP.mode==='prev'){ var pm=m-1,py=y; if(pm<1){pm=12;py--;} B=monthWin(py,pm); bl=mLabelYM(py+'-'+d2(pm)); }
+    else { B=monthWin(y-1,m); bl=mLabelYM((y-1)+'-'+d2(m)); }
+  } else if(g==='week'){ A={from:base,to:addDays(base,6)}; var pp=base.split('-'); al='w/o '+(+pp[2])+' '+MON[(+pp[1])-1];
+    if(CMP.mode==='prev'){ B={from:addDays(base,-7),to:addDays(base,-1)}; var q=B.from.split('-'); bl='w/o '+(+q[2])+' '+MON[(+q[1])-1]; }
+    else { B={from:addDays(base,-364),to:addDays(base,-358)}; var q2=B.from.split('-'); bl='w/o '+(+q2[2])+' '+MON[(+q2[1])-1]+' '+q2[0].slice(2); }
+  } else { var sy=+base; A=seasonWin(sy); al=seasonLabel(sy); B=seasonWin(sy-1); bl=seasonLabel(sy-1); }
+  return {A:A,B:B,al:al,bl:bl};
+}
+function cmpDelta(a,b){ if(!b) return {t:(a?'▲ new':'0%'),c:a?'cmp-up':'cmp-flat'}; var d=(a-b)/Math.abs(b)*100; var c=d>0.5?'cmp-up':d<-0.5?'cmp-dn':'cmp-flat'; var ar=d>0.5?'▲':d<-0.5?'▼':'■'; return {t:ar+' '+(d>=0?'+':'')+d.toFixed(0)+'%',c:c}; }
+function runCompare(){
+  if(!CMP.base)return; var w=cmpWindows();
+  document.getElementById('cmpState').textContent='Loading…';
+  Promise.all([invFor(w.A.from,w.A.to), invFor(w.B.from,w.B.to)]).then(function(res){
+    renderCompare(res[0],res[1],w);
+    document.getElementById('cmpState').textContent=w.al+'  vs  '+w.bl;
+  }).catch(function(e){ document.getElementById('cmpState').textContent='Error: '+((e&&e.message)||e); });
+}
+function renderCompare(a,b,w){
+  var inA=num(a.rangeInbound),outA=Math.abs(num(a.rangeOutbound)),ohA=num(a.kpi&&a.kpi.onhandTotal),netA=inA-outA;
+  var inB=num(b.rangeInbound),outB=Math.abs(num(b.rangeOutbound)),ohB=num(b.kpi&&b.kpi.onhandTotal),netB=inB-outB;
+  var tiles=[{l:'Inbound',a:inA,b:inB},{l:'Outbound',a:outA,b:outB},{l:'Net Movement',a:netA,b:netB},{l:'On-Hand (period end)',a:ohA,b:ohB}];
+  document.getElementById('cmpTiles').innerHTML=tiles.map(function(t){ var dd=cmpDelta(t.a,t.b);
+    return '<div class="cmp-tile"><div class="lbl">'+t.l+'</div><div class="a">EGP '+t.a.toFixed(1)+'M</div><div class="b">'+w.bl+': EGP '+t.b.toFixed(1)+'M · <span class="d '+dd.c+'">'+dd.t+'</span></div></div>';
+  }).join('');
+  barChart('cmp-flow',['Inbound','Outbound','Net'],[
+    {label:w.al,data:[+inA.toFixed(1),+outA.toFixed(1),+netA.toFixed(1)],backgroundColor:NAVY,borderRadius:4,datalabels:dlv(function(v){return v.toFixed(1);})},
+    {label:w.bl,data:[+inB.toFixed(1),+outB.toFixed(1),+netB.toFixed(1)],backgroundColor:ORANGE,borderRadius:4,datalabels:dlv(function(v){return v.toFixed(1);})}
+  ]);
+  var ohcA=a.onhandByCat||{},ohcB=b.onhandByCat||{};
+  barChart('cmp-cat',CAT,[
+    {label:w.al,data:CAT.map(function(c){return +num(ohcA[c]).toFixed(1);}),backgroundColor:NAVY,borderRadius:4,datalabels:dlv(function(v){return v.toFixed(0);})},
+    {label:w.bl,data:CAT.map(function(c){return +num(ohcB[c]).toFixed(1);}),backgroundColor:SLATE,borderRadius:4,datalabels:dlv(function(v){return v.toFixed(0);})}
+  ]);
+  var iA=a.inboundByCatSeason||{},iB=b.inboundByCatSeason||{},oA=a.outboundByCatSeason||{},oB=b.outboundByCatSeason||{};
+  var h='<tr><th>Category</th><th class="n">In A</th><th class="n">In B</th><th class="n">Δ%</th><th class="n">Out A</th><th class="n">Out B</th><th class="n">Δ%</th></tr>';
+  CAT.forEach(function(c){ var ia=num(iA[c]),ib=num(iB[c]),oa=Math.abs(num(oA[c])),ob=Math.abs(num(oB[c])); var di=cmpDelta(ia,ib),doo=cmpDelta(oa,ob);
+    h+='<tr><td class="b">'+c+'</td><td class="n">'+ia.toFixed(1)+'</td><td class="n">'+ib.toFixed(1)+'</td><td class="n '+di.c+'">'+di.t+'</td><td class="n">'+oa.toFixed(1)+'</td><td class="n">'+ob.toFixed(1)+'</td><td class="n '+doo.c+'">'+doo.t+'</td></tr>';
+  });
+  document.getElementById('cmpTable').innerHTML=h;
+}
+var cmpReady=false;
+function cmpInit(){
+  if(!cmpReady){ cmpReady=true;
+    document.querySelectorAll('#cmpGran .chip').forEach(function(ch){ch.onclick=function(){ document.querySelectorAll('#cmpGran .chip').forEach(function(c){c.classList.toggle('on',c===ch);}); CMP.gran=ch.dataset.g; var mm=document.getElementById('cmpMode'); if(mm)mm.style.opacity=CMP.gran==='season'?'.4':'1'; cmpBaseOptions(); runCompare(); };});
+    document.querySelectorAll('#cmpMode .chip').forEach(function(ch){ch.onclick=function(){ document.querySelectorAll('#cmpMode .chip').forEach(function(c){c.classList.toggle('on',c===ch);}); CMP.mode=ch.dataset.m; runCompare(); };});
+    var sel=document.getElementById('cmpBase'); if(sel)sel.onchange=function(){ CMP.base=sel.value; runCompare(); };
+    cmpBaseOptions();
+  }
+  runCompare();
 }
 
 donut('c-share',CAT,CAT.map(c=>DATA.onhandByCat[c]),CAT.map(c=>CATCOLOR[c]));
