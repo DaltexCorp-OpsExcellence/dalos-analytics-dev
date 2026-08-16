@@ -148,6 +148,9 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
 .cmp-tile .b{font-size:11.5px;color:var(--text2);margin-top:4px}
 .cmp-tile .d{font-weight:700;font-family:var(--mono)}
 .cmp-up{color:#16a34a}.cmp-dn{color:#dc2626}.cmp-flat{color:var(--text3)}
+.cmpsel{font-family:var(--font);font-size:10.5px;font-weight:600;color:var(--text2);border:1px solid var(--border);border-radius:20px;padding:3px 9px;background:var(--white);cursor:pointer;flex-shrink:0}
+.cmpsel:focus{outline:none;border-color:var(--orange)}
+.h3ctl{display:inline-flex;gap:8px;align-items:center;flex-shrink:0}
 @media(max-width:1100px){.cmp-tiles{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:640px){.cmp-tiles{grid-template-columns:1fr}}
 .fsel,.fsearch{font-family:inherit;font-size:12px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r);background:var(--white);color:var(--text);height:32px}
@@ -242,7 +245,6 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <button class="tab-btn" data-tab="site" onclick="setTab(this)"><i class="ti ti-map-pin"></i>By Site</button>
     <button class="tab-btn" data-tab="brand" onclick="setTab(this)"><i class="ti ti-tags"></i>By Brand</button>
     <button class="tab-btn" data-tab="movement" onclick="setTab(this)"><i class="ti ti-arrows-exchange"></i>Movement</button>
-    <button class="tab-btn" data-tab="compare" onclick="setTab(this)"><i class="ti ti-git-compare"></i>Compare</button>
     <button class="tab-btn" data-tab="forecast" onclick="setTab(this)"><i class="ti ti-chart-line"></i>Forecast<span class="soon">soon</span></button>
     <button class="tab-btn" data-tab="health" onclick="setTab(this)"><i class="ti ti-heartbeat"></i>Health</button>
   </div>
@@ -273,12 +275,12 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <div class="sec-sub">Headline inventory position and season movement</div>
     <div class="kpis" id="kpiRow"></div>
     <div class="grid g2" style="margin-bottom:14px">
-      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-season">Season 26 · Stock Value / Month (M EGP)</span></span><span class="gtoggle" data-chart="season"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box"><canvas id="c-season"></canvas></div></div>
+      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-season">Season 26 · Stock Value / Month (M EGP)</span></span><span class="h3ctl"><select class="cmpsel" data-cc="season"><option value="off">Compare…</option><option value="prev">vs Previous</option><option value="ly">vs Last year</option></select><span class="gtoggle" data-chart="season"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></span></h3><div class="chart-box"><canvas id="c-season"></canvas></div></div>
       <div class="card"><h3><i class="ti ti-chart-donut"></i>Category Share of On-Hand Value</h3><div class="chart-box"><canvas id="c-share"></canvas></div></div>
     </div>
     <div class="grid g2">
-      <div class="card"><h3><i class="ti ti-arrows-exchange"></i><span id="h-iocat">Inbound vs Outbound by Category (Season, M EGP)</span></h3><div class="chart-box"><canvas id="c-io-cat"></canvas></div></div>
-      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-calendar-stats"></i><span id="h-iomonth">Inbound vs Outbound Monthly (M EGP)</span></span><span class="gtoggle" data-chart="iomonth"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box"><canvas id="c-io-month"></canvas></div></div>
+      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrows-exchange"></i><span id="h-iocat">Inbound vs Outbound by Category (Season, M EGP)</span></span><select class="cmpsel" data-cc="iocat"><option value="off">Compare…</option><option value="prev">vs Previous</option><option value="ly">vs Last year</option></select></h3><div class="chart-box"><canvas id="c-io-cat"></canvas></div></div>
+      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-calendar-stats"></i><span id="h-iomonth">Inbound vs Outbound Monthly (M EGP)</span></span><span class="h3ctl"><select class="cmpsel" data-cc="iomonth"><option value="off">Compare…</option><option value="prev">vs Previous</option><option value="ly">vs Last year</option></select><span class="gtoggle" data-chart="iomonth"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></span></h3><div class="chart-box"><canvas id="c-io-month"></canvas></div></div>
     </div>
   </div>
 
@@ -302,11 +304,11 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <div class="sec-title">By Category</div>
     <div class="sec-sub">SP · IRR · Oil · Invest — value, share and monthly trend</div>
     <div class="grid g2" style="margin-bottom:14px">
-      <div class="card"><h3><i class="ti ti-chart-bar"></i>On-Hand Value by Category (M EGP)</h3><div class="chart-box"><canvas id="c-cat-oh"></canvas></div></div>
+      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i>On-Hand Value by Category (M EGP)</span><select class="cmpsel" data-cc="catoh"><option value="off">Compare…</option><option value="prev">vs Previous</option><option value="ly">vs Last year</option></select></h3><div class="chart-box"><canvas id="c-cat-oh"></canvas></div></div>
       <div class="card"><h3><i class="ti ti-chart-donut"></i>Category Share</h3><div class="chart-box"><canvas id="c-cat-share"></canvas></div></div>
     </div>
-    <div class="card" style="margin-bottom:14px"><h3><i class="ti ti-rotate-clockwise"></i>Inventory Turnover by Category (× · season outbound ÷ on-hand)</h3><div class="chart-box sm"><canvas id="c-cat-turn"></canvas></div></div>
-    <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-line"></i><span id="h-cattrend">Total On-Hand Value — Monthly Trend (M EGP)</span></span><span class="gtoggle" data-chart="cattrend"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box tall"><canvas id="c-cat-trend"></canvas></div></div>
+    <div class="card" style="margin-bottom:14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-rotate-clockwise"></i>Inventory Turnover by Category (× · season outbound ÷ on-hand)</span><select class="cmpsel" data-cc="catturn"><option value="off">Compare…</option><option value="prev">vs Previous</option><option value="ly">vs Last year</option></select></h3><div class="chart-box sm"><canvas id="c-cat-turn"></canvas></div></div>
+    <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-line"></i><span id="h-cattrend">Total On-Hand Value — Monthly Trend (M EGP)</span></span><span class="h3ctl"><select class="cmpsel" data-cc="cattrend"><option value="off">Compare…</option><option value="prev">vs Previous</option><option value="ly">vs Last year</option></select><span class="gtoggle" data-chart="cattrend"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></span></h3><div class="chart-box tall"><canvas id="c-cat-trend"></canvas></div></div>
     <div class="card" style="margin-top:14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-catmonthly">Stock Value / Month — Per Category (M EGP)</span></span><span class="gtoggle" data-chart="catmonthly"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box tall"><canvas id="c-cat-monthly"></canvas></div></div>
     <div class="card" style="margin-top:14px"><h3><i class="ti ti-arrows-up-down"></i>Month-over-Month Stock Value Variance (M EGP · Δ and %)</h3><div style="overflow-x:auto"><table class="mom" id="momTable"></table></div></div>
   </div>
@@ -343,29 +345,11 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
   <div class="panel" id="movement">
     <div class="sec-title">Movement</div>
     <div class="sec-sub">Inbound (Or Ty 1P/2P/FF) vs Outbound (Do Ty #) over the season</div>
-    <div class="card" style="margin-bottom:14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrows-exchange"></i><span id="h-mvmonth">Monthly Inbound vs Outbound (M EGP)</span></span><span class="gtoggle" data-chart="mvmonth"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></h3><div class="chart-box tall"><canvas id="c-mv-month"></canvas></div></div>
+    <div class="card" style="margin-bottom:14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrows-exchange"></i><span id="h-mvmonth">Monthly Inbound vs Outbound (M EGP)</span></span><span class="h3ctl"><select class="cmpsel" data-cc="mvmonth"><option value="off">Compare…</option><option value="prev">vs Previous</option><option value="ly">vs Last year</option></select><span class="gtoggle" data-chart="mvmonth"><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span></span></h3><div class="chart-box tall"><canvas id="c-mv-month"></canvas></div></div>
     <div class="grid g2">
-      <div class="card"><h3><i class="ti ti-arrow-down-circle" style="color:var(--green)"></i><span id="h-mvin">Inbound by Category — Season (M EGP)</span></h3><div class="chart-box sm"><canvas id="c-mv-in"></canvas></div></div>
-      <div class="card"><h3><i class="ti ti-arrow-up-circle" style="color:var(--red)"></i><span id="h-mvout">Outbound by Category — Season (M EGP)</span></h3><div class="chart-box sm"><canvas id="c-mv-out"></canvas></div></div>
+      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-down-circle" style="color:var(--green)"></i><span id="h-mvin">Inbound by Category — Season (M EGP)</span></span><select class="cmpsel" data-cc="mvin"><option value="off">Compare…</option><option value="prev">vs Previous</option><option value="ly">vs Last year</option></select></h3><div class="chart-box sm"><canvas id="c-mv-in"></canvas></div></div>
+      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-up-circle" style="color:var(--red)"></i><span id="h-mvout">Outbound by Category — Season (M EGP)</span></span><select class="cmpsel" data-cc="mvout"><option value="off">Compare…</option><option value="prev">vs Previous</option><option value="ly">vs Last year</option></select></h3><div class="chart-box sm"><canvas id="c-mv-out"></canvas></div></div>
     </div>
-  </div>
-
-  <!-- COMPARE -->
-  <div class="panel" id="compare">
-    <div class="sec-title">Compare Periods</div>
-    <div class="sec-sub">Week-over-week, month-over-month or season-over-season — against the previous period or the same period last year. Uses the filters above.</div>
-    <div class="rail" style="margin-bottom:14px">
-      <div class="fl"><label>Compare by</label><div class="chips" id="cmpGran"><span class="chip on" data-g="month">Month</span><span class="chip" data-g="week">Week</span><span class="chip" data-g="season">Season</span></div></div>
-      <div class="fl"><label>Base period</label><select id="cmpBase" class="fsel" style="min-width:150px"></select></div>
-      <div class="fl"><label>Compare to</label><div class="chips" id="cmpMode"><span class="chip on" data-m="prev">Previous</span><span class="chip" data-m="ly">Same period last year</span></div></div>
-      <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-git-compare" style="color:var(--orange);font-size:13px"></i><b id="cmpState" style="color:var(--navy)">—</b></span></div>
-    </div>
-    <div class="cmp-tiles" id="cmpTiles"></div>
-    <div class="grid g2" style="margin-bottom:14px">
-      <div class="card"><h3><i class="ti ti-arrows-exchange"></i>Inbound · Outbound · Net (M EGP)</h3><div class="chart-box"><canvas id="cmp-flow"></canvas></div></div>
-      <div class="card"><h3><i class="ti ti-stack-2"></i>On-Hand by Category — period end (M EGP)</h3><div class="chart-box"><canvas id="cmp-cat"></canvas></div></div>
-    </div>
-    <div class="card"><h3><i class="ti ti-table"></i>By Category — Inbound &amp; Outbound</h3><div style="overflow-x:auto"><table class="dtable" id="cmpTable"></table></div></div>
   </div>
 
   <!-- FORECAST -->
@@ -418,7 +402,6 @@ function setTab(btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b===btn));
   const t=btn.dataset.tab;
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===t));
-  if(t==='compare')cmpInit();
 }
 
 /* ---- snapshot ---- */
@@ -670,7 +653,7 @@ function updateTitles(vw){
   setTitle('h-brandiss','Top 10 Brands by Issues — '+SP+' (M EGP)');
 }
 function renderWindow(vw){
-  updateTitles(vw);
+  LASTVW=vw; updateTitles(vw);
   drawSnapshot(vw); drawKpis(vw);
   drawSeason(vw); drawIoCat(vw); drawIoMonth(vw);
   drawCatTrend(vw); drawCatMonthly(vw); drawCatTurn(vw);
@@ -731,6 +714,7 @@ function reflectChartToggle(key){var t=document.querySelector('.gtoggle[data-cha
 function reflectAllToggles(){Object.keys(CG).forEach(reflectChartToggle);}
 function setChartGrain(key,g){
   CG[key]=g; reflectChartToggle(key);
+  if(CC[key]&&CC[key]!=='off'){ drawChartCmp(key); return; }
   var tog=document.querySelector('.gtoggle[data-chart="'+key+'"]'); if(tog)tog.style.opacity=.5;
   fetchInv(g).then(function(p){ drawOne(key,payloadVW(p,key)); chartTitle(key,g); if(tog)tog.style.opacity=1; })
     .catch(function(e){ if(tog)tog.style.opacity=1; console.warn('grain fetch failed',e); });
@@ -751,7 +735,7 @@ function applyView(){
   if(RANGE.from&&RANGE.to&&RANGE.from>RANGE.to){var t=RANGE.from;RANGE.from=RANGE.to;RANGE.to=t;if(df)df.value=RANGE.from;if(dt)dt.value=RANGE.to;}
   if(!anyActive()){
     RANGE.active=false; for(var kk in RGCACHE)delete RGCACHE[kk]; Object.keys(CG).forEach(function(k){CG[k]='month';});
-    renderWindow(buildFullVW()); reflectAllToggles(); renderX();
+    renderWindow(buildFullVW()); reflectAllToggles(); renderX(); refreshCompares();
     document.getElementById('filterState').textContent='All items'; return;
   }
   RANGE.active=true;
@@ -760,7 +744,7 @@ function applyView(){
     if(!p||!p.kpi)throw new Error((p&&p.message)||'no data');
     var vw=buildRangeVW(p); renderWindow(vw); drawBreakdowns(vw);
     Object.keys(CG).forEach(function(k){CG[k]='month';}); reflectAllToggles();
-    renderX();
+    renderX(); refreshCompares();
     document.getElementById('filterState').textContent=filterSummary();
   }).catch(function(e){ document.getElementById('filterState').textContent='Filter error: '+((e&&e.message)||e); });
 }
@@ -774,86 +758,83 @@ function wireRangeControls(){
   });
 }
 
-/* ================= COMPARE (period vs period) ================= */
-const CMP={gran:'month',base:null,mode:'prev'};
+/* ================= PER-CHART COMPARE (period-vs-period overlay) ================= */
+const CC={}; var LASTVW=null;
 function addFilters(b){ if(S.cat.length)b.p_cat=S.cat; if(S.dept.length)b.p_dept=S.dept; if(S.tier.length)b.p_tier=S.tier; if(S.lm.length)b.p_lm=S.lm; if(S.brand.length)b.p_brand=S.brand; if(GQ)b.p_search=GQ; return b; }
-function invFor(from,to){ var b=addFilters({p_from:from,p_to:to,p_grain:'month'}); var k='CMP'+JSON.stringify(b); if(RGCACHE[k])return Promise.resolve(RGCACHE[k]);
+function invFor(from,to,grain){ var b=addFilters({p_from:from,p_to:to,p_grain:grain||'month'}); var k='CMP'+JSON.stringify(b); if(RGCACHE[k])return Promise.resolve(RGCACHE[k]);
   var H={apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'};
   return fetch(SB+'/rest/v1/rpc/inv_range',{method:'POST',headers:H,body:JSON.stringify(b)}).then(function(r){return r.ok?r.json():r.text().then(function(t){throw new Error(r.status+': '+t.slice(0,120));});}).then(function(p){RGCACHE[k]=p;return p;});
 }
-function d2(n){return (''+n).padStart(2,'0');}
 function addDays(iso,n){var d=new Date(iso+'T00:00:00');d.setDate(d.getDate()+n);return ymd(d);}
-function monthWin(y,m){ var last=new Date(y,m,0).getDate(); return {from:y+'-'+d2(m)+'-01', to:y+'-'+d2(m)+'-'+d2(last)}; }
-function mLabelYM(ym){var p=ym.split('-');return MON[(+p[1])-1]+' '+p[0];}
-function seasonWin(y){ return {from:y+'-10-01', to:(y+1)+'-09-30'}; }
-function seasonLabel(y){ return 'Season '+(''+(y+1)).slice(2); }
-function cmpBaseOptions(){
-  var sel=document.getElementById('cmpBase'); if(!sel)return; var opts='', asof=asOfStr(), ay=+asof.slice(0,4), am=+asof.slice(5,7);
-  if(CMP.gran==='month'){
-    var list=[]; for(var y=2023;y<=ay;y++){ var mmax=(y===ay)?am:12; for(var m=1;m<=mmax;m++) list.push(y+'-'+d2(m)); }
-    list.reverse().forEach(function(ym){ opts+='<option value="'+ym+'">'+mLabelYM(ym)+'</option>'; });
-  } else if(CMP.gran==='week'){
-    var mon=new Date(asof+'T00:00:00'); var wd=(mon.getDay()+6)%7; mon.setDate(mon.getDate()-wd);
-    for(var i=0;i<130;i++){ var wkey=ymd(mon); if(wkey<'2023-01-01')break; var p=wkey.split('-'); opts+='<option value="'+wkey+'">w/o '+(+p[2])+' '+MON[(+p[1])-1]+' '+p[0].slice(2)+'</option>'; mon.setDate(mon.getDate()-7); }
-  } else {
-    var sy0=(am>=10)?ay:ay-1;
-    for(var sy=sy0; sy>=2023; sy--){ opts+='<option value="'+sy+'">'+seasonLabel(sy)+'</option>'; }
-  }
-  sel.innerHTML=opts; CMP.base=sel.value;
+function shiftYearISO(iso,dy){var p=(''+iso).split('-');return (parseInt(p[0],10)+dy)+'-'+p[1]+'-'+p[2];}
+function chartCurWin(){ return RANGE.active?{from:RANGE.from,to:RANGE.to}:{from:seasonFrom(),to:asOfStr()}; }
+function chartCompWin(cur,mode){
+  if(!RANGE.active||mode==='ly'){ return {from:shiftYearISO(cur.from,-1),to:shiftYearISO(cur.to,-1)}; }
+  var len=Math.round((new Date(cur.to+'T00:00:00')-new Date(cur.from+'T00:00:00'))/86400000)+1;
+  return {from:addDays(cur.from,-len),to:addDays(cur.from,-1)};
 }
-function cmpWindows(){
-  var g=CMP.gran, base=CMP.base, A,B,al,bl;
-  if(g==='month'){ var y=+base.slice(0,4),m=+base.slice(5,7); A=monthWin(y,m); al=mLabelYM(base);
-    if(CMP.mode==='prev'){ var pm=m-1,py=y; if(pm<1){pm=12;py--;} B=monthWin(py,pm); bl=mLabelYM(py+'-'+d2(pm)); }
-    else { B=monthWin(y-1,m); bl=mLabelYM((y-1)+'-'+d2(m)); }
-  } else if(g==='week'){ A={from:base,to:addDays(base,6)}; var pp=base.split('-'); al='w/o '+(+pp[2])+' '+MON[(+pp[1])-1];
-    if(CMP.mode==='prev'){ B={from:addDays(base,-7),to:addDays(base,-1)}; var q=B.from.split('-'); bl='w/o '+(+q[2])+' '+MON[(+q[1])-1]; }
-    else { B={from:addDays(base,-364),to:addDays(base,-358)}; var q2=B.from.split('-'); bl='w/o '+(+q2[2])+' '+MON[(+q2[1])-1]+' '+q2[0].slice(2); }
-  } else { var sy=+base; A=seasonWin(sy); al=seasonLabel(sy); B=seasonWin(sy-1); bl=seasonLabel(sy-1); }
-  return {A:A,B:B,al:al,bl:bl};
+var CMPMETA={
+  season:{cv:'c-season',fam:'trend',metric:'onhand'},
+  iomonth:{cv:'c-io-month',fam:'trend',metric:'io'},
+  cattrend:{cv:'c-cat-trend',fam:'trend',metric:'onhand'},
+  mvmonth:{cv:'c-mv-month',fam:'trend',metric:'io'},
+  iocat:{cv:'c-io-cat',fam:'cat',metric:'io'},
+  catoh:{cv:'c-cat-oh',fam:'cat',metric:'ohcat'},
+  mvin:{cv:'c-mv-in',fam:'cat',metric:'in'},
+  mvout:{cv:'c-mv-out',fam:'cat',metric:'out'},
+  catturn:{cv:'c-cat-turn',fam:'cat',metric:'turn'}
+};
+var CMP_L1='#8fa1c4', CMP_L2='#eab98f';
+function catVal(P,c,metric){ if(metric==='in')return num((P.inboundByCatSeason||{})[c]); if(metric==='out')return Math.abs(num((P.outboundByCatSeason||{})[c])); if(metric==='ohcat')return num((P.onhandByCat||{})[c]); if(metric==='turn'){var oh=num((P.onhandByCat||{})[c]),o=Math.abs(num((P.outboundByCatSeason||{})[c]));return oh>0?+(o/oh).toFixed(2):0;} return 0; }
+function drawChartCmp(key){
+  var meta=CMPMETA[key], mode=CC[key]||'prev', grain=CG[key]||'month';
+  var cur=chartCurWin(), comp=chartCompWin(cur,mode);
+  var sel=document.querySelector('.cmpsel[data-cc="'+key+'"]'); if(sel)sel.style.opacity=.5;
+  Promise.all([invFor(cur.from,cur.to,grain),invFor(comp.from,comp.to,grain)]).then(function(r){
+    var A=r[0],B=r[1], cl='Current', pl=(mode==='ly'?'Last year':'Previous');
+    if(meta.fam==='trend'){
+      var sa=A.series||[], sb=B.series||[], labels=sa.map(function(x){return bLabel(x.k,A.meta.grain);});
+      if(meta.metric==='onhand'){
+        barChart(meta.cv,labels,[
+          {label:cl,data:sa.map(function(x){return +num(x.onhand).toFixed(1);}),backgroundColor:NAVY,borderRadius:3,datalabels:{display:false}},
+          {label:pl,data:sb.map(function(x){return +num(x.onhand).toFixed(1);}),backgroundColor:SLATE,borderRadius:3,datalabels:{display:false}}
+        ]);
+      } else {
+        barChart(meta.cv,labels,[
+          {label:'In · '+cl,data:sa.map(function(x){return +num(x.inb).toFixed(1);}),backgroundColor:NAVY,borderRadius:2,datalabels:{display:false}},
+          {label:'Out · '+cl,data:sa.map(function(x){return +Math.abs(num(x.outb)).toFixed(1);}),backgroundColor:ORANGE,borderRadius:2,datalabels:{display:false}},
+          {label:'In · '+pl,data:sb.map(function(x){return +num(x.inb).toFixed(1);}),backgroundColor:CMP_L1,borderRadius:2,datalabels:{display:false}},
+          {label:'Out · '+pl,data:sb.map(function(x){return +Math.abs(num(x.outb)).toFixed(1);}),backgroundColor:CMP_L2,borderRadius:2,datalabels:{display:false}}
+        ]);
+      }
+    } else if(meta.metric==='io'){
+      barChart(meta.cv,CAT,[
+        {label:'In · '+cl,data:CAT.map(function(c){return +catVal(A,c,'in').toFixed(1);}),backgroundColor:NAVY,borderRadius:3,datalabels:{display:false}},
+        {label:'Out · '+cl,data:CAT.map(function(c){return +catVal(A,c,'out').toFixed(1);}),backgroundColor:ORANGE,borderRadius:3,datalabels:{display:false}},
+        {label:'In · '+pl,data:CAT.map(function(c){return +catVal(B,c,'in').toFixed(1);}),backgroundColor:CMP_L1,borderRadius:3,datalabels:{display:false}},
+        {label:'Out · '+pl,data:CAT.map(function(c){return +catVal(B,c,'out').toFixed(1);}),backgroundColor:CMP_L2,borderRadius:3,datalabels:{display:false}}
+      ]);
+    } else {
+      var fmt=meta.metric==='turn'?function(v){return v.toFixed(2)+'×';}:function(v){return v.toFixed(1);};
+      barChart(meta.cv,CAT,[
+        {label:cl,data:CAT.map(function(c){return +catVal(A,c,meta.metric).toFixed(2);}),backgroundColor:NAVY,borderRadius:4,datalabels:dlv(fmt)},
+        {label:pl,data:CAT.map(function(c){return +catVal(B,c,meta.metric).toFixed(2);}),backgroundColor:SLATE,borderRadius:4,datalabels:dlv(fmt)}
+      ]);
+    }
+    if(sel)sel.style.opacity=1;
+  }).catch(function(e){ if(sel)sel.style.opacity=1; console.warn('compare fetch failed',e); });
 }
-function cmpDelta(a,b){ if(!b) return {t:(a?'▲ new':'0%'),c:a?'cmp-up':'cmp-flat'}; var d=(a-b)/Math.abs(b)*100; var c=d>0.5?'cmp-up':d<-0.5?'cmp-dn':'cmp-flat'; var ar=d>0.5?'▲':d<-0.5?'▼':'■'; return {t:ar+' '+(d>=0?'+':'')+d.toFixed(0)+'%',c:c}; }
-function runCompare(){
-  if(!CMP.base)return; var w=cmpWindows();
-  document.getElementById('cmpState').textContent='Loading…';
-  Promise.all([invFor(w.A.from,w.A.to), invFor(w.B.from,w.B.to)]).then(function(res){
-    renderCompare(res[0],res[1],w);
-    document.getElementById('cmpState').textContent=w.al+'  vs  '+w.bl;
-  }).catch(function(e){ document.getElementById('cmpState').textContent='Error: '+((e&&e.message)||e); });
+function chartCmpOff(key){
+  var meta=CMPMETA[key];
+  if(meta.fam==='trend'){ setChartGrain(key, CG[key]||'month'); }
+  else { var vw=LASTVW||buildFullVW(); if(key==='iocat')drawIoCat(vw); else if(key==='catturn')drawCatTurn(vw); else if(key==='catoh')drawBreakdowns(vw); else drawMovement(vw); }
 }
-function renderCompare(a,b,w){
-  var inA=num(a.rangeInbound),outA=Math.abs(num(a.rangeOutbound)),ohA=num(a.kpi&&a.kpi.onhandTotal),netA=inA-outA;
-  var inB=num(b.rangeInbound),outB=Math.abs(num(b.rangeOutbound)),ohB=num(b.kpi&&b.kpi.onhandTotal),netB=inB-outB;
-  var tiles=[{l:'Inbound',a:inA,b:inB},{l:'Outbound',a:outA,b:outB},{l:'Net Movement',a:netA,b:netB},{l:'On-Hand (period end)',a:ohA,b:ohB}];
-  document.getElementById('cmpTiles').innerHTML=tiles.map(function(t){ var dd=cmpDelta(t.a,t.b);
-    return '<div class="cmp-tile"><div class="lbl">'+t.l+'</div><div class="a">EGP '+t.a.toFixed(1)+'M</div><div class="b">'+w.bl+': EGP '+t.b.toFixed(1)+'M · <span class="d '+dd.c+'">'+dd.t+'</span></div></div>';
-  }).join('');
-  barChart('cmp-flow',['Inbound','Outbound','Net'],[
-    {label:w.al,data:[+inA.toFixed(1),+outA.toFixed(1),+netA.toFixed(1)],backgroundColor:NAVY,borderRadius:4,datalabels:dlv(function(v){return v.toFixed(1);})},
-    {label:w.bl,data:[+inB.toFixed(1),+outB.toFixed(1),+netB.toFixed(1)],backgroundColor:ORANGE,borderRadius:4,datalabels:dlv(function(v){return v.toFixed(1);})}
-  ]);
-  var ohcA=a.onhandByCat||{},ohcB=b.onhandByCat||{};
-  barChart('cmp-cat',CAT,[
-    {label:w.al,data:CAT.map(function(c){return +num(ohcA[c]).toFixed(1);}),backgroundColor:NAVY,borderRadius:4,datalabels:dlv(function(v){return v.toFixed(0);})},
-    {label:w.bl,data:CAT.map(function(c){return +num(ohcB[c]).toFixed(1);}),backgroundColor:SLATE,borderRadius:4,datalabels:dlv(function(v){return v.toFixed(0);})}
-  ]);
-  var iA=a.inboundByCatSeason||{},iB=b.inboundByCatSeason||{},oA=a.outboundByCatSeason||{},oB=b.outboundByCatSeason||{};
-  var h='<tr><th>Category</th><th class="n">In A</th><th class="n">In B</th><th class="n">Δ%</th><th class="n">Out A</th><th class="n">Out B</th><th class="n">Δ%</th></tr>';
-  CAT.forEach(function(c){ var ia=num(iA[c]),ib=num(iB[c]),oa=Math.abs(num(oA[c])),ob=Math.abs(num(oB[c])); var di=cmpDelta(ia,ib),doo=cmpDelta(oa,ob);
-    h+='<tr><td class="b">'+c+'</td><td class="n">'+ia.toFixed(1)+'</td><td class="n">'+ib.toFixed(1)+'</td><td class="n '+di.c+'">'+di.t+'</td><td class="n">'+oa.toFixed(1)+'</td><td class="n">'+ob.toFixed(1)+'</td><td class="n '+doo.c+'">'+doo.t+'</td></tr>';
+function wireCompare(){
+  document.querySelectorAll('.cmpsel[data-cc]').forEach(function(sel){ var key=sel.dataset.cc;
+    sel.onchange=function(){ CC[key]=sel.value; if(sel.value==='off')chartCmpOff(key); else drawChartCmp(key); };
   });
-  document.getElementById('cmpTable').innerHTML=h;
 }
-var cmpReady=false;
-function cmpInit(){
-  if(!cmpReady){ cmpReady=true;
-    document.querySelectorAll('#cmpGran .chip').forEach(function(ch){ch.onclick=function(){ document.querySelectorAll('#cmpGran .chip').forEach(function(c){c.classList.toggle('on',c===ch);}); CMP.gran=ch.dataset.g; var mm=document.getElementById('cmpMode'); if(mm)mm.style.opacity=CMP.gran==='season'?'.4':'1'; cmpBaseOptions(); runCompare(); };});
-    document.querySelectorAll('#cmpMode .chip').forEach(function(ch){ch.onclick=function(){ document.querySelectorAll('#cmpMode .chip').forEach(function(c){c.classList.toggle('on',c===ch);}); CMP.mode=ch.dataset.m; runCompare(); };});
-    var sel=document.getElementById('cmpBase'); if(sel)sel.onchange=function(){ CMP.base=sel.value; runCompare(); };
-    cmpBaseOptions();
-  }
-  runCompare();
-}
+function refreshCompares(){ Object.keys(CC).forEach(function(k){ if(CC[k]&&CC[k]!=='off')drawChartCmp(k); }); }
 
 donut('c-share',CAT,CAT.map(c=>DATA.onhandByCat[c]),CAT.map(c=>CATCOLOR[c]));
 // inbound vs outbound by category — real Season 26 figures
@@ -1037,7 +1018,7 @@ function renderX(){
 }
 (function(){ const sb=document.getElementById('fSearch'); if(sb){ sb.oninput=e=>{GQ=e.target.value.trim().toLowerCase();}; sb.onkeydown=e=>{if(e.key==='Enter')applyView();}; }
   document.addEventListener('click',e=>{if(!e.target.closest('.ms'))document.querySelectorAll('.ms-dd').forEach(d=>d.classList.remove('open'));});
-  wireRangeControls(); buildFilters(); renderX();
+  wireRangeControls(); wireCompare(); buildFilters(); renderX();
 })();
 
 /* env-aware staging badge (shared convention) — visible only on -dev/ paths */
