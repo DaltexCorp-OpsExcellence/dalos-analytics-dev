@@ -786,6 +786,7 @@ var CMPMETA={
 };
 var CMP_L1='#8fa1c4', CMP_L2='#eab98f';
 function catVal(P,c,metric){ if(metric==='in')return num((P.inboundByCatSeason||{})[c]); if(metric==='out')return Math.abs(num((P.outboundByCatSeason||{})[c])); if(metric==='ohcat')return num((P.onhandByCat||{})[c]); if(metric==='turn'){var oh=num((P.onhandByCat||{})[c]),o=Math.abs(num((P.outboundByCatSeason||{})[c]));return oh>0?+(o/oh).toFixed(2):0;} return 0; }
+function dcmp(){return {display:true,anchor:'end',align:'top',rotation:-90,color:'#374151',font:{size:7,weight:'700'},clamp:true,formatter:function(v){return v>=0.5?(v>=10?v.toFixed(0):v.toFixed(1)):'';}};}
 function drawChartCmp(key){
   var meta=CMPMETA[key], mode=CC[key]||'prev', grain=CG[key]||'month';
   var cur=chartCurWin(), comp=chartCompWin(cur,mode);
@@ -796,23 +797,23 @@ function drawChartCmp(key){
       var sa=A.series||[], sb=B.series||[], labels=sa.map(function(x){return bLabel(x.k,A.meta.grain);});
       if(meta.metric==='onhand'){
         barChart(meta.cv,labels,[
-          {label:cl,data:sa.map(function(x){return +num(x.onhand).toFixed(1);}),backgroundColor:NAVY,borderRadius:3,datalabels:{display:false}},
-          {label:pl,data:sb.map(function(x){return +num(x.onhand).toFixed(1);}),backgroundColor:SLATE,borderRadius:3,datalabels:{display:false}}
+          {label:cl,data:sa.map(function(x){return +num(x.onhand).toFixed(1);}),backgroundColor:NAVY,borderRadius:3,datalabels:dcmp()},
+          {label:pl,data:sb.map(function(x){return +num(x.onhand).toFixed(1);}),backgroundColor:SLATE,borderRadius:3,datalabels:dcmp()}
         ]);
       } else {
         barChart(meta.cv,labels,[
-          {label:'In · '+cl,data:sa.map(function(x){return +num(x.inb).toFixed(1);}),backgroundColor:NAVY,borderRadius:2,datalabels:{display:false}},
-          {label:'Out · '+cl,data:sa.map(function(x){return +Math.abs(num(x.outb)).toFixed(1);}),backgroundColor:ORANGE,borderRadius:2,datalabels:{display:false}},
-          {label:'In · '+pl,data:sb.map(function(x){return +num(x.inb).toFixed(1);}),backgroundColor:CMP_L1,borderRadius:2,datalabels:{display:false}},
-          {label:'Out · '+pl,data:sb.map(function(x){return +Math.abs(num(x.outb)).toFixed(1);}),backgroundColor:CMP_L2,borderRadius:2,datalabels:{display:false}}
+          {label:'In · '+cl,data:sa.map(function(x){return +num(x.inb).toFixed(1);}),backgroundColor:NAVY,borderRadius:2,datalabels:dcmp()},
+          {label:'Out · '+cl,data:sa.map(function(x){return +Math.abs(num(x.outb)).toFixed(1);}),backgroundColor:ORANGE,borderRadius:2,datalabels:dcmp()},
+          {label:'In · '+pl,data:sb.map(function(x){return +num(x.inb).toFixed(1);}),backgroundColor:CMP_L1,borderRadius:2,datalabels:dcmp()},
+          {label:'Out · '+pl,data:sb.map(function(x){return +Math.abs(num(x.outb)).toFixed(1);}),backgroundColor:CMP_L2,borderRadius:2,datalabels:dcmp()}
         ]);
       }
     } else if(meta.metric==='io'){
       barChart(meta.cv,CAT,[
-        {label:'In · '+cl,data:CAT.map(function(c){return +catVal(A,c,'in').toFixed(1);}),backgroundColor:NAVY,borderRadius:3,datalabels:{display:false}},
-        {label:'Out · '+cl,data:CAT.map(function(c){return +catVal(A,c,'out').toFixed(1);}),backgroundColor:ORANGE,borderRadius:3,datalabels:{display:false}},
-        {label:'In · '+pl,data:CAT.map(function(c){return +catVal(B,c,'in').toFixed(1);}),backgroundColor:CMP_L1,borderRadius:3,datalabels:{display:false}},
-        {label:'Out · '+pl,data:CAT.map(function(c){return +catVal(B,c,'out').toFixed(1);}),backgroundColor:CMP_L2,borderRadius:3,datalabels:{display:false}}
+        {label:'In · '+cl,data:CAT.map(function(c){return +catVal(A,c,'in').toFixed(1);}),backgroundColor:NAVY,borderRadius:3,datalabels:dcmp()},
+        {label:'Out · '+cl,data:CAT.map(function(c){return +catVal(A,c,'out').toFixed(1);}),backgroundColor:ORANGE,borderRadius:3,datalabels:dcmp()},
+        {label:'In · '+pl,data:CAT.map(function(c){return +catVal(B,c,'in').toFixed(1);}),backgroundColor:CMP_L1,borderRadius:3,datalabels:dcmp()},
+        {label:'Out · '+pl,data:CAT.map(function(c){return +catVal(B,c,'out').toFixed(1);}),backgroundColor:CMP_L2,borderRadius:3,datalabels:dcmp()}
       ]);
     } else {
       var fmt=meta.metric==='turn'?function(v){return v.toFixed(2)+'×';}:function(v){return v.toFixed(1);};
