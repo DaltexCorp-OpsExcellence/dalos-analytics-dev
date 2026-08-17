@@ -7,6 +7,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>DalOS Analytics</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="alternate icon" href="favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#142850">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
@@ -34,7 +41,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .staging-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.9);display:inline-block;flex-shrink:0;animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
 .logo{display:flex;align-items:center;gap:12px}
-.logo-icon{width:36px;height:36px;background:#DC6428;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;font-family:var(--mono)}
+.logo-icon{width:36px;height:36px;background:transparent;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:100%;height:100%;display:block}
 .logo-name{font-size:18px;font-weight:700;color:#fff;letter-spacing:-.3px}
 .logo-sub{font-size:12px;color:rgba(255,255,255,.5);margin-left:4px;font-weight:400}
 .topbar-right{display:flex;align-items:center;gap:16px}
@@ -312,18 +320,38 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .manage-access-btn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#dce6f5;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:.18s}
 .manage-access-btn:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28)}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* Loading-mark animation — the bars climb from the baseline, the gold data-point
+   pops and breathes. Applied only to marks carrying .an-anim (the loading splash). */
+.an-anim .an-bar{transform-box:fill-box;transform-origin:center bottom;animation:an-bar 1.8s ease-in-out infinite}
+.an-anim .an-bar:nth-of-type(2){animation-delay:.14s}
+.an-anim .an-bar:nth-of-type(3){animation-delay:.28s}
+.an-anim .an-dot{transform-box:fill-box;transform-origin:center;animation:an-dot 1.8s ease-in-out infinite;animation-delay:.28s}
+@keyframes an-bar{0%{transform:scaleY(.16)}45%{transform:scaleY(1)}75%{transform:scaleY(1)}100%{transform:scaleY(.16)}}
+@keyframes an-dot{0%,100%{opacity:.4;transform:scale(.7)}45%,75%{opacity:1;transform:scale(1.16)}}
+@media(prefers-reduced-motion:reduce){.an-anim .an-bar,.an-anim .an-dot{animation:none;transform:none;opacity:1}}
 @keyframes shimmer{0%{background-position:-300px 0}100%{background-position:300px 0}}
 .sk{background:var(--bg);background-image:linear-gradient(90deg,transparent 0,rgba(0,0,0,.07) 30px,transparent 60px);background-size:400px 100%;background-repeat:no-repeat;animation:shimmer 1.3s infinite linear;border-radius:5px;display:inline-block;vertical-align:middle}
 </style>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwYjE1MTAiLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg3LjAwMCwzOC42MjEpIHNjYWxlKDAuMDE4OTE4LC0wLjAxODkxOCkiPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAsMCkiIGQ9Ik0yMiAwVjEwTDQzIDE4UTc1IDMxIDc1IDY5VjU5MVE3NSA2MzEgNDMgNjQyTDIyIDY1MFY2NjBIMjg2UTM5MiA2NjAgNDY4LjUgNjIwLjVRNTQ1IDU4MSA1ODYuNSA1MDcuNVE2MjggNDM0IDYyOCAzMzFRNjI4IDIyNiA1ODMuMCAxNTIuMFE1MzggNzggNDU3LjUgMzkuMFEzNzcgMCAyNjggMFpNMjI1IDIwSDI2OFEzNDAgMjAgMzg0LjAgNDguNVE0MjggNzcgNDQ4LjUgMTQ0LjVRNDY5IDIxMiA0NjkgMzMwUTQ2OSA0NDggNDQ4LjUgNTE1LjVRNDI4IDU4MyAzODUuMCA2MTEuNVEzNDIgNjQwIDI3MiA2NDBIMjI1WiIgZmlsbD0iI2ZmZmZmZiIvPjxwYXRoIHRyYW5zZm9ybT0idHJhbnNsYXRlKDY0OCwwKSIgZD0iTTE2NiAtMTVRMTA4IC0xNSA2OC41IDE4LjBRMjkgNTEgMjkgMTEzUTI5IDE2MCA3Ny4wIDE5OS41UTEyNSAyMzkgMjI4IDI1OVEyNDQgMjYyIDI2NC4wIDI2NS41UTI4NCAyNjkgMzA2IDI3M1YzNTJRMzA2IDQyMCAyODkuNSA0NDcuNVEyNzMgNDc1IDIzOCA0NzVRMjE0IDQ3NSAyMDAuMCA0NTkuNVExODYgNDQ0IDE4MiA0MDZMMTgwIDM5NVExNzggMzUyIDE1OS4wIDMzMi4wUTE0MCAzMTIgMTEyIDMxMlE4NiAzMTIgNjkuMCAzMjguMFE1MiAzNDQgNTIgMzcxUTUyIDQxMiA4MC41IDQ0MC4wUTEwOSA0NjggMTU2LjAgNDgyLjBRMjAzIDQ5NiAyNTggNDk2UTM0NyA0OTYgMzk1LjUgNDUyLjVRNDQ0IDQwOSA0NDQgMzExVjkwUTQ0NCA0NSA0ODYgNDVINTA4TDUxNyAzN1E0OTggMTMgNDc1LjUgMC4wUTQ1MyAtMTMgNDEyIC0xM1EzNjggLTEzIDM0Mi41IDcuNVEzMTcgMjggMzA5IDYyUTI3OSAzMCAyNDcuNSA3LjVRMjE2IC0xNSAxNjYgLTE1Wk0yMjcgNDZRMjQ3IDQ2IDI2NC41IDU1LjVRMjgyIDY1IDMwNiA4NVYyNTNRMjk2IDI1MSAyODYuMCAyNDkuMFEyNzYgMjQ3IDI2MyAyNDVRMjE3IDIzMyAxODkuNSAyMDQuNVExNjIgMTc2IDE2MiAxMjhRMTYyIDg3IDE4MS4wIDY2LjVRMjAwIDQ2IDIyNyA0NloiIGZpbGw9IiNmZmZmZmYiLz48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMTY2LDApIiBkPSJNMjMgMFYxMEwzNSAxNFE3MSAyNiA3MSA2NFY1OTlRNzEgNjE5IDYzLjAgNjI5LjVRNTUgNjQwIDM1IDY0NUwyMiA2NDhWNjU4TDIwNSA3MDFMMjE3IDY5MkwyMTMgNTUyVjIxMFEyMTMgMTczIDIxMy41IDEzNi41UTIxNCAxMDAgMjE0IDY0UTIxNCA0NCAyMjIuMCAzMS41UTIzMCAxOSAyNDkgMTNMMjYyIDEwVjBaIiBmaWxsPSIjZmZmZmZmIi8+PHBhdGggdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTQ1MiwwKSIgZD0iTTMzNSAtMThRMjc0IC0xOCAyMTcuNSA0LjBRMTYxIDI2IDExNi41IDY5LjVRNzIgMTEzIDQ2LjAgMTc4LjBRMjAgMjQzIDIwIDMzMFEyMCA0MTYgNDYuMCA0ODEuMFE3MiA1NDYgMTE3LjAgNTg5LjVRMTYyIDYzMyAyMTguNSA2NTUuNVEyNzUgNjc4IDMzNSA2NzhRMzk2IDY3OCA0NTIuNSA2NTYuNVE1MDkgNjM1IDU1My41IDU5MS41UTU5OCA1NDggNjI0LjAgNDgyLjVRNjUwIDQxNyA2NTAgMzMwUTY1MCAyNDUgNjI0LjAgMTc5LjVRNTk4IDExNCA1NTMuNSA3MC41UTUwOSAyNyA0NTIuNSA0LjVRMzk2IC0xOCAzMzUgLTE4Wk0zMzUgM1EzOTAgMyA0MjQuMCAzMi41UTQ1OCA2MiA0NzMuNSAxMzMuNVE0ODkgMjA1IDQ4OSAzMzBRNDg5IDQ1NiA0NzMuNSA1MjcuNVE0NTggNTk5IDQyNC4wIDYyOC41UTM5MCA2NTggMzM1IDY1OFEyODEgNjU4IDI0Ny4wIDYyOC41UTIxMyA1OTkgMTk3LjUgNTI3LjVRMTgyIDQ1NiAxODIgMzMwUTE4MiAyMDUgMTk3LjUgMTMzLjVRMjEzIDYyIDI0Ny4wIDMyLjVRMjgxIDMgMzM1IDNaIiBmaWxsPSIjNmZjMTkxIi8+PHBhdGggdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjEyMiwwKSIgZD0iTTIzNyAtMThRMTgyIC0xOCAxMjUuMCAtNC41UTY4IDkgMzAgMzFMMzUgMTY3SDQ1TDc2IDEwMlE5MCA3NCAxMDYuMCA1Mi41UTEyMiAzMSAxNTAgMTlRMTcwIDkgMTg4LjUgNS41UTIwNyAyIDIzMCAyUTI5MSAyIDMyNi41IDM1LjBRMzYyIDY4IDM2MiAxMjBRMzYyIDE2OSAzMzguMCAxOTYuNVEzMTQgMjI0IDI2MSAyNTBMMjIwIDI2OFExMzQgMzA2IDg1LjUgMzU1LjVRMzcgNDA1IDM3IDQ4N1EzNyA1NDYgNjcuNSA1ODkuMFE5OCA2MzIgMTUyLjUgNjU1LjBRMjA3IDY3OCAyODAgNjc4UTMzMyA2NzggMzgwLjUgNjY0LjBRNDI4IDY1MCA0NjMgNjI2TDQ1NyA1MDZINDQ3TDQwNiA1ODFRMzg5IDYxNiAzNzIuMCA2MzAuNVEzNTUgNjQ1IDMzMyA2NTFRMzIwIDY1NSAzMDkuMCA2NTYuNVEyOTggNjU4IDI4MSA2NThRMjMwIDY1OCAxOTUuMCA2MjguNVExNjAgNTk5IDE2MCA1NDlRMTYwIDQ5OCAxODcuMCA0NjcuNVEyMTQgNDM3IDI2NiA0MTNMMzEyIDM5M1E0MDggMzUxIDQ1MC4wIDMwMy41UTQ5MiAyNTYgNDkyIDE4MVE0OTIgOTMgNDI1LjUgMzcuNVEzNTkgLTE4IDIzNyAtMThaIiBmaWxsPSIjNmZjMTkxIi8+PC9nPjwvc3ZnPg=="/>
 </head>
 <body>
+<!-- Branded loading splash: navy ground + animated Signature-bars mark, shown instantly
+     and faded once the page has loaded (min ~1.3s so the animation plays a cycle). -->
+<div id="an-splash" style="position:fixed;inset:0;z-index:99999;background:#142850;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .45s ease">
+  <div style="width:60px;height:60px;filter:drop-shadow(0 8px 22px rgba(220,100,40,.35))">
+    <svg class="an-anim" width="100%" height="100%" viewBox="0 0 64 64" fill="none" aria-label="DalOS Analytics"><rect class="an-bar" x="14" y="32" width="8.5" height="18" rx="4" fill="#f08a4b"/><rect class="an-bar" x="27.75" y="24" width="8.5" height="26" rx="4" fill="#DC6428"/><rect class="an-bar" x="41.5" y="15" width="8.5" height="35" rx="4" fill="#DC6428"/><circle class="an-dot" cx="45.75" cy="15" r="4.3" fill="#f7c948"/></svg>
+  </div>
+  <div style="font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:700;font-size:22px;letter-spacing:-.3px;color:#fff">Dal<span style="color:#DC6428">OS</span> Analytics</div>
+  <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7f8db0;font-family:'Plus Jakarta Sans',system-ui,sans-serif">Loading…</div>
+</div>
+<script>
+(function(){var sp=document.getElementById('an-splash');if(!sp)return;function done(){var w=Math.max(0,1300-((window.performance&&performance.now)?performance.now():1300));setTimeout(function(){sp.style.opacity='0';setTimeout(function(){if(sp.parentNode)sp.parentNode.removeChild(sp);},480);},w);}if(document.readyState==='complete')done();else window.addEventListener('load',done);})();
+</script>
 
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-left">
   <div class="logo">
-    <div class="logo-icon"><i class="ti ti-chart-bar"></i></div>
+    <div class="logo-icon"><svg viewBox="0 0 64 64" width="100%" height="100%" aria-label="DalOS Analytics"><rect width="64" height="64" rx="14" fill="#142850"/><rect x="14" y="32" width="8.5" height="18" rx="4" fill="#f08a4b"/><rect x="27.75" y="24" width="8.5" height="26" rx="4" fill="#DC6428"/><rect x="41.5" y="15" width="8.5" height="35" rx="4" fill="#DC6428"/><circle cx="45.75" cy="15" r="4.3" fill="#f7c948"/></svg></div>
     <div>
       <span class="logo-name">Dal<span style="color:#DC6428">OS</span> Analytics</span>
       <span class="logo-sub">Business Intelligence Platform</span>
