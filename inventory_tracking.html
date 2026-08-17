@@ -397,6 +397,8 @@ Chart.defaults.plugins.datalabels.display=false;
 Chart.defaults.plugins.legend.labels.usePointStyle=true;
 Chart.defaults.plugins.legend.labels.boxWidth=8;
 Chart.defaults.plugins.legend.labels.font={size:11};
+/* when a chart is in compare mode, its hover tooltip footers the two real periods + exact dates */
+Chart.defaults.plugins.tooltip.callbacks.footer=function(items){ var it=items&&items[0]; var id=it&&it.chart&&it.chart.canvas&&it.chart.canvas.id; var w=id&&CMPWIN[id]; if(!w)return ''; return ['', w.cl+':  '+w.cur.from+' → '+w.cur.to, w.pl+':  '+w.comp.from+' → '+w.comp.to]; };
 
 function setTab(btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b===btn));
@@ -759,7 +761,7 @@ function wireRangeControls(){
 }
 
 /* ================= PER-CHART COMPARE (period-vs-period overlay) ================= */
-const CC={}; var LASTVW=null;
+const CC={}; var LASTVW=null, CMPWIN={};
 function addFilters(b){ if(S.cat.length)b.p_cat=S.cat; if(S.dept.length)b.p_dept=S.dept; if(S.tier.length)b.p_tier=S.tier; if(S.lm.length)b.p_lm=S.lm; if(S.brand.length)b.p_brand=S.brand; if(GQ)b.p_search=GQ; return b; }
 function invFor(from,to,grain){ var b=addFilters({p_from:from,p_to:to,p_grain:grain||'month'}); var k='CMP'+JSON.stringify(b); if(RGCACHE[k])return Promise.resolve(RGCACHE[k]);
   var H={apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'};
@@ -802,6 +804,8 @@ function drawChartCmp(key){
   var sel=document.querySelector('.cmpsel[data-cc="'+key+'"]'); if(sel)sel.style.opacity=.5;
   Promise.all([invFor(cur.from,cur.to,grain),invFor(comp.from,comp.to,grain)]).then(function(r){
     var A=r[0],B=r[1], cl=periodLabel(cur), pl=periodLabel(comp);
+    CMPWIN[meta.cv]={cl:cl,pl:pl,cur:cur,comp:comp};
+    if(sel)sel.title=cl+' ('+cur.from+' → '+cur.to+')   vs   '+pl+' ('+comp.from+' → '+comp.to+')';
     if(meta.fam==='trend'){
       var sa=A.series||[], sb=B.series||[], labels=sa.map(function(x){return bLabel(x.k,A.meta.grain);});
       if(meta.metric==='onhand'){
@@ -835,7 +839,8 @@ function drawChartCmp(key){
   }).catch(function(e){ if(sel)sel.style.opacity=1; console.warn('compare fetch failed',e); });
 }
 function chartCmpOff(key){
-  var meta=CMPMETA[key];
+  var meta=CMPMETA[key]; delete CMPWIN[meta.cv];
+  var s0=document.querySelector('.cmpsel[data-cc="'+key+'"]'); if(s0)s0.title='';
   if(meta.fam==='trend'){ setChartGrain(key, CG[key]||'month'); }
   else { var vw=LASTVW||buildFullVW(); if(key==='iocat')drawIoCat(vw); else if(key==='catturn')drawCatTurn(vw); else if(key==='catoh')drawBreakdowns(vw); else drawMovement(vw); }
 }
