@@ -399,6 +399,8 @@ Chart.defaults.plugins.legend.labels.boxWidth=8;
 Chart.defaults.plugins.legend.labels.font={size:11};
 /* when a chart is in compare mode, its hover tooltip footers the two real periods + exact dates */
 Chart.defaults.plugins.tooltip.callbacks.footer=function(items){ var it=items&&items[0]; var id=it&&it.chart&&it.chart.canvas&&it.chart.canvas.id; var w=id&&CMPWIN[id]; if(!w)return ''; return ['', w.cl+':  '+w.cur.from+' → '+w.cur.to, w.pl+':  '+w.comp.from+' → '+w.comp.to]; };
+/* title = the hovered bar's OWN bucket date (current vs comparison sit at the same x but are different actual periods) */
+Chart.defaults.plugins.tooltip.callbacks.title=function(items){ var it=items&&items[0]; if(!it)return ''; var w=it.chart&&CMPWIN[it.chart.canvas.id]; if(w&&w.keysByDs&&w.keysByDs[it.datasetIndex]){ var k=w.keysByDs[it.datasetIndex][it.dataIndex]; if(k)return bLabelYr(k,w.grain); } return it.label; };
 
 function setTab(btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b===btn));
@@ -784,6 +786,8 @@ function periodLabel(win){
   if(days<=8) return 'w/o '+(+fp[2])+' '+MON[(+fp[1])-1]+' '+fp[0].slice(2);
   return (+fp[2])+' '+MON[(+fp[1])-1]+'–'+(+tp[2])+' '+MON[(+tp[1])-1]+' '+tp[0].slice(2);
 }
+/* bucket label WITH year — for compare tooltips so each bar shows its own actual period */
+function bLabelYr(k,grain){ var p=(''+k).split('-'); if(grain==='month')return MON[(+p[1])-1]+' '+p[0]; var mo=MON[(+p[1])-1]; return (grain==='week'?'w/o ':'')+(+p[2])+' '+mo+' '+p[0]; }
 var CMPMETA={
   season:{cv:'c-season',fam:'trend',metric:'onhand'},
   iomonth:{cv:'c-io-month',fam:'trend',metric:'io'},
@@ -808,6 +812,9 @@ function drawChartCmp(key){
     if(sel)sel.title=cl+' ('+cur.from+' → '+cur.to+')   vs   '+pl+' ('+comp.from+' → '+comp.to+')';
     if(meta.fam==='trend'){
       var sa=A.series||[], sb=B.series||[], labels=sa.map(function(x){return bLabel(x.k,A.meta.grain);});
+      var curKeys=sa.map(function(x){return x.k;}), compKeys=sb.map(function(x){return x.k;});
+      CMPWIN[meta.cv].grain=A.meta.grain;
+      CMPWIN[meta.cv].keysByDs = (meta.metric==='onhand') ? [curKeys,compKeys] : [curKeys,curKeys,compKeys,compKeys];
       if(meta.metric==='onhand'){
         barChart(meta.cv,labels,[
           {label:cl,data:sa.map(function(x){return +num(x.onhand).toFixed(1);}),backgroundColor:NAVY,borderRadius:3,datalabels:dcmp()},
