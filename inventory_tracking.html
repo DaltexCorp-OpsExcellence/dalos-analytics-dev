@@ -674,15 +674,24 @@ function drawMvOut(vw){ var q=isQ('mvout'), src=q?vw.outByCatQ:vw.outByCat;
   barChart('c-mv-out',CAT,[{label:'Outbound',data:data,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#fff',q?(v=>fmtQ(v)):(v=>v.toFixed(1)))}]);
 }
 function drawMovement(vw){ drawMvMonth(vw); drawMvIn(vw); drawMvOut(vw); }
-function drawBrandOh(vw){ var q=isQ('brandoh'), src=q?vw.onhandByBrandQ:vw.onhandByBrand;
-  const oh=Object.entries(src).filter(([b,v])=>b!=='(Unbranded)'&&b!==''&&v>0).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  const data=oh.map(e=>q?Math.round(+e[1]):+(+e[1]).toFixed(1));
-  barChart('c-brand-oh',oh.map(e=>e[0]),[{label:'On-hand',data:data,backgroundColor:NAVY,borderRadius:4,datalabels:q?dlh(v=>fmtQ(v)):dlh(v=>v.toFixed(1))}],
+/* Brand set is ALWAYS the top 12 brands by on-hand EGP value; the metric toggle only
+   changes which value (EGP vs that brand's qty) is shown. Bars sorted by displayed metric. */
+function brandTop12(egpObj,qtyObj,q){
+  var top=Object.entries(egpObj||{}).filter(function(e){return e[0]&&e[0]!=='(Unbranded)'&&e[1]>0;})
+            .sort(function(a,b){return b[1]-a[1];}).slice(0,12).map(function(e){return e[0];});
+  var rows=top.map(function(b){return {b:b,egp:num(egpObj[b]),qty:num(qtyObj&&qtyObj[b])};});
+  rows.sort(function(a,b){return q?(b.qty-a.qty):(b.egp-a.egp);});
+  return rows;
+}
+function drawBrandOh(vw){ var q=isQ('brandoh');
+  var rows=brandTop12(vw.onhandByBrand,vw.onhandByBrandQ,q);
+  var data=rows.map(function(r){return q?Math.round(r.qty):+(+r.egp).toFixed(1);});
+  barChart('c-brand-oh',rows.map(function(r){return r.b;}),[{label:'On-hand',data:data,backgroundColor:NAVY,borderRadius:4,datalabels:q?dlh(function(v){return fmtQ(v);}):dlh(function(v){return v.toFixed(1);})}],
     {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
-  const grand=oh.reduce((s,e)=>s+e[1],0)||1;
-  const col=q?'Units':'M EGP', numFmt=q?(v=>fmtQ(v)):(v=>(+v).toFixed(1));
-  let html='<tr><th>#</th><th>Brand</th><th class="n">'+col+'</th><th class="n">Share</th></tr>';
-  oh.forEach((e,i)=>{html+=`<tr><td>${i+1}</td><td class="b">${e[0]}</td><td class="n">${numFmt(e[1])}</td><td class="n">${(100*e[1]/grand).toFixed(1)}%</td></tr>`;});
+  var grand=rows.reduce(function(s,r){return s+(q?r.qty:r.egp);},0)||1;
+  var col=q?'Units':'M EGP', numFmt=q?function(v){return fmtQ(v);}:function(v){return (+v).toFixed(1);};
+  var html='<tr><th>#</th><th>Brand</th><th class="n">'+col+'</th><th class="n">Share</th></tr>';
+  rows.forEach(function(r,i){ var v=q?r.qty:r.egp; html+='<tr><td>'+(i+1)+'</td><td class="b">'+r.b+'</td><td class="n">'+numFmt(v)+'</td><td class="n">'+(100*v/grand).toFixed(1)+'%</td></tr>';});
   document.getElementById('brandTable').innerHTML=html;
 }
 function drawBrandIss(vw){ var q=isQ('brandiss'), src=q?vw.issueByBrandQ:vw.issueByBrand;
@@ -758,7 +767,7 @@ function updateTitles(vw){
   setTitle('h-catoh','On-Hand Value by Category ('+uLbl('catoh')+')');
   setTitle('h-site','On-Hand Value by Site ('+uLbl('site')+')');
   setTitle('h-heat','Stock Value Heat Map — Location × Category ('+uLbl('heat')+')');
-  setTitle('h-brandoh','Top 12 Brands by On-Hand Value ('+uLbl('brandoh')+')');
+  setTitle('h-brandoh',isQ('brandoh')?'On-Hand Qty of Top 12 Brands by Value (units)':'Top 12 Brands by On-Hand Value (M EGP)');
   setTitle('h-statusval','Value by Movement Status ('+uLbl('health')+')');
 }
 function renderWindow(vw){
@@ -1094,17 +1103,8 @@ barChart('c-mv-out',CAT,[{label:'Outbound',data:CAT.map(c=>+Math.abs(DATA.outbou
 paintHealth(DATA.statusVal,DATA.statusCnt);
 
 /* ===== BY BRAND ===== */
-(()=>{ if(typeof BRAND==='undefined')return;
-  const oh=Object.entries(BRAND.onhandByBrand).filter(([b,v])=>b!=='(Unbranded)'&&b!=='' &&v>0).slice(0,12);
-  barChart('c-brand-oh',oh.map(e=>e[0]),[{label:'On-hand',data:oh.map(e=>+e[1].toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:dlh(v=>v.toFixed(1))}],
-    {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
-  const iss=Object.entries(BRAND.issueSeasonByBrand).filter(([b,v])=>b!=='(Unbranded)'&&b!==''&&v>0).slice(0,10);
-  barChart('c-brand-iss',iss.map(e=>e[0]),[{label:'Issues',data:iss.map(e=>+(e[1]/1e6).toFixed(2)),backgroundColor:ORANGE,borderRadius:4,datalabels:dlh(v=>v.toFixed(2))}],
-    {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
-  const grand=oh.reduce((s,e)=>s+e[1],0);
-  let html='<tr><th>#</th><th>Brand</th><th class="n">M EGP</th><th class="n">Share</th></tr>';
-  oh.forEach((e,i)=>{html+=`<tr><td>${i+1}</td><td class="b">${e[0]}</td><td class="n">${e[1].toFixed(1)}</td><td class="n">${(100*e[1]/grand).toFixed(1)}%</td></tr>`;});
-  document.getElementById('brandTable').innerHTML=html;
+(()=>{ if(typeof BRAND==='undefined'||!BRAND.onhandByBrand)return;
+  var vw=buildFullVW(); drawBrandOh(vw); drawBrandIss(vw);   /* top 12 by EGP value, sorted, table included */
 })();
 
 /* ===== GLOBAL FILTER RECOMPUTE (KPIs + category + brand + health from filtered items) ===== */
@@ -1141,10 +1141,10 @@ function renderFiltered(rows){
   const qc=isQ('catoh');
   barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>qc?Math.round(byCatQ[c]):+M(byCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:qc?dlv(v=>fmtQ(v)):dlv(v=>v.toFixed(1)+'M')}]);
   donut('c-cat-share',CAT,CAT.map(c=>byCat[c]),CAT.map(c=>CATCOLOR[c]));
-  const bb={},bbq={}; rows.forEach(i=>{ if(i.b&&i.b!=='(Unbranded)'){bb[i.b]=(bb[i.b]||0)+i.v;bbq[i.b]=(bbq[i.b]||0)+num(i.q);} });
+  const bbM={},bbq={}; rows.forEach(i=>{ if(i.b&&i.b!=='(Unbranded)'){bbM[i.b]=(bbM[i.b]||0)+M(i.v);bbq[i.b]=(bbq[i.b]||0)+num(i.q);} });
   const qb=isQ('brandoh');
-  const topB=Object.entries(qb?bbq:bb).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  barChart('c-brand-oh',topB.map(e=>e[0]),[{label:'On-hand',data:topB.map(e=>qb?Math.round(e[1]):+M(e[1]).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:qb?dlh(v=>fmtQ(v)):dlh(v=>v.toFixed(1))}],
+  const rowsB=brandTop12(bbM,bbq,qb);   /* set = top 12 by EGP value, then show selected metric */
+  barChart('c-brand-oh',rowsB.map(r=>r.b),[{label:'On-hand',data:rowsB.map(r=>qb?Math.round(r.qty):+(+r.egp).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:qb?dlh(v=>fmtQ(v)):dlh(v=>v.toFixed(1))}],
     {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const TS=['Fast','Normal','Slow','Dead'];
   const tv={},tcnt={},tq={}; TS.forEach(t=>{tv[t]=0;tcnt[t]=0;tq[t]=0;}); rows.forEach(i=>{ if(tv[i.t]!=null){tv[i.t]+=i.v;tcnt[i.t]++;tq[i.t]+=num(i.q);} });
