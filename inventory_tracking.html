@@ -970,11 +970,13 @@ paintHealth(DATA.statusVal,DATA.statusCnt);
 const ASOF_K=(()=>{var a=((DATA.meta&&DATA.meta.asOf)||'2026-08-15').split('-');return (+a[0])*12+(+a[1]);})();
 function lmk(lm){ if(!lm)return -1; const p=(''+lm).split('-'); return (+p[0])*12+(+p[1]); }
 function renderKPIs(rows){
-  const onh=rows.reduce((s,i)=>s+i.v,0)/1e6;
-  const sku=rows.filter(i=>i.q>0).length;
-  const active=rows.filter(i=>i.q>0&&lmk(i.lm)>=ASOF_K-12).length;
-  const spv=rows.filter(i=>i.c==='Sp').reduce((s,i)=>s+i.v,0)/1e6, spD=onh?Math.round(100*spv/onh):0;
-  const inv=rows.filter(i=>i.c==='Invest').reduce((s,i)=>s+i.v,0)/1e6;
+  let onh=rows.reduce((s,i)=>s+i.v,0)/1e6;
+  let sku=rows.filter(i=>i.q>0).length;
+  let active=rows.filter(i=>i.q>0&&lmk(i.lm)>=ASOF_K-12).length;
+  const spv=rows.filter(i=>i.c==='Sp').reduce((s,i)=>s+i.v,0)/1e6; let spD=onh?Math.round(100*spv/onh):0;
+  let inv=rows.filter(i=>i.c==='Invest').reduce((s,i)=>s+i.v,0)/1e6;
+  /* unfiltered view: use the server's authoritative KPIs (the inv_items list can differ by a few rows) */
+  if(!anyActive()){ onh=DATA.kpi.onhandTotal; sku=DATA.kpi.totalSku; active=DATA.kpi.activeItems; spD=DATA.kpi.spDominance; inv=num(DATA.onhandByCat&&DATA.onhandByCat.Invest); }
   const turnover=(seasonOut/DATA.kpi.onhandTotal);
   const kpis=[
     {v:'EGP '+onh.toFixed(1)+'M',l:'Total On-Hand Value',s:'filtered',c:''},
