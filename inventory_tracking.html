@@ -395,7 +395,8 @@ const CAT = ['Sp','IRR','Oil','Invest'];
 const CATCOLOR = {Sp:'#142850',IRR:'#2563eb',Oil:'#d97706',Invest:'#6d28d9'};
 const NAVY='#142850', ORANGE='#DC6428', BLUE='#2563eb', SLATE='#94a3b8', GREEN='#16a34a', RED='#dc2626';
 const fmtM = v => (v>=0?'':'-')+Math.abs(v).toLocaleString('en',{maximumFractionDigits:1});
-const seasonMonths = ['2025-10','2025-11','2025-12','2026-01','2026-02','2026-03','2026-04','2026-05','2026-06','2026-07'];
+function monthRangeYM(startYM,endYM){ var o=[],a=startYM.split('-'),b=endYM.split('-'),y=+a[0],m=+a[1],ey=+b[0],em=+b[1]; while(y<ey||(y===ey&&m<=em)){ o.push(y+'-'+String(m).padStart(2,'0')); m++; if(m>12){m=1;y++;} } return o; }
+const seasonMonths = monthRangeYM(((DATA.meta&&DATA.meta.seasonStart)||'2025-10'), (((DATA.meta&&DATA.meta.asOf)||'2026-08-15').slice(0,7)));
 const mLabel = m => ({'2025-10':'Oct-25','2025-11':'Nov-25','2025-12':'Dec-25','2026-01':'Jan-26','2026-02':'Feb-26','2026-03':'Mar-26','2026-04':'Apr-26','2026-05':'May-26','2026-06':'Jun-26','2026-07':'Jul-26'}[m]||m);
 
 Chart.register(ChartDataLabels);
