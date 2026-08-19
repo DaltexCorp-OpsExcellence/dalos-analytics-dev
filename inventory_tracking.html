@@ -399,7 +399,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
 
     <!-- target-days control -->
     <div class="rail" id="abcControl" style="margin-bottom:12px">
-      <div class="fl"><label>Target coverage (days)</label><input type="number" id="abcDays" class="fsel" style="width:120px" min="1" step="30" value="720"></div>
+      <div class="fl"><label>Target coverage (months)</label><input type="number" id="abcDays" class="fsel" style="width:120px" min="1" step="1" value="24"></div>
       <button class="freset" id="abcApply"><i class="ti ti-check" style="font-size:13px"></i>Apply</button>
       <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-calendar-stats" style="color:var(--orange);font-size:13px"></i><b id="abcAsOf" style="color:var(--navy)">—</b></span></div>
     </div>
@@ -446,7 +446,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <!-- service-level / lead control -->
     <div class="rail" id="roControl" style="margin-bottom:12px">
       <div class="fl"><label>Service level</label><select id="roSvc" class="fsel" style="width:120px"><option value="1.2816">90%</option><option value="1.6449" selected>95%</option><option value="1.9600">97.5%</option><option value="2.3263">99%</option></select></div>
-      <div class="fl"><label>Fallback lead time (days)</label><input type="number" id="roLead" class="fsel" style="width:150px" min="1" step="1" value="60"></div>
+      <div class="fl"><label>Fallback lead time (months)</label><input type="number" id="roLead" class="fsel" style="width:150px" min="0.5" step="0.5" value="2"></div>
       <button class="freset" id="roApply"><i class="ti ti-check" style="font-size:13px"></i>Apply</button>
       <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-calendar-stats" style="color:var(--orange);font-size:13px"></i><b id="roAsOf" style="color:var(--navy)">—</b></span></div>
     </div>
@@ -1119,7 +1119,7 @@ function wireMetric(){
 }
 
 /* ================= ABC ANALYSIS (lazy-loaded tab) ================= */
-var ABC=null, ABC_DAYS=720, ABC_LOADED=false;
+var ABC=null, ABC_DAYS=730, ABC_LOADED=false;  /* 730 days = 24 months */
 const ABC_CAP=400; const ABCF={q:'',cls:'',cat:''};
 const ABC_CLSCOL={A:NAVY,B:BLUE,C:RED};       /* A navy · B teal/blue · C red */
 const ABC_TINT={A:'#dcfce7',B:'#fef3c7',C:'#fee2e2'}, ABC_TXT={A:'#166534',B:'#92400e',C:'#991b1b'};
@@ -1131,9 +1131,9 @@ function abcRpc(days){
 }
 function openABC(){ if(ABC_LOADED)return; ABC_LOADED=true; loadABC(ABC_DAYS); }   /* fetch once on first open */
 function applyABC(){                                                               /* target-days refetch */
-  var inp=document.getElementById('abcDays'); var d=inp?parseInt(inp.value,10):720;
-  if(!d||d<1){ d=720; if(inp)inp.value=720; }
-  ABC_LOADED=true; loadABC(d);
+  var inp=document.getElementById('abcDays'); var mo=inp?parseFloat(inp.value):24;
+  if(!mo||mo<1){ mo=24; if(inp)inp.value=24; }
+  ABC_LOADED=true; loadABC(Math.round(mo*(365/12)));   /* months -> days for the RPC */
 }
 function loadABC(days){
   var body=document.getElementById('abcBody'), ld=document.getElementById('abcLoading'), er=document.getElementById('abcError');
@@ -1141,7 +1141,7 @@ function loadABC(days){
   abcRpc(days).then(function(d){
     if(!d||!d.totals)throw new Error((d&&d.message)||'no data');
     ABC=d; ABC_DAYS=(d.meta&&d.meta.targetDays)||days;
-    var inp=document.getElementById('abcDays'); if(inp&&d.meta&&d.meta.targetDays)inp.value=d.meta.targetDays;
+    var inp=document.getElementById('abcDays'); if(inp&&d.meta&&d.meta.targetDays)inp.value=Math.round(d.meta.targetDays/(365/12)*10)/10;  /* days -> months */
     if(ld)ld.style.display='none'; if(body)body.style.display='block';
     renderABC();
   }).catch(function(e){
@@ -1225,9 +1225,9 @@ function renderAbcItems(){
   var total=f.length, shown=f.slice(0,ABC_CAP);
   var cE=document.getElementById('abcItemCount'); if(cE)cE.textContent=total.toLocaleString();
   var nE=document.getElementById('abcItemNote'); if(nE)nE.textContent=total>ABC_CAP?('showing top '+ABC_CAP+' of '+total.toLocaleString()+' by value'):(total.toLocaleString()+' items');
-  var h='<tr><th>Item</th><th>Name</th><th>Cat</th><th>Class</th><th class="num">On-Hand Qty</th><th class="num">Value (M)</th><th class="num">Unit Value</th><th class="num">FY24</th><th class="num">FY25</th><th class="num">FY26</th><th class="num">Max/yr</th><th class="num">Coverage (d)</th><th class="num">Target Qty</th><th class="num">Over Qty</th><th class="num">Over Value (M)</th></tr>';
+  var h='<tr><th>Item</th><th>Name</th><th>Cat</th><th>Class</th><th class="num">On-Hand Qty</th><th class="num">Value (M)</th><th class="num">Unit Value</th><th class="num">FY24</th><th class="num">FY25</th><th class="num">FY26</th><th class="num">Max/yr</th><th class="num">Months of Stock</th><th class="num">Target Qty</th><th class="num">Over Qty</th><th class="num">Over Value (M)</th></tr>';
   shown.forEach(function(i){
-    var cov=(i.cov==null)?'∞':Math.round(num(i.cov)).toLocaleString();
+    var cov=(i.cov==null)?'∞':(num(i.cov)/(365/12)).toFixed(1);   /* coverage days -> months of stock */
     h+='<tr><td class="num">'+i.n+'</td>'
       +'<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+fesc(i.nm||'')+'">'+fesc(i.nm||'')+'</td>'
       +'<td>'+(i.c||'')+'</td>'
@@ -1255,7 +1255,7 @@ function wireABC(){
 }
 
 /* ================= REORDER & SAFETY STOCK (lazy-loaded tab) ================= */
-var RO=null, RO_Z=1.6449, RO_LEAD=60, RO_LOADED=false;
+var RO=null, RO_Z=1.6449, RO_LEAD=61, RO_LOADED=false;  /* RO_LEAD in DAYS; 61 ≈ 2 months */
 const RO_CAP=400; const ROF={q:'',cat:'',st:''};
 const RO_SVCPCT={'1.2816':'90','1.6449':'95','1.9600':'97.5','2.3263':'99'};   /* Z -> service level % label */
 const RO_STCOL={Reorder:RED,OK:GREEN};                                          /* status badge colors */
@@ -1269,9 +1269,9 @@ function openReorder(){ if(RO_LOADED)return; RO_LOADED=true; loadReorder(RO_Z,RO
 function applyReorder(){                                                                     /* service/lead refetch */
   var sv=document.getElementById('roSvc'); var z=sv?parseFloat(sv.value):1.6449;
   if(!z||z<=0){ z=1.6449; if(sv)sv.value='1.6449'; }
-  var ll=document.getElementById('roLead'); var lead=ll?parseInt(ll.value,10):60;
-  if(!lead||lead<1){ lead=60; if(ll)ll.value=60; }
-  RO_LOADED=true; loadReorder(z,lead);
+  var ll=document.getElementById('roLead'); var mo=ll?parseFloat(ll.value):2;
+  if(!mo||mo<0.5){ mo=2; if(ll)ll.value=2; }
+  RO_LOADED=true; loadReorder(z,Math.round(mo*(365/12)));   /* months -> days for the RPC */
 }
 function loadReorder(z,lead){
   var body=document.getElementById('roBody'), ld=document.getElementById('roLoading'), er=document.getElementById('roError');
@@ -1279,6 +1279,7 @@ function loadReorder(z,lead){
   roRpc(z,lead).then(function(d){
     if(!d||!d.totals)throw new Error((d&&d.message)||'no data');
     RO=d; RO_Z=(d.meta&&d.meta.z)||z; RO_LEAD=lead;
+    var ll=document.getElementById('roLead'); if(ll)ll.value=Math.round(RO_LEAD/(365/12)*10)/10;  /* days -> months */
     if(ld)ld.style.display='none'; if(body)body.style.display='block';
     renderReorder();
   }).catch(function(e){
@@ -1291,7 +1292,7 @@ function renderReorder(){
   if(!RO)return;
   var pct=RO_SVCPCT[''+RO_Z]||((RO.meta&&RO.meta.z)?(''+RO.meta.z):'—');
   var as=document.getElementById('roAsOf');
-  if(as)as.textContent=((RO.meta&&RO.meta.asOf)?('as of '+RO.meta.asOf+' · '):'')+'service '+pct+'% · lead est. from receipts (fallback '+RO_LEAD+' d)';
+  if(as)as.textContent=((RO.meta&&RO.meta.asOf)?('as of '+RO.meta.asOf+' · '):'')+'service '+pct+'% · lead est. from receipts (fallback '+(RO_LEAD/(365/12)).toFixed(1)+' mo)';
   renderRoKpis(); renderRoCharts(); renderRoItems();
 }
 function roByCat(arr){ var o={}; (arr||[]).forEach(function(r){o[r.cat]=r;}); return o; }
@@ -1327,7 +1328,7 @@ function renderRoItems(){
   var total=f.length, shown=f.slice(0,RO_CAP);
   var cE=document.getElementById('roItemCount'); if(cE)cE.textContent=total.toLocaleString();
   var nE=document.getElementById('roItemNote'); if(nE)nE.textContent=total>RO_CAP?('showing top '+RO_CAP+' of '+total.toLocaleString()+' (reorder-now first)'):(total.toLocaleString()+' items');
-  var h='<tr><th>Item</th><th>Name</th><th>Cat</th><th class="num">On-Hand Qty</th><th class="num">Avg Monthly Demand</th><th class="num">σ (monthly)</th><th class="num">Lead (days)</th><th class="num">Safety Stock</th><th class="num">Reorder Point</th><th>On-Hand vs ROP</th><th class="num">SS Value (M)</th></tr>';
+  var h='<tr><th>Item</th><th>Name</th><th>Cat</th><th class="num">On-Hand Qty</th><th class="num">Avg Monthly Demand</th><th class="num">σ (monthly)</th><th class="num">Lead (months)</th><th class="num">Safety Stock</th><th class="num">Reorder Point</th><th>On-Hand vs ROP</th><th class="num">SS Value (M)</th></tr>';
   shown.forEach(function(i){
     var stLbl=(i.st==='Reorder')?'Reorder':'OK';
     h+='<tr><td class="num">'+i.n+'</td>'
@@ -1336,7 +1337,7 @@ function renderRoItems(){
       +'<td class="num">'+Math.round(num(i.q)).toLocaleString()+'</td>'
       +'<td class="num">'+num(i.dmo).toLocaleString('en',{maximumFractionDigits:1})+'</td>'
       +'<td class="num">'+num(i.sig).toLocaleString('en',{maximumFractionDigits:1})+'</td>'
-      +'<td class="num">'+Math.round(num(i.ld)).toLocaleString()+'</td>'
+      +'<td class="num">'+(num(i.ld)/(365/12)).toFixed(1)+'</td>'
       +'<td class="num">'+Math.round(num(i.ss)).toLocaleString()+'</td>'
       +'<td class="num">'+Math.round(num(i.rop)).toLocaleString()+'</td>'
       +'<td><span class="tier-pill" style="background:'+(RO_STCOL[i.st]||SLATE)+'">'+stLbl+'</span></td>'
