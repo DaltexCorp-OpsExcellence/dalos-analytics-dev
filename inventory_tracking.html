@@ -317,7 +317,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
       <div class="card"><h3><i class="ti ti-building-factory"></i>On-Hand by Department (M EGP)</h3><div class="chart-box sm"><canvas id="c-exp-dept"></canvas></div></div>
     </div>
     <div class="card" style="margin-bottom:14px"><h3><i class="ti ti-stack-2"></i>Stock Tier by Category (M EGP)</h3><div class="chart-box"><canvas id="c-exp-tier"></canvas></div></div>
-    <div class="card"><h3><i class="ti ti-list-search"></i><span id="itCount">0</span> items <span style="font-weight:400;color:var(--text3);font-size:11px">· click a bar above to filter · showing top 200 by value</span></h3>
+    <div class="card"><h3 style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-list-search"></i><span id="itCount">0</span> items <span style="font-weight:400;color:var(--text3);font-size:11px">· click a bar above to filter · top 200 by value</span></span><span style="display:inline-flex;align-items:center;gap:6px"><div class="gsearch" style="min-width:180px;max-width:240px;padding:6px 10px"><i class="ti ti-search" style="color:var(--text3);font-size:14px"></i><input id="itemSearch" placeholder="Search items…"></div><button class="freset" id="itemSearchBtn"><i class="ti ti-search" style="font-size:13px"></i>Search</button><button class="freset" id="itemSearchClear" title="Clear" style="background:var(--white);color:var(--text2)"><i class="ti ti-x" style="font-size:13px"></i></button></span></h3>
       <div style="overflow:auto;max-height:540px"><table class="itable" id="itemTable"></table></div>
     </div>
   </div>
@@ -1552,6 +1552,14 @@ function renderX(){
 }
 (function(){ const sb=document.getElementById('fSearch'); if(sb){ sb.oninput=e=>{GQ=e.target.value.trim().toLowerCase();}; sb.onkeydown=e=>{if(e.key==='Enter')applyView();}; }
   document.addEventListener('click',e=>{if(!e.target.closest('.ms'))document.querySelectorAll('.ms-dd').forEach(d=>d.classList.remove('open'));});
+  /* Explorer items-section search (client-side filter of the item list) */
+  (function(){ var si=document.getElementById('itemSearch'), sb=document.getElementById('itemSearchBtn'), sc=document.getElementById('itemSearchClear');
+    var g=document.getElementById('fSearch');
+    function runIS(){ GQ=si?si.value.trim().toLowerCase():''; if(g)g.value=si?si.value:''; renderX(); }
+    if(sb)sb.onclick=runIS;
+    if(si)si.onkeydown=function(e){ if(e.key==='Enter')runIS(); };
+    if(sc)sc.onclick=function(){ if(si)si.value=''; GQ=''; if(g)g.value=''; renderX(); };
+  })();
   wireRangeControls(); wireCompare(); wireMetric(); wireABC(); wireReorder(); buildFilters(); renderX();
 })();
 
