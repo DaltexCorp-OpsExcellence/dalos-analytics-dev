@@ -267,7 +267,6 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <button class="tab-btn" data-tab="site" onclick="setTab(this)"><i class="ti ti-map-pin"></i>By Site</button>
     <button class="tab-btn" data-tab="brand" onclick="setTab(this)"><i class="ti ti-tags"></i>By Brand</button>
     <button class="tab-btn" data-tab="movement" onclick="setTab(this)"><i class="ti ti-arrows-exchange"></i>Movement</button>
-    <button class="tab-btn" data-tab="forecast" onclick="setTab(this)"><i class="ti ti-chart-line"></i>Forecast<span class="soon">soon</span></button>
     <button class="tab-btn" data-tab="health" onclick="setTab(this)"><i class="ti ti-heartbeat"></i>Health</button>
     <button class="tab-btn" data-tab="abc" onclick="setTab(this)"><i class="ti ti-abc"></i>ABC Analysis</button>
     <button class="tab-btn" data-tab="reorder" onclick="setTab(this)"><i class="ti ti-refresh-alert"></i>Reorder &amp; Safety Stock</button>
@@ -374,13 +373,6 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
       <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-down-circle" style="color:var(--green)"></i><span id="h-mvin">Inbound by Category — Season (M EGP)</span></span><span class="h3ctl"><span class="mtoggle" data-mchart="mvin"><button type="button" data-m="v" class="on">EGP</button><button type="button" data-m="q">Qty</button></span><select class="cmpsel" data-cc="mvin"><option value="off">Compare…</option><option value="ly">vs same period last year</option></select></span></h3><div class="chart-box sm"><canvas id="c-mv-in"></canvas></div></div>
       <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-up-circle" style="color:var(--red)"></i><span id="h-mvout">Outbound by Category — Season (M EGP)</span></span><span class="h3ctl"><span class="mtoggle" data-mchart="mvout"><button type="button" data-m="v" class="on">EGP</button><button type="button" data-m="q">Qty</button></span><select class="cmpsel" data-cc="mvout"><option value="off">Compare…</option><option value="ly">vs same period last year</option></select></span></h3><div class="chart-box sm"><canvas id="c-mv-out"></canvas></div></div>
     </div>
-  </div>
-
-  <!-- FORECAST -->
-  <div class="panel" id="forecast">
-    <div class="sec-title">Forecast</div>
-    <div class="sec-sub">Expected stock, dead / over stock, months of stock</div>
-    <div class="stub"><i class="ti ti-chart-line"></i><b>Forecast model — next iteration</b>Months-of-Stock, expected/dead/over-stock and consumption projections build on the same ledger. I'll wire these after you sign off on the core views.</div>
   </div>
 
   <!-- HEALTH -->
