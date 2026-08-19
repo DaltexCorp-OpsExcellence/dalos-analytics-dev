@@ -155,7 +155,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
 .infowrap{position:relative;display:inline-block}
 .infobtn{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border);background:var(--white);color:var(--text2);font-size:10px;font-weight:800;cursor:pointer;line-height:1;vertical-align:middle;margin-left:4px;padding:0;font-family:Georgia,serif;font-style:italic}
 .infobtn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
-.infopop{position:absolute;top:calc(100% + 7px);left:0;z-index:60;width:310px;max-width:78vw;background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 26px rgba(20,40,80,.16);padding:13px 15px;font-size:12px;line-height:1.55;color:var(--text2);font-weight:400;display:none;text-align:left;white-space:normal;text-transform:none;letter-spacing:normal}
+.infopop{position:fixed;z-index:9999;width:310px;max-width:calc(100vw - 24px);background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 26px rgba(20,40,80,.22);padding:13px 15px;font-size:12px;line-height:1.55;color:var(--text2);font-weight:400;display:none;text-align:left;white-space:normal;text-transform:none;letter-spacing:normal}
 .infopop.open{display:block}
 .infopop h5{font-size:12.5px;font-weight:800;color:var(--navy);margin:0 0 7px}
 .infopop p{margin:0 0 7px}.infopop p:last-child{margin-bottom:0}
@@ -522,13 +522,23 @@ function setTab(btn){
   if(t==='abc')openABC();
   if(t==='reorder')openReorder();
 }
-/* clickable ⓘ definition popovers */
-function toggleInfo(btn,ev){ if(ev)ev.stopPropagation();
-  var pop=btn.nextElementSibling, open=pop.classList.contains('open');
-  document.querySelectorAll('.infopop.open').forEach(function(p){p.classList.remove('open');});
-  if(!open)pop.classList.add('open');
+/* clickable ⓘ definition popovers — position:fixed near the icon so no parent can clip it */
+function closeInfo(){ document.querySelectorAll('.infopop.open').forEach(function(p){p.classList.remove('open');}); }
+function toggleInfo(btn,ev){ if(ev){ev.stopPropagation();ev.preventDefault();}
+  var wrap=btn.closest('.infowrap'); var pop=wrap&&wrap.querySelector('.infopop'); if(!pop)return;
+  var isOpen=pop.classList.contains('open'); closeInfo();
+  if(!isOpen){
+    var r=btn.getBoundingClientRect();
+    var w=Math.min(310, window.innerWidth-24);
+    pop.style.width=w+'px';
+    pop.style.left=Math.max(12, Math.min(r.left, window.innerWidth-w-12))+'px';
+    pop.style.top=Math.min(r.bottom+6, window.innerHeight-12)+'px';
+    pop.classList.add('open');
+  }
 }
-document.addEventListener('click',function(e){ if(!e.target.closest('.infowrap'))document.querySelectorAll('.infopop.open').forEach(function(p){p.classList.remove('open');}); });
+document.addEventListener('click',function(e){ if(!e.target.closest('.infowrap'))closeInfo(); });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeInfo(); });
+window.addEventListener('scroll',closeInfo,true);
 
 /* ---- snapshot ---- */
 document.getElementById('s-onhand').textContent='EGP '+DATA.kpi.onhandTotal+'M';
