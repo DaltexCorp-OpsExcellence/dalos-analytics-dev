@@ -208,11 +208,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     <div class="logo"><span class="logo-name" style="color:#fff">Dal<span style="color:#DC6428">OS</span> Analytics</span></div>
     <button class="nd-close" onclick="closeNav()"><i class="ti ti-x"></i></button>
   </div>
-  <div class="nd-search"><i class="ti ti-search"></i><input id="nd-q" placeholder="Search dashboards…" oninput="renderNav()"></div>
-  <div class="nd-tabbar">
-    <button class="nd-tab on" id="tab-all" onclick="setNavTab('all')">All dashboards</button>
-    <button class="nd-tab" id="tab-fav" onclick="setNavTab('fav')"><i class="ti ti-star" style="font-size:12px"></i> Favorites</button>
-  </div>
   <div class="nd-body" id="nd-body"></div>
   <div class="nd-foot">
     <button class="nd-btn admin" onclick="openWizard()"><i class="ti ti-shield-lock" style="font-size:15px"></i>Manage access<span class="dot">2</span></button>
@@ -307,47 +302,22 @@ function renderSample(){
   }).join('');
 }
 
-// ── left nav drawer ──
-let NAVTAB='all';
+// ── left nav drawer (Favorites only) ──
 function openNav(){document.getElementById('navdrawer').classList.add('open');document.getElementById('nav-overlay').classList.add('open');renderNav();}
 function closeNav(){document.getElementById('navdrawer').classList.remove('open');document.getElementById('nav-overlay').classList.remove('open');}
-function setNavTab(t){NAVTAB=t;document.getElementById('tab-all').classList.toggle('on',t==='all');document.getElementById('tab-fav').classList.toggle('on',t==='fav');renderNav();}
-const OPEN_G=new Set(['grapes']);
-function toggleG(k){OPEN_G.has(k)?OPEN_G.delete(k):OPEN_G.add(k);renderNav();}
 
 function renderNav(){
-  const q=(document.getElementById('nd-q').value||'').toLowerCase();
   const body=document.getElementById('nd-body');
-  if(NAVTAB==='fav'){
-    const items=[];
-    allGroups().forEach(g=>g.dbs.forEach(d=>{const id=idOf(g.key,d.k);if(FAVS.has(id)&&(!q||d.n.toLowerCase().includes(q)||g.name.toLowerCase().includes(q)))items.push({g,d,id});}));
-    body.innerHTML='<div class="nd-sect"><i class="ti ti-star"></i>Favorites</div>'+
-      (items.length?items.map(it=>navItem(it.g,it.d,it.id)).join(''):'<div class="nd-fav-empty">No favorites yet. Tap the ★ next to any dashboard to pin it here.</div>');
-    return;
-  }
-  // all — grouped
-  let html='';
-  const grp=(title,list)=>{
-    html+=`<div class="nd-sect"><i class="ti ti-${title==='Products'?'package':'building'}"></i>${title}</div>`;
-    list.forEach(g=>{
-      const dbs=g.dbs.filter(d=>!q||d.n.toLowerCase().includes(q)||g.name.toLowerCase().includes(q));
-      if(q&&!dbs.length)return;
-      const open=OPEN_G.has(g.key)||q;
-      html+=`<div class="nd-group ${open?'open':''}"><div class="nd-ghead" onclick="toggleG('${g.key}')">
-        <span class="emo">${g.emo}</span><span class="g-name">${g.name}</span>
-        ${g.soon?'<span class="nd-soon">Soon</span>':`<span class="g-cnt">${g.dbs.length}</span>`}
-        <i class="ti ti-chevron-right chev"></i></div>
-        <div class="nd-children">${dbs.map(d=>navItem(g,d,idOf(g.key,d.k))).join('')}</div></div>`;
-    });
-  };
-  grp('Products',DATA.products);
-  grp('Departments',DATA.departments);
-  body.innerHTML=html;
+  const items=[];
+  allGroups().forEach(g=>g.dbs.forEach(d=>{const id=idOf(g.key,d.k);if(FAVS.has(id))items.push({g,d,id});}));
+  body.innerHTML='<div class="nd-sect"><i class="ti ti-star"></i>Favorites</div>'+
+    (items.length?items.map(it=>navItem(it.g,it.d,it.id)).join('')
+     :'<div class="nd-fav-empty">No favorites yet. Tap the ★ on any dashboard to pin it here.</div>');
 }
 function navItem(g,d,id){
-  const on=FAVS.has(id);
-  return `<div class="nd-item"><span class="nd-lbl">${d.n}</span>
-    <button class="nd-star ${on?'on':''}" title="${on?'Unpin':'Pin'}" onclick="event.stopPropagation();toggleFav('${id}')"><i class="ti ti-star${on?'-filled':''}"></i></button></div>`;
+  return `<a class="nd-item" href="#"><span class="emo">${g.emo}</span>
+    <span class="nd-lbl">${d.n}<div class="nd-ctx">${g.name}</div></span>
+    <button class="nd-star on" title="Unpin" onclick="event.preventDefault();event.stopPropagation();toggleFav('${id}')"><i class="ti ti-star-filled"></i></button></a>`;
 }
 
 // ── wizard ──
