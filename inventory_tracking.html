@@ -152,6 +152,16 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
 .mtoggle button{font-family:var(--font);font-size:10.5px;font-weight:700;color:var(--text2);background:var(--white);border:none;padding:4px 12px;cursor:pointer;transition:.12s}
 .mtoggle button:hover{background:var(--bg)}
 .mtoggle button.on{background:var(--orange);color:#fff}
+.infowrap{position:relative;display:inline-block}
+.infobtn{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border);background:var(--white);color:var(--text2);font-size:10px;font-weight:800;cursor:pointer;line-height:1;vertical-align:middle;margin-left:4px;padding:0;font-family:Georgia,serif;font-style:italic}
+.infobtn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.infopop{position:absolute;top:calc(100% + 7px);left:0;z-index:60;width:310px;max-width:78vw;background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 26px rgba(20,40,80,.16);padding:13px 15px;font-size:12px;line-height:1.55;color:var(--text2);font-weight:400;display:none;text-align:left;white-space:normal;text-transform:none;letter-spacing:normal}
+.infopop.open{display:block}
+.infopop h5{font-size:12.5px;font-weight:800;color:var(--navy);margin:0 0 7px}
+.infopop p{margin:0 0 7px}.infopop p:last-child{margin-bottom:0}
+.infopop b{color:var(--navy);font-weight:700}
+.infopop .eq{font-family:'IBM Plex Mono',monospace;background:var(--bg);border-radius:5px;padding:1px 6px;font-size:11px;color:var(--navy)}
+.infopop ul{margin:0 0 4px;padding-left:16px}.infopop li{margin-bottom:3px}
 /* compare tiles */
 .cmp-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
 .cmp-tile{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);padding:16px 18px}
@@ -394,12 +404,12 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
 
   <!-- ABC ANALYSIS -->
   <div class="panel" id="abc">
-    <div class="sec-title">ABC Analysis</div>
+    <div class="sec-title">ABC Analysis <span class="infowrap"><button type="button" class="infobtn" onclick="toggleInfo(this,event)">i</button><div class="infopop"><h5>ABC classes (Pareto 80/20)</h5><p><b>A — vital few:</b> ~10% of items that hold ~80% of your on-hand value. Watch these closely.</p><p><b>B:</b> the middle — the next ~15% of value.</p><p><b>C — long tail:</b> most of your items, but only ~5% of value. Don't over-manage these.</p><p>Computed per category: sort items high→low by value; A up to 80% of the category's value, B up to 95%, C the rest.</p></div></span></div>
     <div class="sec-sub">Pareto classification by on-hand value within each category — <b>A</b> = items making up the first ≤80% of category value (the vital few), <b>B</b> = the next ≤95%, <b>C</b> = the long tail. Overstock = on-hand above a target of (max annual usage ÷ 365 × target days).</div>
 
     <!-- target-days control -->
     <div class="rail" id="abcControl" style="margin-bottom:12px">
-      <div class="fl"><label>Target coverage (months)</label><input type="number" id="abcDays" class="fsel" style="width:120px" min="1" step="1" value="24"></div>
+      <div class="fl"><label>Target coverage (months) <span class="infowrap"><button type="button" class="infobtn" onclick="toggleInfo(this,event)">i</button><div class="infopop"><h5>Target coverage (months)</h5><p>How many months of stock you aim to hold. Anything beyond it counts as <b>overstock</b>. Default <b>24</b> ≈ 2 years.</p><p><span class="eq">Target Qty = avg monthly demand × months</span></p><p>Over Qty = on-hand − Target Qty; Over Value = Over Qty × unit cost.</p><p>Lower it → stricter (more flagged as overstock). Items with no usage get a target of 0, so all their stock shows as overstock (dead stock).</p></div></span></label><input type="number" id="abcDays" class="fsel" style="width:120px" min="1" step="1" value="24"></div>
       <button class="freset" id="abcApply"><i class="ti ti-check" style="font-size:13px"></i>Apply</button>
       <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-calendar-stats" style="color:var(--orange);font-size:13px"></i><b id="abcAsOf" style="color:var(--navy)">—</b></span></div>
     </div>
@@ -441,12 +451,12 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
   <!-- REORDER & SAFETY STOCK -->
   <div class="panel" id="reorder">
     <div class="sec-title">Reorder &amp; Safety Stock</div>
-    <div class="sec-sub">Statistical reorder points from the transaction ledger — monthly OUTBOUND per item gives mean demand <b>D̄</b> and std-dev <b>σ<sub>D</sub></b>; lead time <b>L</b> is estimated from the average interval between INBOUND receipts. <b>Safety Stock = Z·σ<sub>D</sub>·√L</b> · <b>Reorder Point = D̄·L + Safety Stock</b> (L in months). An item needs reordering when on-hand ≤ its reorder point.</div>
+    <div class="sec-sub">Statistical reorder points from the transaction ledger — monthly OUTBOUND per item gives mean demand <b>D̄</b> and std-dev <b>σ<sub>D</sub></b>; lead time <b>L</b> is estimated from the average interval between INBOUND receipts. <b>Safety Stock = Z·σ<sub>D</sub>·√L</b> · <b>Reorder Point = D̄·L + Safety Stock</b> (L in months). An item needs reordering when on-hand ≤ its reorder point. <span class="infowrap"><button type="button" class="infobtn" onclick="toggleInfo(this,event)">i</button><div class="infopop"><h5>What the formulas mean</h5><p><span class="eq">Reorder Point = D̄·L + Safety Stock</span> — the "time to reorder" line: the stock you'll use up while waiting for delivery, plus a cushion. When on-hand drops to it, reorder.</p><p><span class="eq">Safety Stock = Z·σ·√L</span> — the just-in-case cushion. Bigger when demand is bouncy (σ), the wait is long (L), or you want to play it safe (Z).</p><p><b>Candy-stand version:</b> reorder point = "call the truck now" line; safety stock = the backup pile so you never run out on a surprise-busy day.</p></div></span></div>
 
     <!-- service-level / lead control -->
     <div class="rail" id="roControl" style="margin-bottom:12px">
-      <div class="fl"><label>Service level</label><select id="roSvc" class="fsel" style="width:120px"><option value="1.2816">90%</option><option value="1.6449" selected>95%</option><option value="1.9600">97.5%</option><option value="2.3263">99%</option></select></div>
-      <div class="fl"><label>Fallback lead time (months)</label><input type="number" id="roLead" class="fsel" style="width:150px" min="0.5" step="0.5" value="2"></div>
+      <div class="fl"><label>Service level <span class="infowrap"><button type="button" class="infobtn" onclick="toggleInfo(this,event)">i</button><div class="infopop"><h5>Service level</h5><p>Your target for <b>not</b> running out while waiting for restock. <b>95%</b> = you accept stocking out only ~5% of the time.</p><p>Becomes a <b>Z factor</b> (90%→1.28, 95%→1.65, 99%→2.33) that sizes the safety stock.</p><p><b>Higher (99%)</b> = bigger buffer, fewer stockouts, more cash held. <b>Lower (90%)</b> = leaner but more shortages. Use high service for your A-class items.</p></div></span></label><select id="roSvc" class="fsel" style="width:120px"><option value="1.2816">90%</option><option value="1.6449" selected>95%</option><option value="1.9600">97.5%</option><option value="2.3263">99%</option></select></div>
+      <div class="fl"><label>Fallback lead time (months) <span class="infowrap"><button type="button" class="infobtn" onclick="toggleInfo(this,event)">i</button><div class="infopop"><h5>Fallback lead time (months)</h5><p><b>Lead time</b> = how long a restock takes to arrive.</p><p>Each item's lead time is normally estimated from the average gap between its <b>inbound receipts</b> (data-driven).</p><p>For items with too few receipts to measure a gap, this <b>fallback</b> value is used instead. Default 2 months.</p></div></span></label><input type="number" id="roLead" class="fsel" style="width:150px" min="0.5" step="0.5" value="2"></div>
       <button class="freset" id="roApply"><i class="ti ti-check" style="font-size:13px"></i>Apply</button>
       <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-calendar-stats" style="color:var(--orange);font-size:13px"></i><b id="roAsOf" style="color:var(--navy)">—</b></span></div>
     </div>
@@ -512,6 +522,13 @@ function setTab(btn){
   if(t==='abc')openABC();
   if(t==='reorder')openReorder();
 }
+/* clickable ⓘ definition popovers */
+function toggleInfo(btn,ev){ if(ev)ev.stopPropagation();
+  var pop=btn.nextElementSibling, open=pop.classList.contains('open');
+  document.querySelectorAll('.infopop.open').forEach(function(p){p.classList.remove('open');});
+  if(!open)pop.classList.add('open');
+}
+document.addEventListener('click',function(e){ if(!e.target.closest('.infowrap'))document.querySelectorAll('.infopop.open').forEach(function(p){p.classList.remove('open');}); });
 
 /* ---- snapshot ---- */
 document.getElementById('s-onhand').textContent='EGP '+DATA.kpi.onhandTotal+'M';
