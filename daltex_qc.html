@@ -512,7 +512,7 @@ input,select,button{font-family:var(--font)}
 const SB='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
 const AK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmeWp2Z2p3dnR3a3JucXJ2cXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzIxNjYsImV4cCI6MjA5MDQ0ODE2Nn0.FjA75XZsp0Kx5Xam_rrnYoAHX4JHKey6vEFCH_zlMuQ';
 
-const MAJ=[['cracks_splits','Cracks / Splits'],['wet_berries','Wet / Glassy'],['dead_berries','Dead / Shrivel'],['sulphur','Sulphur / SO2'],['slip_skin','Slip Skin / Bruise'],['cobwebs','Cobwebs'],['maggots_rots','Maggots / Rots / Mould']];
+const MAJ=[['cracks_splits','Cracks / Splits'],['wet_berries','Wet / Glassy'],['dead_berries','Dead / Shrivel'],['sulphur','Sulphur / SO2'],['slip_skin','Slip Skin / Bruise'],['cobwebs','Cobwebs'],['maggots_rots','Maggots / Rots / Mould'],['live_dead_pests','Live / Dead Pests']];
 const MIN=[['blemish_skin','Blemish / Skin'],['berry_drop','Berry Drop & Shatter'],['sunburn','Sunburn / Heat'],['dry_stems','Dry Stems']];
 const ALLDEF=MAJ.map(d=>[d[0],d[1],'maj']).concat(MIN.map(d=>[d[0],d[1],'min']));
 const PAL=['#142850','#2563eb','#7c3aed','#0e7490','#16a34a','#d97706','#dc2626','#db2777','#64748b','#a16207','#0891b2'];
@@ -917,6 +917,7 @@ const DATACOLS_QC=[
   {id:'slip_skin',label:'Slip Skin',pct:true,majCol:true},
   {id:'cobwebs',label:'Cobwebs',pct:true,majCol:true},
   {id:'maggots_rots',label:'Maggots/Rots',pct:true,majCol:true},
+  {id:'live_dead_pests',label:'Live/Dead Pests',pct:true,majCol:true},
   {id:'blemish_skin',label:'Blemish/Skin',pct:true},
   {id:'berry_drop',label:'Berry Drop',pct:true},
   {id:'sunburn',label:'Sunburn',pct:true},
@@ -1352,7 +1353,7 @@ function renderDim(rows,field,label){
   }
   drawDimBar('grouped');
   window.setDimMode=function(mode,btn){drawDimBar(mode);};
-  mkChart('ch-mix',{type:'bar',data:{labels:items.map(o=>o.k),datasets:ALLDEF.map((d,i)=>({label:d[1],data:items.map(o=>r2(cavg(g[o.k],r=>num(r[d[0]])))),backgroundColor:d[2]==='maj'?['#2563eb', '#7c3aed', '#0891b2', '#dc2626', '#d97706', '#16a34a', '#be185d'][MAJ.findIndex(m=>m[0]===d[0])]:(['#ea580c', '#0d9488', '#b45309', '#6d28d9'])[MIN.findIndex(m=>m[0]===d[0])],stack:'s',barThickness:16}))},
+  mkChart('ch-mix',{type:'bar',data:{labels:items.map(o=>o.k),datasets:ALLDEF.map((d,i)=>({label:d[1],data:items.map(o=>r2(cavg(g[o.k],r=>num(r[d[0]])))),backgroundColor:d[2]==='maj'?['#2563eb', '#7c3aed', '#0891b2', '#dc2626', '#d97706', '#16a34a', '#be185d', '#4f46e5'][MAJ.findIndex(m=>m[0]===d[0])]:(['#ea580c', '#0d9488', '#b45309', '#6d28d9'])[MIN.findIndex(m=>m[0]===d[0])],stack:'s',barThickness:16}))},
    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{color:'#fff',textStrokeColor:'rgba(0,0,0,.4)',textStrokeWidth:2,anchor:'center',align:'center',font:{family:"'IBM Plex Mono'",size:8,weight:'700'},formatter:v=>(+v>=3?(Math.round(v*10)/10):''),display:c=>+c.dataset.data[c.dataIndex]>=3},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.raw+'%'}}},scales:{x:{stacked:true,grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:"'IBM Plex Mono'",size:10}}},y:{stacked:true,grid:{display:false},ticks:{autoSkip:false,font:{size:10.5,weight:'500'}}}}}});
   const periods=[...new Set(rows.map(perKey))].sort();
   const top5=items.slice(0,5).map(o=>o.k);
