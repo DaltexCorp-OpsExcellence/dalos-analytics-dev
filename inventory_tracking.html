@@ -317,7 +317,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
       <div class="card"><h3><i class="ti ti-building-factory"></i>On-Hand by Department (M EGP)</h3><div class="chart-box sm"><canvas id="c-exp-dept"></canvas></div></div>
     </div>
     <div class="card" style="margin-bottom:14px"><h3><i class="ti ti-stack-2"></i>Stock Tier by Category (M EGP)</h3><div class="chart-box"><canvas id="c-exp-tier"></canvas></div></div>
-    <div class="card"><h3 style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-list-search"></i><span id="itCount">0</span> items <span style="font-weight:400;color:var(--text3);font-size:11px">· click a bar above to filter · top 200 by value</span></span><span style="display:inline-flex;align-items:center;gap:6px"><div class="gsearch" style="min-width:180px;max-width:240px;padding:6px 10px"><i class="ti ti-search" style="color:var(--text3);font-size:14px"></i><input id="itemSearch" placeholder="Search items…"></div><button class="freset" id="itemSearchBtn"><i class="ti ti-search" style="font-size:13px"></i>Search</button><button class="freset" id="itemSearchClear" title="Clear" style="background:var(--white);color:var(--text2)"><i class="ti ti-x" style="font-size:13px"></i></button></span></h3>
+    <div class="card"><h3 style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-list-search"></i><span id="itCount">0</span> items <span style="font-weight:400;color:var(--text3);font-size:11px">· click a bar above to filter · top 200 by value</span></span><span style="display:inline-flex;align-items:center;gap:6px"><div class="gsearch" style="min-width:180px;max-width:240px;padding:6px 10px"><i class="ti ti-search" style="color:var(--text3);font-size:14px"></i><input id="itemSearch" placeholder="Search items…"></div><button class="freset" id="itemSearchBtn"><i class="ti ti-search" style="font-size:13px"></i>Search</button><button class="freset" id="itemSearchClear" title="Clear" style="background:var(--white);color:var(--text2)"><i class="ti ti-x" style="font-size:13px"></i></button><button class="freset" id="itemExport" title="Export all filtered items to CSV"><i class="ti ti-download" style="font-size:13px"></i>Export CSV</button></span></h3>
       <div style="overflow:auto;max-height:540px"><table class="itable" id="itemTable"></table></div>
     </div>
   </div>
@@ -434,7 +434,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
         <div class="fl"><label>Class</label><select id="abcClsSel" class="fsel"><option value="">All classes</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
         <div class="fl"><label>Category</label><select id="abcCatSel" class="fsel"><option value="">All categories</option><option value="Sp">Sp</option><option value="IRR">IRR</option><option value="Oil">Oil</option><option value="Invest">Invest</option></select></div>
       </div>
-      <div class="card"><h3><i class="ti ti-list-search"></i><span id="abcItemCount">0</span> items <span style="font-weight:400;color:var(--text3);font-size:11px">· <span id="abcItemNote">—</span></span></h3>
+      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-list-search"></i><span id="abcItemCount">0</span> items <span style="font-weight:400;color:var(--text3);font-size:11px">· <span id="abcItemNote">—</span></span></span><button class="freset" id="abcExport" title="Export all filtered items to CSV"><i class="ti ti-download" style="font-size:13px"></i>Export CSV</button></h3>
         <div style="overflow:auto;max-height:560px"><table class="itable" id="abcItems"></table></div>
       </div>
     </div>
@@ -471,7 +471,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
         <div class="fl"><label>Category</label><select id="roCatSel" class="fsel"><option value="">All categories</option><option value="Sp">Sp</option><option value="IRR">IRR</option><option value="Oil">Oil</option><option value="Invest">Invest</option></select></div>
         <div class="fl"><label>Status</label><select id="roStSel" class="fsel"><option value="">All statuses</option><option value="Reorder">Reorder now</option><option value="OK">OK</option></select></div>
       </div>
-      <div class="card"><h3><i class="ti ti-list-search"></i><span id="roItemCount">0</span> items <span style="font-weight:400;color:var(--text3);font-size:11px">· <span id="roItemNote">—</span></span></h3>
+      <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-list-search"></i><span id="roItemCount">0</span> items <span style="font-weight:400;color:var(--text3);font-size:11px">· <span id="roItemNote">—</span></span></span><button class="freset" id="roExport" title="Export all filtered items to CSV"><i class="ti ti-download" style="font-size:13px"></i>Export CSV</button></h3>
         <div style="overflow:auto;max-height:560px"><table class="itable" id="roItems"></table></div>
       </div>
     </div>
@@ -531,6 +531,37 @@ function toggleInfo(btn,ev){ if(ev){ev.stopPropagation();ev.preventDefault();}
 document.addEventListener('click',function(e){ if(!e.target.closest('.infowrap'))closeInfo(); });
 document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeInfo(); });
 window.addEventListener('scroll',closeInfo,true);
+/* ---- CSV export (opens in Excel; UTF-8 BOM keeps Arabic descriptions intact) ---- */
+function csvCell(v){ v=(v==null?'':''+v); return /[",\n\r]/.test(v)?('"'+v.replace(/"/g,'""')+'"'):v; }
+function downloadCSV(name,headers,rows){
+  var csv=headers.map(csvCell).join(',')+'\r\n'+rows.map(function(r){return r.map(csvCell).join(',');}).join('\r\n');
+  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}), url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},150);
+}
+function asOfTag(){ return (((DATA&&DATA.meta&&DATA.meta.asOf)||'')+'').replace(/[^0-9-]/g,'')||'export'; }
+function exportExplorerCSV(){
+  var rows=ITEMS.items.filter(passesX).sort(function(a,b){return num(b.v)-num(a.v);});
+  downloadCSV('inventory-items-'+asOfTag()+'.csv',
+    ['Item','Description','Type','Dept','Brand','Site','Tier','On-Hand (EGP)','Qty'],
+    rows.map(function(i){return [i.n,i.dsc||'',i.c,i.d,i.b,i.s,i.t,Math.round(num(i.v)),Math.round(num(i.q))];}));
+}
+function exportAbcCSV(){
+  var items=(ABC&&ABC.items)||[], q=ABCF.q, cls=ABCF.cls, cat=ABCF.cat;
+  var rows=items.filter(function(i){ if(cls&&i.cls!==cls)return false; if(cat&&i.c!==cat)return false; if(q){var s=(''+(i.n||'')).toLowerCase()+' '+(''+(i.nm||'')).toLowerCase(); if(s.indexOf(q)<0)return false;} return true; })
+    .sort(function(a,b){return num(b.v)-num(a.v);});
+  downloadCSV('abc-analysis-'+asOfTag()+'.csv',
+    ['Item','Name','Category','Class','On-Hand Qty','Value (EGP)','Unit Value (EGP)','FY24','FY25','FY26','Max per year','Months of Stock','Target Qty','Over Qty','Over Value (EGP)'],
+    rows.map(function(i){return [i.n,i.nm||'',i.c,i.cls,Math.round(num(i.q)),Math.round(num(i.v)),Math.round(num(i.u)),Math.round(num(i.c24)),Math.round(num(i.c25)),Math.round(num(i.c26)),Math.round(num(i.mx)),(i.cov==null?'':(num(i.cov)/(365/12)).toFixed(1)),Math.round(num(i.tg)),Math.round(num(i.oq)),Math.round(num(i.ov))];}));
+}
+function exportReorderCSV(){
+  var items=(RO&&RO.items)||[], q=ROF.q, cat=ROF.cat, st=ROF.st;
+  var rows=items.filter(function(i){ if(cat&&i.c!==cat)return false; if(st&&i.st!==st)return false; if(q){var s=(''+(i.n||'')).toLowerCase()+' '+(''+(i.nm||'')).toLowerCase(); if(s.indexOf(q)<0)return false;} return true; })
+    .sort(function(a,b){ var ra=(a.st==='Reorder')?1:0, rb=(b.st==='Reorder')?1:0; if(ra!==rb)return rb-ra; return num(b.ssv)-num(a.ssv); });
+  downloadCSV('reorder-safety-stock-'+asOfTag()+'.csv',
+    ['Item','Name','Category','On-Hand Qty','Avg Monthly Demand','Sigma (monthly)','Lead (months)','Safety Stock','Reorder Point','Status','SS Value (EGP)','Unit Value (EGP)'],
+    rows.map(function(i){return [i.n,i.nm||'',i.c,Math.round(num(i.q)),num(i.dmo),num(i.sig),(num(i.ld)/(365/12)).toFixed(1),Math.round(num(i.ss)),Math.round(num(i.rop)),i.st,Math.round(num(i.ssv)),Math.round(num(i.u))];}));
+}
 
 /* ---- snapshot ---- */
 document.getElementById('s-onhand').textContent='EGP '+DATA.kpi.onhandTotal+'M';
@@ -1559,6 +1590,9 @@ function renderX(){
     if(sb)sb.onclick=runIS;
     if(si)si.onkeydown=function(e){ if(e.key==='Enter')runIS(); };
     if(sc)sc.onclick=function(){ if(si)si.value=''; GQ=''; if(g)g.value=''; renderX(); };
+    var eb=document.getElementById('itemExport'); if(eb)eb.onclick=exportExplorerCSV;
+    var ab=document.getElementById('abcExport'); if(ab)ab.onclick=exportAbcCSV;
+    var rb=document.getElementById('roExport'); if(rb)rb.onclick=exportReorderCSV;
   })();
   wireRangeControls(); wireCompare(); wireMetric(); wireABC(); wireReorder(); buildFilters(); renderX();
 })();
