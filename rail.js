@@ -98,13 +98,13 @@
     +'<button class="dal-ric" id="dal-fav">'+ic('star',21)+'<span class="dal-cnt" id="dal-favcnt" style="display:none">0</span><span class="dal-tip">Favorites</span></button>'
     +'<button class="dal-ric" id="dal-access" style="display:none">'+ic('shield',21)+'<span class="dal-tip">Manage access</span></button>'
     +'<div class="dal-rsp"></div>'
-    +'<button class="dal-ric dal-acct" id="dal-acct"><span class="dal-avatar" id="dal-avatar">–</span><span class="dal-tip" id="dal-acct-tip">Account</span></button>';
+    +'<button class="dal-ric dal-acct" id="dal-acct"><span class="dal-avatar" id="dal-avatar">–</span><span class="dal-tip" id="dal-acct-tip">Account</span></button>'
+    +'<button class="dal-ric" id="dal-signout" title="Sign out">'+ic('logout',21)+'<span class="dal-tip">Sign out</span></button>';
   document.body.appendChild(rail);
 
   var acctPop=document.createElement('div'); acctPop.className='dal-acct-pop'; acctPop.id='dal-acct-pop';
   acctPop.innerHTML=''
-    +'<div class="dal-acct-hd"><div class="dal-avatar lg" id="dal-acct-av">–</div><div style="min-width:0"><div class="dal-acct-nm" id="dal-acct-nm">—</div><div class="dal-acct-em" id="dal-acct-em"></div></div></div>'
-    +'<button class="dal-acct-out" id="dal-acct-out">'+ic('logout',15)+' Sign out</button>';
+    +'<div class="dal-acct-hd" style="border-bottom:none;padding-bottom:0;margin-bottom:0"><div class="dal-avatar lg" id="dal-acct-av">–</div><div style="min-width:0"><div class="dal-acct-nm" id="dal-acct-nm">—</div><div class="dal-acct-em" id="dal-acct-em"></div></div></div>';
   document.body.appendChild(acctPop);
 
   var ov=document.createElement('div'); ov.className='dal-fly-ov'; document.body.appendChild(ov);
@@ -175,7 +175,7 @@
   document.getElementById('dal-acct').addEventListener('click',function(e){e.stopPropagation();toggleAcct();});
   acctPop.addEventListener('click',function(e){e.stopPropagation();});
   document.addEventListener('click',function(){if(acctOpen)toggleAcct(false);});
-  document.getElementById('dal-acct-out').addEventListener('click',function(){
+  document.getElementById('dal-signout').addEventListener('click',function(){
     if(typeof window.dalSignOut==='function')return window.dalSignOut();
     if(typeof window.signOut==='function')return window.signOut();
     window.location='daltex_login.html';
