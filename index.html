@@ -299,6 +299,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .sm-dbrow{display:flex;align-items:center;gap:9px;padding:9px 13px 9px 30px;border-top:1px solid var(--border);cursor:pointer}
 .sm-dbrow:hover{background:var(--bg)}
 .sm-dbrow .dn{font-size:13px;color:var(--text2);font-weight:500}
+.sm-master{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;margin-bottom:12px;cursor:pointer;font-size:13px;font-weight:700;color:var(--navy);background:#f8fafc}
+.sm-master:hover{background:#eef1f8}
+.sm-master-cnt{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text3);font-weight:600}
+.sm-gchk{display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:5px;padding:1px}
+.sm-gchk:hover{background:#e6ebf5}
 
 .sm-pname{font-size:12px;font-weight:600;color:var(--navy);flex:1}
 .sm-dbrow{display:flex;align-items:center;gap:8px;padding:7px 11px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
@@ -1266,22 +1271,36 @@ const smDbLabels={shipments:'Shipments',qc:'Quality Control',harvest:'Harvest Fu
 const smGroups=[{label:'Products',keys:['grapes','mango','pomegranate','citrus','potatoes']},{label:'Departments',keys:['finance','operations']}];
 let smOpenG={};
 function smTogGroup(p){smOpenG[p]=!smOpenG[p];smRenderMatrix();}
+// All [product,dashboard] pairs across every group (for the master "Select all").
+function smAllPairs(){var out=[];smGroups.forEach(function(g){g.keys.forEach(function(p){if(smProds.indexOf(p)<0)return;smProdDbs(p).forEach(function(d){out.push([p,d]);});});});return out;}
+// Master toggle: turn every dashboard on, or all off if already all on.
+function smMxTogAll(){
+  var pairs=smAllPairs();
+  var allOn=pairs.length>0&&pairs.every(function(pd){return (smAccess[pd[0]]||{})[pd[1]];});
+  pairs.forEach(function(pd){ if(!smAccess[pd[0]])smAccess[pd[0]]={shipments:false,qc:false,harvest:false,budget:false,inventory:false,board_review:false}; smAccess[pd[0]][pd[1]]=!allOn; });
+  smRenderMatrix();
+}
 function smRenderMatrix(){
   var host=document.getElementById('sm-matrix-rows');if(!host)return;
   function chk(on){return '<div class="sm-chk'+(on?' on':'')+'">'+(on?'<i class="ti ti-check" style="font-size:10px"></i>':'')+'</div>';}
-  host.innerHTML=smGroups.map(function(g){
+  var pairs=smAllPairs(), onCnt=pairs.filter(function(pd){return (smAccess[pd[0]]||{})[pd[1]];}).length;
+  var masterOn=pairs.length>0&&onCnt===pairs.length;
+  var master='<div class="sm-master" onclick="smMxTogAll()">'+chk(masterOn)+'<span>Select all dashboards</span><span class="sm-master-cnt">'+onCnt+'/'+pairs.length+'</span></div>';
+  var groups=smGroups.map(function(g){
     var rows=g.keys.filter(function(p){return smProds.indexOf(p)>-1;}).map(function(p){
       var dbs=smProdDbs(p),a=smAccess[p]||{},cnt=dbs.filter(function(d){return a[d];}).length;
       var allOn=dbs.length>0&&cnt===dbs.length,open=!!smOpenG[p];
       return '<div class="sm-grp'+(open?' open':'')+'">'
-        +'<div class="sm-ghead" onclick="smTogGroup(\''+p+'\')"><span class="sm-gname">'+smProdLabels[p]+'</span><span class="sm-gcnt">'+cnt+'/'+dbs.length+'</span><i class="ti ti-chevron-right sm-gchev" style="font-size:15px"></i></div>'
+        +'<div class="sm-ghead" onclick="smTogGroup(\''+p+'\')">'
+          +'<div class="sm-gchk" title="Select all '+smProdLabels[p]+' dashboards" onclick="event.stopPropagation();smMxTogProd(\''+p+'\')">'+chk(allOn)+'</div>'
+          +'<span class="sm-gname">'+smProdLabels[p]+'</span><span class="sm-gcnt">'+cnt+'/'+dbs.length+'</span><i class="ti ti-chevron-right sm-gchev" style="font-size:15px"></i></div>'
         +'<div class="sm-gbody">'
-        +'<div class="sm-selall" onclick="smMxTogProd(\''+p+'\')">'+chk(allOn)+'Select all '+smProdLabels[p]+' dashboards</div>'
         +dbs.map(function(d){return '<div class="sm-dbrow" data-prod="'+p+'" data-db="'+d+'" onclick="smMxTog(this)">'+chk(!!a[d])+'<span class="dn">'+(smDbLabels[d]||d)+'</span></div>';}).join('')
         +'</div></div>';
     }).join('');
     return '<div class="sm-glabel">'+g.label+'</div>'+rows;
   }).join('');
+  host.innerHTML=master+groups;
 }
 // Toggle a single product-dashboard cell
 function smMxTog(el){var p=el.dataset.prod,db=el.dataset.db;if(!smAccess[p])smAccess[p]={shipments:false,qc:false,harvest:false,budget:false,inventory:false,board_review:false};smAccess[p][db]=!smAccess[p][db];smRenderMatrix();}
