@@ -1705,8 +1705,11 @@ updateDate();
         // Admin — show everything + admin buttons
         allCards.forEach(function(c){c.style.display='';});
         colorGrapesChips(true);
-        var mab=document.getElementById('manage-access-btn');
-        if(mab) mab.style.display='';
+        // Manage access now lives on the left rail (rail.js). Keep the legacy topbar
+        // button hidden; reveal the rail's shield instead. Flag is polled by rail.js
+        // in case it loads after this admin branch runs.
+        window.__dalIsAdmin=true;
+        if(window.DalRail&&window.DalRail.showAccess) window.DalRail.showAccess();
         var gsb=document.getElementById('grapes-share-btn');
         if(gsb) gsb.style.display='';
         // Show pending-request notification badge and keep it fresh
@@ -1829,6 +1832,7 @@ updateDate();
 })();
 </script>
 <script src="switcher.js" defer></script>
+<script src="rail.js" defer></script>
 <script>
 /* Auto-expire the "New" badge 15 days after launch (2026-08-05 → 2026-08-20) */
 (function(){
