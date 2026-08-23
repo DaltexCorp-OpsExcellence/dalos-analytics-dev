@@ -11,6 +11,8 @@
   if(window.__dalRailLoaded) return; window.__dalRailLoaded=true;
 
   var RAIL_W=60, FAV_KEY='dalos_favorites';
+  var SB_URL='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
+  var SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmeWp2Z2p3dnR3a3JucXJ2cXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzIxNjYsImV4cCI6MjA5MDQ0ODE2Nn0.FjA75XZsp0Kx5Xam_rrnYoAHX4JHKey6vEFCH_zlMuQ';
 
   /* ---- inline SVG icons (no icon-font dependency) ---- */
   var P={
@@ -73,7 +75,25 @@
    +'@media(max-width:768px){.dal-ric .dal-tip{display:none}}';
   var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
 
-  /* ---- favorites store ---- */
+  /* ---- signed-in session (id + token for RLS-scoped calls) ---- */
+  function getSession(){
+    try{
+      var raw=null;
+      for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(/^sb-.*-auth-token$/.test(k)){raw=localStorage.getItem(k);break;}}
+      if(!raw)return null;
+      var s=JSON.parse(raw);
+      var sess=(s&&s.access_token)?s:((s&&s.currentSession)?s.currentSession:s);
+      var u=(sess&&sess.user)||s.user||null;
+      var token=(sess&&sess.access_token)||s.access_token||null;
+      if(!u||!token)return null;
+      var meta=u.user_metadata||{};
+      var name=meta.full_name||meta.name||meta.display_name||(u.email?u.email.split('@')[0]:'')||'User';
+      return {id:u.id, token:token, name:name, email:u.email||''};
+    }catch(e){return null;}
+  }
+  function sbHead(tok){return {apikey:SB_ANON,Authorization:'Bearer '+tok,'Content-Type':'application/json'};}
+
+  /* ---- favorites store: localStorage cache + Supabase (per-user, dal_favorites) ---- */
   function getFavs(){try{return JSON.parse(localStorage.getItem(FAV_KEY)||'[]');}catch(e){return [];}}
   function setFavs(a){localStorage.setItem(FAV_KEY,JSON.stringify(a));}
   function isFav(href){return getFavs().some(function(f){return f.href===href;});}
@@ -82,6 +102,30 @@
     for(var k=0;k<a.length;k++){if(a[k].href===item.href){i=k;break;}}
     if(i>=0)a.splice(i,1); else a.push(item);
     setFavs(a); renderFlyout(); decorate(); updateCount();
+    pushFavs(); // persist to backend for this user (RLS-scoped)
+  }
+  // Upsert this user's full favorites list to Supabase.
+  function pushFavs(){
+    var s=getSession(); if(!s)return;
+    fetch(SB_URL+'/rest/v1/dal_favorites?on_conflict=user_id',{
+      method:'POST',
+      headers:Object.assign({},sbHead(s.token),{'Prefer':'resolution=merge-duplicates,return=minimal'}),
+      body:JSON.stringify({user_id:s.id,favorites:getFavs(),updated_at:new Date().toISOString()})
+    }).catch(function(){});
+  }
+  // Pull this user's favorites from Supabase (source of truth); migrate local ones up on first use.
+  function pullFavs(){
+    var s=getSession(); if(!s)return;
+    fetch(SB_URL+'/rest/v1/dal_favorites?user_id=eq.'+s.id+'&select=favorites&limit=1',{headers:sbHead(s.token)})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(rows){
+        if(!rows)return;
+        if(rows.length && Array.isArray(rows[0].favorites)){
+          setFavs(rows[0].favorites); renderFlyout(); updateCount(); decorate();
+        } else if(getFavs().length){
+          pushFavs(); // no backend row yet — seed it from existing local favorites (one-time)
+        }
+      }).catch(function(){});
   }
 
   /* ---- page context (product / department name) for labelling favorites ---- */
@@ -146,22 +190,9 @@
   document.getElementById('dal-home').addEventListener('click',function(){window.location='index.html';});
 
   /* ---- account identity + menu ---- */
-  function getUser(){
-    try{
-      var raw=null;
-      for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(/^sb-.*-auth-token$/.test(k)){raw=localStorage.getItem(k);break;}}
-      if(!raw)return null;
-      var s=JSON.parse(raw);
-      var sess=(s&&s.access_token)?s:((s&&s.currentSession)?s.currentSession:s);
-      var u=(sess&&sess.user)||s.user||null; if(!u)return null;
-      var meta=u.user_metadata||{};
-      var name=meta.full_name||meta.name||meta.display_name||(u.email?u.email.split('@')[0]:'')||'User';
-      return {name:name, email:u.email||''};
-    }catch(e){return null;}
-  }
   function initialsOf(n){var p=(n||'').trim().split(/\s+/);return (((p[0]||'')[0]||'')+((p[1]||'')[0]||'')).toUpperCase()||'?';}
   function renderAcct(){
-    var u=getUser();
+    var u=getSession();
     var name=(u&&u.name)||'Account', email=(u&&u.email)||'', ini=initialsOf(name);
     var av=document.getElementById('dal-avatar'); if(av)av.textContent=ini;
     var av2=document.getElementById('dal-acct-av'); if(av2)av2.textContent=ini;
@@ -239,6 +270,8 @@
 
   renderFlyout(); updateCount(); decorate();
   setTimeout(decorate,800); setTimeout(decorate,2500);
+  // Sync favorites from Supabase for the signed-in user (retry once in case the session loads late).
+  pullFavs(); setTimeout(pullFavs,1500);
 
   window.DalRail={toggleFav:toggleFav,showAccess:showAccess,refresh:function(){renderFlyout();updateCount();decorate();}};
 })();
