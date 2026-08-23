@@ -622,7 +622,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   <div class="ap-head">
     <div>
       <div class="ap-title"><i class="ti ti-shield-lock" style="font-size:14px;margin-right:6px"></i>Access management</div>
-      <div class="ap-sub" id="ap-sub">DALos Analytics — All products</div>
+      <div class="ap-sub" id="ap-sub">DalOS Analytics — All products</div>
     </div>
     <button class="ap-close" onclick="closePanel()"><i class="ti ti-x"></i></button>
   </div>
@@ -645,7 +645,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     <div class="sm-head">
       <div>
         <div class="sm-title"><i class="ti ti-shield-lock" style="font-size:13px;margin-right:5px"></i>Share dashboard access</div>
-        <div class="sm-sub">DALos Analytics — Daltex</div>
+        <div class="sm-sub">DalOS Analytics — Daltex</div>
       </div>
       <button class="sm-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
     </div>
@@ -658,7 +658,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       <!-- STEP 1: USER -->
       <div class="sm-panel active" id="smp1">
         <div class="sm-label">Select workspace user</div>
-        <div class="sm-search"><i class="ti ti-search"></i><input type="text" placeholder="Search DALos Workspace users..." oninput="smFilterU(this.value)" id="sm-search-input"></div>
+        <div class="sm-search"><i class="ti ti-search"></i><input type="text" placeholder="Search DalOS Workspace users..." oninput="smFilterU(this.value)" id="sm-search-input"></div>
         <div class="sm-ulist" id="sm-ulist"><div style="text-align:center;padding:16px;color:var(--text3);font-size:12px"><i class="ti ti-loader-2" style="animation:spin 1s linear infinite"></i> Loading users…</div></div>
         <div id="sm-ucnt" style="font-size:11px;color:var(--text3)">No user selected</div>
       </div>
@@ -788,7 +788,7 @@ function signOut(){
     window.location.href='daltex_login.html';
   }
 }
-// ── DALos Analytics — Phase 1 Access Control ──
+// ── DalOS Analytics — Phase 1 Access Control ──
 const SB_URL='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmeWp2Z2p3dnR3a3JucXJ2cXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzIxNjYsImV4cCI6MjA5MDQ0ODE2Nn0.FjA75XZsp0Kx5Xam_rrnYoAHX4JHKey6vEFCH_zlMuQ';
 const DAP='dal_analytics_permissions'; // permission table
@@ -875,7 +875,7 @@ async function loadPanelUsers(){
 
 // ── PANEL: revoke — deletes from dal_analytics_permissions only ──
 async function revokeUser(permId,name,userId,email){
-  if(!confirm('Revoke DALos Analytics access for '+name+'?\nThis will NOT affect their DALos Workspace account.')) return;
+  if(!confirm('Revoke DalOS Analytics access for '+name+'?\nThis will NOT affect their DalOS Workspace account.')) return;
   try{
     var row=document.getElementById('arow-'+permId);
     if(row){row.style.opacity='0.4';row.style.pointerEvents='none';}
@@ -1109,7 +1109,7 @@ async function declineRequest(reqId, name, email, product){
 function openPanel(product){
   document.getElementById('access-overlay').classList.add('open');
   document.getElementById('access-panel').classList.add('open');
-  document.getElementById('ap-sub').textContent=product==='all'?'DALos Analytics — All products':'Grapes · DALos Analytics';
+  document.getElementById('ap-sub').textContent=product==='all'?'DalOS Analytics — All products':'Grapes · DalOS Analytics';
   loadPendingRequests();
   loadPanelUsers();
 }
