@@ -378,10 +378,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     <span class="staging-badge" id="dalStgBadge" style="display:none"><span class="staging-dot"></span>Staging</span><script>if(location.pathname.indexOf("/dalos-analytics-dev/")===0){var _b=document.getElementById("dalStgBadge");if(_b)_b.style.display="inline-flex";}</script>
     <div class="topbar-badge"><i class="ti ti-circle-dot" style="font-size:10px"></i> Season 2025/26</div>
     <button id="manage-access-btn" class="manage-access-btn" onclick="openPanel('all')" style="display:none;position:relative"><i class="ti ti-shield-lock" style="font-size:13px"></i>Manage access<span id="ma-badge" style="display:none;position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;line-height:17px;text-align:center;box-shadow:0 0 0 2px #142850"></span></button>
-    <div style="display:flex;align-items:center;gap:8px">
-      <div id="dalos-avatar" style="width:32px;height:32px;border-radius:50%;background:#DC6428;border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px;flex-shrink:0" title="Profile">??</div>
-      <button onclick="dalSignOut()" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:8px;background:rgba(255,100,100,.1);border:1px solid rgba(255,100,100,.3);color:#ffb3b3;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s" onmouseover="this.style.background='rgba(255,100,100,.2)'" onmouseout="this.style.background='rgba(255,100,100,.1)'"><i class="ti ti-logout" style="font-size:12px"></i> Sign out</button>
-    </div>
+    <!-- Account + sign out now live on the left rail (rail.js). Keep a hidden avatar for scripts that read initials. -->
+    <div id="dalos-avatar" style="display:none">??</div>
   </div>
 </div>
 

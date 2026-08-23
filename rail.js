@@ -53,6 +53,17 @@
    +'.dal-fun{width:26px;height:26px;border-radius:6px;border:none;background:none;color:#DC6428;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}'
    +'.dal-fun:hover{background:#fff2e8}'
    +'.dal-ffoot{border-top:1px solid #e2e6f0;padding:11px;font-size:11px;color:#8a95b0;text-align:center}'
+   /* account button + menu */
+   +'.dal-avatar{width:34px;height:34px;border-radius:50%;background:#DC6428;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;letter-spacing:.3px;border:1px solid rgba(255,255,255,.28)}'
+   +'.dal-ric.dal-acct{padding:0}'
+   +'.dal-acct-pop{position:fixed;left:64px;bottom:12px;width:232px;background:#fff;border:1px solid #e2e6f0;border-radius:12px;box-shadow:0 12px 36px rgba(20,40,80,.24);z-index:340;padding:12px;opacity:0;transform:translateY(8px);pointer-events:none;transition:.16s;font-family:var(--font,\'Plus Jakarta Sans\',system-ui,sans-serif)}'
+   +'.dal-acct-pop.on{opacity:1;transform:none;pointer-events:auto}'
+   +'.dal-acct-hd{display:flex;align-items:center;gap:10px;padding-bottom:11px;border-bottom:1px solid #e2e6f0;margin-bottom:10px}'
+   +'.dal-avatar.lg{width:40px;height:40px;font-size:14px;flex-shrink:0}'
+   +'.dal-acct-nm{font-size:13.5px;font-weight:700;color:#142850;line-height:1.2}'
+   +'.dal-acct-em{font-size:11px;color:#8a95b0;word-break:break-all;margin-top:1px}'
+   +'.dal-acct-out{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:9px;border-radius:8px;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}'
+   +'.dal-acct-out:hover{background:#dc2626;color:#fff;border-color:#dc2626}'
    /* card star */
    +'.dal-fav-host{position:relative}'
    +'.dal-fav-host .dc-header{padding-right:30px}'
@@ -87,8 +98,14 @@
     +'<button class="dal-ric" id="dal-fav">'+ic('star',21)+'<span class="dal-cnt" id="dal-favcnt" style="display:none">0</span><span class="dal-tip">Favorites</span></button>'
     +'<button class="dal-ric" id="dal-access" style="display:none">'+ic('shield',21)+'<span class="dal-tip">Manage access</span></button>'
     +'<div class="dal-rsp"></div>'
-    +'<button class="dal-ric" id="dal-signout" title="Sign out">'+ic('logout',21)+'<span class="dal-tip">Sign out</span></button>';
+    +'<button class="dal-ric dal-acct" id="dal-acct"><span class="dal-avatar" id="dal-avatar">–</span><span class="dal-tip" id="dal-acct-tip">Account</span></button>';
   document.body.appendChild(rail);
+
+  var acctPop=document.createElement('div'); acctPop.className='dal-acct-pop'; acctPop.id='dal-acct-pop';
+  acctPop.innerHTML=''
+    +'<div class="dal-acct-hd"><div class="dal-avatar lg" id="dal-acct-av">–</div><div style="min-width:0"><div class="dal-acct-nm" id="dal-acct-nm">—</div><div class="dal-acct-em" id="dal-acct-em"></div></div></div>'
+    +'<button class="dal-acct-out" id="dal-acct-out">'+ic('logout',15)+' Sign out</button>';
+  document.body.appendChild(acctPop);
 
   var ov=document.createElement('div'); ov.className='dal-fly-ov'; document.body.appendChild(ov);
   var fly=document.createElement('aside'); fly.className='dal-flyout';
@@ -127,7 +144,38 @@
 
   /* ---- rail actions ---- */
   document.getElementById('dal-home').addEventListener('click',function(){window.location='index.html';});
-  document.getElementById('dal-signout').addEventListener('click',function(){
+
+  /* ---- account identity + menu ---- */
+  function getUser(){
+    try{
+      var raw=null;
+      for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(/^sb-.*-auth-token$/.test(k)){raw=localStorage.getItem(k);break;}}
+      if(!raw)return null;
+      var s=JSON.parse(raw);
+      var sess=(s&&s.access_token)?s:((s&&s.currentSession)?s.currentSession:s);
+      var u=(sess&&sess.user)||s.user||null; if(!u)return null;
+      var meta=u.user_metadata||{};
+      var name=meta.full_name||meta.name||meta.display_name||(u.email?u.email.split('@')[0]:'')||'User';
+      return {name:name, email:u.email||''};
+    }catch(e){return null;}
+  }
+  function initialsOf(n){var p=(n||'').trim().split(/\s+/);return (((p[0]||'')[0]||'')+((p[1]||'')[0]||'')).toUpperCase()||'?';}
+  function renderAcct(){
+    var u=getUser();
+    var name=(u&&u.name)||'Account', email=(u&&u.email)||'', ini=initialsOf(name);
+    var av=document.getElementById('dal-avatar'); if(av)av.textContent=ini;
+    var av2=document.getElementById('dal-acct-av'); if(av2)av2.textContent=ini;
+    var nm=document.getElementById('dal-acct-nm'); if(nm)nm.textContent=name;
+    var em=document.getElementById('dal-acct-em'); if(em)em.textContent=email;
+    var tip=document.getElementById('dal-acct-tip'); if(tip)tip.textContent=name;
+  }
+  renderAcct(); setTimeout(renderAcct,1200); setTimeout(renderAcct,3500);
+  var acctOpen=false;
+  function toggleAcct(v){acctOpen=(v===undefined)?!acctOpen:v;acctPop.classList.toggle('on',acctOpen);document.getElementById('dal-acct').classList.toggle('on',acctOpen);}
+  document.getElementById('dal-acct').addEventListener('click',function(e){e.stopPropagation();toggleAcct();});
+  acctPop.addEventListener('click',function(e){e.stopPropagation();});
+  document.addEventListener('click',function(){if(acctOpen)toggleAcct(false);});
+  document.getElementById('dal-acct-out').addEventListener('click',function(){
     if(typeof window.dalSignOut==='function')return window.dalSignOut();
     if(typeof window.signOut==='function')return window.signOut();
     window.location='daltex_login.html';
