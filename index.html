@@ -283,6 +283,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .sm-mx-dchk.on{background:var(--orange);border-color:var(--orange);color:#fff}
 .sm-mx-dchk.disabled{opacity:.3;cursor:not-allowed;background:var(--bg)}
 .sm-mx-note{padding:8px 11px;font-size:10px;color:var(--muted);display:flex;align-items:center;gap:5px;background:var(--bg)}
+/* simplified wizard — collapsible dashboard groups */
+.sm-glabel{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin:2px 2px 8px}
+.sm-glabel:not(:first-child){margin-top:14px}
+.sm-grp{border:1px solid var(--border);border-radius:10px;margin-bottom:9px;overflow:hidden}
+.sm-ghead{display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--bg);cursor:pointer}
+.sm-ghead:hover{background:#eef1f8}
+.sm-gname{font-size:13.5px;font-weight:700;color:var(--navy);flex:1}
+.sm-gcnt{font-size:11px;color:var(--text3);font-family:var(--mono);margin-right:4px}
+.sm-gchev{transition:transform .2s;color:var(--text3)}
+.sm-grp.open .sm-gchev{transform:rotate(90deg)}
+.sm-gbody{display:none}
+.sm-grp.open .sm-gbody{display:block}
+.sm-selall{display:flex;align-items:center;gap:9px;padding:9px 13px;border-top:1px solid var(--border);cursor:pointer;font-size:12px;font-weight:700;color:var(--navy)}
+.sm-dbrow{display:flex;align-items:center;gap:9px;padding:9px 13px 9px 30px;border-top:1px solid var(--border);cursor:pointer}
+.sm-dbrow:hover{background:var(--bg)}
+.sm-dbrow .dn{font-size:13px;color:var(--text2);font-weight:500}
 
 .sm-pname{font-size:12px;font-weight:600;color:var(--navy);flex:1}
 .sm-dbrow{display:flex;align-items:center;gap:8px;padding:7px 11px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s}
@@ -638,13 +654,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     <div class="sm-steps" id="sm-steps">
       <div class="sm-step active" id="ss1"><div class="sm-snum" id="sn1">1</div><span>User</span></div>
       <div class="sm-line" id="sl1"></div>
-      <div class="sm-step" id="ss2"><div class="sm-snum" id="sn2">2</div><span>Role</span></div>
-      <div class="sm-line" id="sl2"></div>
-      <div class="sm-step" id="ss3"><div class="sm-snum" id="sn3">3</div><span>Products</span></div>
-      <div class="sm-line" id="sl3"></div>
-      <div class="sm-step" id="ss4"><div class="sm-snum" id="sn4">4</div><span>Filters</span></div>
-      <div class="sm-line" id="sl4"></div>
-      <div class="sm-step" id="ss5"><div class="sm-snum" id="sn5">5</div><span>Tabs</span></div>
+      <div class="sm-step" id="ss2"><div class="sm-snum" id="sn2">2</div><span>Dashboards</span></div>
     </div>
     <div class="sm-body">
       <!-- STEP 1: USER -->
@@ -691,25 +701,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
         </div>
         <div class="sm-info-note"><i class="ti ti-info-circle" style="font-size:14px;color:var(--orange)"></i>Role pre-fills products, filters and tabs. Override anything in the next steps.</div>
       </div>
-      <!-- STEP 3: PRODUCTS & DASHBOARDS -->
+      <!-- STEP 2: DASHBOARDS (per product / department, collapsible + select all) -->
       <div class="sm-panel" id="smp3">
-        <div class="sm-label"><span class="sm-lpill lp2">Layer 2</span>Products & dashboards</div>
-        <div class="sm-prefill"><i class="ti ti-wand" style="font-size:13px"></i><span id="p3note">Pre-filled from role. Adjust as needed.</span></div>
-        <div class="sm-matrix" id="sm-matrix">
-          <div class="sm-mx-head">
-            <div class="sm-mx-prod"><i class="ti ti-package" style="font-size:12px"></i> Product</div>
-            <div class="sm-mx-dbs">
-              <span class="sm-mx-dbh">Shipments</span>
-              <span class="sm-mx-dbh">QC</span>
-              <span class="sm-mx-dbh">Harvest</span>
-              <span class="sm-mx-dbh">Budget</span>
-              <span class="sm-mx-dbh">Inventory</span>
-              <span class="sm-mx-dbh">Board Review</span>
-            </div>
-          </div>
-          <div id="sm-matrix-rows"></div>
-          <div class="sm-mx-note"><i class="ti ti-info-circle" style="font-size:11px"></i> Tick a product to enable it, then choose which dashboards that product can access.</div>
-        </div>
+        <div class="sm-label">Choose dashboards</div>
+        <div class="sm-mx-note" style="background:none;padding:0 0 12px"><i class="ti ti-info-circle" style="font-size:13px;color:var(--orange)"></i> Pick dashboards per product or department. Use “Select all” to grant a whole group.</div>
+        <div id="sm-matrix-rows"></div>
       </div>
       <!-- STEP 4: FILTERS -->
       <div class="sm-panel" id="smp4">
@@ -1066,17 +1062,15 @@ async function approveRequest(reqId, userId, name, prod){
   var steps=document.getElementById('sm-steps');if(steps)steps.style.display='';
   var foot=document.getElementById('sm-foot');if(foot)foot.style.display='';
   document.getElementById('share-modal-wrap').classList.add('open');
-  // Pre-select the requested product only (match on the base product, not the dashboard-suffixed value)
-  smProds.forEach(function(p){
-    var el=document.getElementById('mpc-'+p);
-    if(!el) return;
-    var row=el.closest('.sm-prow');
-    var on=(p===baseProd);
-    el.className='sm-chk'+(on?' on':'');
-    el.innerHTML=on?'<i class="ti ti-check" style="font-size:10px"></i>':'';
-    on?row.classList.add('sel'):row.classList.remove('sel');
-  });
-  smStep=2; smShowP('smp2'); smUpdateBar();
+  // Pre-select the requested dashboards for the base product (whole product if no specific dashboard).
+  smAccess=smBlankAccess();
+  if(smAccess[baseProd]){
+    if(reqDash&&smProdDbs(baseProd).indexOf(reqDash)>-1){ smAccess[baseProd][reqDash]=true; }
+    else { smProdDbs(baseProd).forEach(function(d){smAccess[baseProd][d]=true;}); }
+  }
+  smOpenG={}; if(baseProd) smOpenG[baseProd]=true;
+  smRenderMatrix();
+  smStep=3; smShowP('smp3'); smUpdateBar();
   window._pendingReqId=reqId;
   // Remove from pending immediately for instant feedback
   var pendingRow=document.getElementById('preq-'+reqId);
@@ -1149,9 +1143,9 @@ function editUser(permId, name, role, config, expiresAt, email){
   document.querySelector('.sm-title').innerHTML='<i class="ti ti-edit" style="font-size:13px;margin-right:5px"></i>Edit access — '+escH(name);
   document.getElementById('sm-nx').textContent='Next';
   document.getElementById('sm-nx').disabled=false;
-  // Skip step 1 (user already chosen) — go straight to step 2
-  smStep=2;
-  smShowP('smp2');
+  // Skip step 1 (user already chosen) — go straight to the Dashboards step
+  smStep=3;
+  smShowP('smp3');
   smUpdateBar();
   // pre-fill role — set smRole directly, highlight card WITHOUT applying defaults
   smRole = role || 'viewer';
@@ -1201,7 +1195,7 @@ function editUser(permId, name, role, config, expiresAt, email){
 }
 
 function openModal(){
-  _editPermId=null;
+  smReset();
   // reset modal title for new grant
   document.querySelector('.sm-title').innerHTML='<i class="ti ti-shield-lock" style="font-size:13px;margin-right:5px"></i>Share dashboard access';
   document.getElementById('share-modal-wrap').classList.add('open');
@@ -1270,22 +1264,31 @@ function smBlankAccess(){var o={};smProds.forEach(function(p){o[p]={shipments:fa
 function smProdDbs(p){return p==='finance'?['budget','board_review']:(p==='operations'?['inventory']:['shipments','qc','harvest','budget']);}
 function smProdOn(p){var a=smAccess[p];return !!(a&&(a.shipments||a.qc||a.harvest||a.budget||a.inventory||a.board_review));}
 // Build the matrix rows UI from smAccess
+const smDbLabels={shipments:'Shipments',qc:'Quality Control',harvest:'Harvest Funnel',budget:'Labor Budget',inventory:'Inventory',board_review:'Board Review 2026'};
+const smGroups=[{label:'Products',keys:['grapes','mango','pomegranate','citrus','potatoes']},{label:'Departments',keys:['finance','operations']}];
+let smOpenG={};
+function smTogGroup(p){smOpenG[p]=!smOpenG[p];smRenderMatrix();}
 function smRenderMatrix(){
   var host=document.getElementById('sm-matrix-rows');if(!host)return;
-  host.innerHTML=smProds.map(function(p){
-    var a=smAccess[p]||{};var on=smProdOn(p);
-    function cell(db){var c=a[db]?' on':'';return '<div class="sm-mx-dchk'+c+'" data-prod="'+p+'" data-db="'+db+'" onclick="smMxTog(this)">'+(a[db]?'<i class=\'ti ti-check\' style=\'font-size:11px\'></i>':'')+'</div>';}
-    var pchk='<div class="sm-chk'+(on?' on':'')+'" >'+(on?'<i class=\'ti ti-check\' style=\'font-size:10px\'></i>':'')+'</div>';
-    return '<div class="sm-mxrow'+(on?' on':'')+'" data-prod="'+p+'">'+
-      '<div class="sm-mx-pcell" onclick="smMxTogProd(\''+p+'\')">'+pchk+'<span class="sm-pname">'+smProdLabels[p]+'</span></div>'+
-      '<div class="sm-mx-dcells">'+['shipments','qc','harvest','budget','inventory','board_review'].map(function(db){return smProdDbs(p).indexOf(db)>-1?cell(db):'<div style="visibility:hidden" class="sm-mx-dchk"></div>';}).join('')+'</div>'+
-    '</div>';
+  function chk(on){return '<div class="sm-chk'+(on?' on':'')+'">'+(on?'<i class="ti ti-check" style="font-size:10px"></i>':'')+'</div>';}
+  host.innerHTML=smGroups.map(function(g){
+    var rows=g.keys.filter(function(p){return smProds.indexOf(p)>-1;}).map(function(p){
+      var dbs=smProdDbs(p),a=smAccess[p]||{},cnt=dbs.filter(function(d){return a[d];}).length;
+      var allOn=dbs.length>0&&cnt===dbs.length,open=!!smOpenG[p];
+      return '<div class="sm-grp'+(open?' open':'')+'">'
+        +'<div class="sm-ghead" onclick="smTogGroup(\''+p+'\')"><span class="sm-gname">'+smProdLabels[p]+'</span><span class="sm-gcnt">'+cnt+'/'+dbs.length+'</span><i class="ti ti-chevron-right sm-gchev" style="font-size:15px"></i></div>'
+        +'<div class="sm-gbody">'
+        +'<div class="sm-selall" onclick="smMxTogProd(\''+p+'\')">'+chk(allOn)+'Select all '+smProdLabels[p]+' dashboards</div>'
+        +dbs.map(function(d){return '<div class="sm-dbrow" data-prod="'+p+'" data-db="'+d+'" onclick="smMxTog(this)">'+chk(!!a[d])+'<span class="dn">'+(smDbLabels[d]||d)+'</span></div>';}).join('')
+        +'</div></div>';
+    }).join('');
+    return '<div class="sm-glabel">'+g.label+'</div>'+rows;
   }).join('');
 }
 // Toggle a single product-dashboard cell
 function smMxTog(el){var p=el.dataset.prod,db=el.dataset.db;if(!smAccess[p])smAccess[p]={shipments:false,qc:false,harvest:false,budget:false,inventory:false,board_review:false};smAccess[p][db]=!smAccess[p][db];smRenderMatrix();}
-// Toggle a whole product row: if any on -> turn all off; if all off -> turn all on
-function smMxTogProd(p){var on=smProdOn(p);var v=!on;smAccess[p]={shipments:false,qc:false,harvest:false,budget:false,inventory:false,board_review:false};smProdDbs(p).forEach(function(d){smAccess[p][d]=v;});smRenderMatrix();}
+// "Select all" toggle for a group: if every dashboard is on -> turn all off; else turn all on.
+function smMxTogProd(p){var dbs=smProdDbs(p);var a=smAccess[p]||{};var allOn=dbs.length>0&&dbs.every(function(d){return a[d];});smAccess[p]={shipments:false,qc:false,harvest:false,budget:false,inventory:false,board_review:false};if(!allOn)dbs.forEach(function(d){smAccess[p][d]=true;});smOpenG[p]=true;smRenderMatrix();}
 // Convert smAccess -> compact map {product:[dbs]} for saving; also legacy flat arrays for back-compat
 function smAccessToConfig(){
   var access={},prods=[],dbsSet={};
@@ -1306,6 +1309,7 @@ function smConfigToAccess(cfg){
     var prods=cfg.products||[],dbs=cfg.dashboards||[];
     prods.forEach(function(p){if(!smAccess[p])return;smDbs.forEach(function(d){smAccess[p][d]=dbs.indexOf(d)>-1;});});
   }
+  smOpenG={};smProds.forEach(function(p){if(smProdOn(p))smOpenG[p]=true;});
   smRenderMatrix();
 }
 const roleDefaults={
@@ -1320,31 +1324,29 @@ const roleLabels={director:'Director',product_manager:'Product manager',farm_man
 const roleNotes={director:'Director — full access pre-filled.',product_manager:'Product manager pre-filled.',farm_manager:'Farm manager — Farm A pre-filled.',qc_analyst:'QC analyst pre-filled.',export_manager:'Export manager pre-filled.',finance:'Finance pre-filled.'};
 
 function smUpdateBar(){
-  [1,2,3,4,5].forEach(i=>{
-    const s=document.getElementById('ss'+i),n=document.getElementById('sn'+i);
-    s.className='sm-step'+(i===smStep?' active':i<smStep?' done':'');
-    n.innerHTML=i<smStep?'<i class="ti ti-check" style="font-size:10px"></i>':i;
-  });
-  [1,2,3,4].forEach(i=>document.getElementById('sl'+i).className='sm-line'+(i<smStep?' done':''));
-  document.getElementById('sm-bk').style.visibility=smStep>1?'visible':'hidden';
+  // Two steps only: 1 = User, (anything else) = Dashboards.
+  var onDash=(smStep!==1);
+  var s1=document.getElementById('ss1'),n1=document.getElementById('sn1');
+  var s2=document.getElementById('ss2'),n2=document.getElementById('sn2');
+  var l1=document.getElementById('sl1');
+  if(s1)s1.className='sm-step'+(onDash?' done':' active');
+  if(n1)n1.innerHTML=onDash?'<i class="ti ti-check" style="font-size:10px"></i>':'1';
+  if(s2)s2.className='sm-step'+(onDash?' active':'');
+  if(n2)n2.innerHTML='2';
+  if(l1)l1.className='sm-line'+(onDash?' done':'');
+  document.getElementById('sm-bk').style.visibility=onDash?'visible':'hidden';
   const nx=document.getElementById('sm-nx');
-  if(smStep===5){nx.className='sm-btn-grant';nx.textContent=_editPermId?'Update access':'Grant access';}
+  if(onDash){nx.className='sm-btn-grant';nx.textContent=_editPermId?'Update access':'Grant access';}
   else{nx.className='sm-btn-n';nx.textContent='Next';}
 }
 function smShowP(id){document.querySelectorAll('.sm-panel').forEach(p=>p.className='sm-panel');document.getElementById(id).className='sm-panel active';}
 function smNext(){
-  console.log('smNext called — step:',smStep,'role:',smRole,'editPermId:',_editPermId,'user:',smUser);
+  // Simplified 2-step flow: User (1) -> Dashboards (3) -> grant. Role defaults to viewer.
   if(smStep===1&&!smUser){console.warn('smNext blocked: step 1 with no user');return;}
-  // Step 2 = role. Never dead-end: if no role chosen yet, default to viewer so Next always advances.
-  if(smStep===2&&!smRole&&!_editPermId){ smRole='viewer'; }
-  if(smStep===5){smGrant();return;}
-  smStep++;
-  try{ smShowP('smp'+smStep); }
-  catch(e){ console.warn('smShowP failed for step',smStep,e); }
-  try{ smUpdateBar(); }
-  catch(e){ console.warn('smUpdateBar failed at step',smStep,e); }
+  if(smStep===1){ smStep=3; smShowP('smp3'); smUpdateBar(); return; }
+  smGrant();
 }
-function smBack(){if(smStep<=1)return;smStep--;smShowP('smp'+smStep);smUpdateBar();}
+function smBack(){ if(smStep!==1){ smStep=1; smShowP('smp1'); smUpdateBar(); } }
 
 function smSelU(row){
   document.querySelectorAll('.sm-urow').forEach(r=>{r.classList.remove('sel');const c=r.querySelector('.sm-chk');c.className='sm-chk';c.innerHTML='';});
@@ -1502,7 +1504,7 @@ function smReset(){
   var _nx=document.getElementById('sm-nx');if(_nx){_nx.disabled=false;_nx.textContent='Next';}
   smStep=1;smUser=null;smRole=null;smAllTabs=true;
   smTabs.forEach(t=>{smTabSt[t]=true;smSyncTab(t);});
-  smAccess=smBlankAccess();smAccess.grapes={shipments:true,qc:true,harvest:true,budget:true};smRenderMatrix();
+  smAccess=smBlankAccess();smAccess.grapes={shipments:true,qc:true,harvest:true,budget:true};smOpenG={grapes:true};smRenderMatrix();
   document.querySelectorAll('.sm-urow').forEach(r=>{r.classList.remove('sel');const c=r.querySelector('.sm-chk');c.className='sm-chk';c.innerHTML='';});
   document.querySelectorAll('.sm-rcard').forEach(c=>{const f=c.classList.contains('full');c.className=f?'sm-rcard full':'sm-rcard';const chk=c.querySelector('.sm-chk');if(chk){chk.className='sm-chk';chk.innerHTML='';}});
   const ucnt=document.getElementById('sm-ucnt');if(ucnt)ucnt.textContent='No user selected';
@@ -1514,7 +1516,7 @@ function smReset(){
   /* product/dashboard reset handled via smAccess above */
   smShowP('smp1');smUpdateBar();
 }
-smAccess=smBlankAccess();smAccess.grapes={shipments:true,qc:true,harvest:true,budget:true};smRenderMatrix();smUpdateBar();
+smAccess=smBlankAccess();smAccess.grapes={shipments:true,qc:true,harvest:true,budget:true};smOpenG={grapes:true};smRenderMatrix();smUpdateBar();
 </script>
 
 <script>
