@@ -712,23 +712,20 @@ function drawKpis(vw){
   ];
   document.getElementById('kpiRow').innerHTML=kpis.map(k=>`<div class="kpi ${k.c}"><div class="kpi-val">${k.v}</div><div class="kpi-lbl">${k.l}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
 }
-/* least-squares straight trendline over the last up-to-12 buckets (nulls before, so it only spans the last year) */
-function trendLine12(ys){
-  var n=ys.length, k=Math.min(n,12), start=n-k;
-  if(k<2) return ys.map(function(){return null;});
-  var sx=0,sy=0,sxy=0,sxx=0,c=0;
-  for(var i=start;i<n;i++){ var x=i-start,y=+ys[i]||0; sx+=x;sy+=y;sxy+=x*y;sxx+=x*x;c++; }
-  var den=c*sxx-sx*sx; if(den===0) return ys.map(function(){return null;});
-  var b=(c*sxy-sx*sy)/den, a=(sy-b*sx)/c;
-  return ys.map(function(_,i){ return i<start?null:(a+b*(i-start)); });
-}
 function drawSeason(vw){ killChart('c-season'); var q=isQ('season');
   var data=q?vw.sOnhandQ:vw.sOnhand, lf=q?(v=>fmtQ(v)):(v=>v.toFixed(0)+'M');
-  CH['c-season']=new Chart(document.getElementById('c-season'),{data:{labels:vw.sLabels,datasets:[
-    {type:'bar',label:'On-hand',data:data,backgroundColor:NAVY,borderRadius:4,datalabels:dl('#fff',lf)},
-    {type:'line',label:'Trend',data:data,borderColor:ORANGE,backgroundColor:ORANGE,tension:.35,pointRadius:0,borderWidth:2.5,datalabels:{display:false}},
-    {type:'line',label:'Trendline (last 12m)',data:trendLine12(data),borderColor:'rgba(220,100,40,.40)',borderWidth:2.5,borderDash:[7,5],pointRadius:0,fill:false,tension:0,spanGaps:false,datalabels:{display:false}}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#eef1f6'}},x:{grid:{display:false}}}}});
+  /* last-season comparison line: only in the default month view, aligned month-for-month (prev year) */
+  var showLast=!vw.rangeActive && data.length===seasonMonths.length;
+  var ds=[{type:'bar',label:'This season',data:data,backgroundColor:NAVY,borderRadius:4,datalabels:dl('#fff',lf)}];
+  if(showLast){
+    var src=q?(DATA.monthlyOnhandQty||{}):(DATA.monthlyOnhand||{});
+    var last=seasonMonths.map(function(m){ var p=(''+m).split('-'); var lm=(+p[0]-1)+'-'+p[1]; return (lm in src)?num(src[lm]):null; });
+    ds.push({type:'line',label:'Last season',data:last,borderColor:ORANGE,backgroundColor:ORANGE,borderWidth:2.5,borderDash:[6,4],pointRadius:2,pointBackgroundColor:ORANGE,tension:.3,fill:false,spanGaps:true,datalabels:{display:false}});
+  } else {
+    ds.push({type:'line',label:'Trend',data:data,borderColor:ORANGE,backgroundColor:ORANGE,tension:.35,pointRadius:0,borderWidth:2.5,datalabels:{display:false}});
+  }
+  CH['c-season']=new Chart(document.getElementById('c-season'),{data:{labels:vw.sLabels,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:showLast,position:'bottom'}},scales:{y:{grid:{color:'#eef1f6'}},x:{grid:{display:false}}}}});
 }
 function drawIoCat(vw){ var q=isQ('iocat'), inb=q?vw.inByCatQ:vw.inByCat, outb=q?vw.outByCatQ:vw.outByCat;
   var f=q?(v=>v>0?fmtQ(v):''):(v=>v>0?v.toFixed(1):'');
