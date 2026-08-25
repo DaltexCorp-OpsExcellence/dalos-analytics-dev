@@ -723,7 +723,7 @@ function drawSeason(vw){ killChart('c-season'); var q=isQ('season');
   if(showLast){
     var src=q?(DATA.monthlyOnhandQty||{}):(DATA.monthlyOnhand||{});
     var last=seasonMonths.map(function(m){ var p=(''+m).split('-'); var lm=(+p[0]-1)+'-'+p[1]; return (lm in src)?num(src[lm]):null; });
-    ds.push({type:'line',label:'Same period last year',data:last,borderColor:SLATE,backgroundColor:SLATE,borderWidth:2.5,borderDash:[2,3],pointRadius:0,tension:.3,fill:false,spanGaps:true,datalabels:{display:false}});
+    ds.push({type:'line',label:'Same period last year',data:last,borderColor:'#0d9488',backgroundColor:'#0d9488',borderWidth:3,borderDash:[6,4],pointRadius:4,pointHoverRadius:5,pointBackgroundColor:'#fff',pointBorderColor:'#0d9488',pointBorderWidth:2,tension:.3,fill:false,spanGaps:true,order:0,datalabels:{display:false}});
   }
   CH['c-season']=new Chart(document.getElementById('c-season'),{data:{labels:vw.sLabels,datasets:ds},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:showLast,position:'bottom',labels:{filter:function(it){return it.text!=='Trend';}}}},scales:{y:{grid:{color:'#eef1f6'}},x:{grid:{display:false}}}}});
