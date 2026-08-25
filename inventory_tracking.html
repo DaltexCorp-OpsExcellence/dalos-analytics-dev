@@ -610,8 +610,7 @@ function barChart(id,labels,datasets,opts={}){ killChart(id);
 }
 
 /* ===== OVERVIEW ===== */
-// season stock value/month bar + line + trendline (via drawSeason so the trendline shows on load)
-drawSeason(buildFullVW());
+// season chart drawn after CMET is declared (drawSeason -> isQ -> CMET), see below
 // category share donut
 function donut(id,labels,vals,colors){ killChart(id);
   CH[id]=new Chart(document.getElementById(id),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
@@ -627,6 +626,8 @@ function bLabel(k,grain){var p=(''+k).split('-');if(grain==='month')return MON[(
 
 /* ---- per-chart metric (EGP value 'v' vs Qty units 'q'); each chart independent ---- */
 const CMET={season:'v',iomonth:'v',iocat:'v',cattrend:'v',catmonthly:'v',mvmonth:'v',mvin:'v',mvout:'v',catoh:'v',catturn:'v',site:'v',heat:'v',brandoh:'v',brandiss:'v',health:'v'};
+/* initial season chart (bar + value line + last-12m trendline) — after CMET so drawSeason->isQ works */
+drawSeason(buildFullVW());
 function mIsQ(key){return CMET[key]==='q';}
 function isQ(key){return CMET[key]==='q';}
 function fmtQ(v){return Math.round(num(v)).toLocaleString();}
