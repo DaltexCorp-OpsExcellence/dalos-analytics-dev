@@ -714,18 +714,10 @@ function drawKpis(vw){
 }
 function drawSeason(vw){ killChart('c-season'); var q=isQ('season');
   var data=q?vw.sOnhandQ:vw.sOnhand, lf=q?(v=>fmtQ(v)):(v=>v.toFixed(0)+'M');
-  /* default month view: show THIS season vs LAST season as two lines (aligned month-for-month) */
-  var showLast=!vw.rangeActive && data.length===seasonMonths.length;
-  var ds=[{type:'bar',label:'This season',data:data,backgroundColor:NAVY,borderRadius:4,datalabels:dl('#fff',lf)}];
-  if(showLast){
-    var src=q?(DATA.monthlyOnhandQty||{}):(DATA.monthlyOnhand||{});
-    var last=seasonMonths.map(function(m){ var p=(''+m).split('-'); var lm=(+p[0]-1)+'-'+p[1]; return (lm in src)?num(src[lm]):null; });
-    ds.push({type:'line',label:'Last season',data:last,borderColor:ORANGE,backgroundColor:ORANGE,borderWidth:2.5,borderDash:[6,4],pointRadius:3,pointBackgroundColor:ORANGE,pointBorderColor:'#fff',pointBorderWidth:1.5,tension:.3,fill:false,spanGaps:true,datalabels:{display:false}});
-  } else {
-    ds.push({type:'line',label:'Trend',data:data,borderColor:ORANGE,backgroundColor:ORANGE,tension:.35,pointRadius:0,borderWidth:2.5,datalabels:{display:false}});
-  }
-  CH['c-season']=new Chart(document.getElementById('c-season'),{data:{labels:vw.sLabels,datasets:ds},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:showLast,position:'bottom'}},scales:{y:{grid:{color:'#eef1f6'},grace:'14%'},x:{grid:{display:false}}}}});
+  CH['c-season']=new Chart(document.getElementById('c-season'),{data:{labels:vw.sLabels,datasets:[
+    {type:'bar',label:'On-hand',data:data,backgroundColor:NAVY,borderRadius:4,datalabels:dl('#fff',lf)},
+    {type:'line',label:'Trend',data:data,borderColor:ORANGE,backgroundColor:ORANGE,tension:.35,pointRadius:0,borderWidth:2.5,datalabels:{display:false}}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#eef1f6'}},x:{grid:{display:false}}}}});
 }
 function drawIoCat(vw){ var q=isQ('iocat'), inb=q?vw.inByCatQ:vw.inByCat, outb=q?vw.outByCatQ:vw.outByCat;
   var f=q?(v=>v>0?fmtQ(v):''):(v=>v>0?v.toFixed(1):'');
