@@ -790,20 +790,18 @@ function drawSite(vw){ var q=isQ('site'), src=q?vw.onhandBySiteQ:vw.onhandBySite
 }
 function drawHeat(vw){ var q=isQ('heat'), src=q?vw.onhandBySiteQ:vw.onhandBySite, hv=q?vw.heatQ:vw.heat;
   const sites=Object.keys(src).filter(s=>src[s]>(q?0:0.05)).sort((a,b)=>src[b]-src[a]);
-  var band;
-  if(q){ var mx=1; sites.forEach(s=>{var t=0;CAT.forEach(c=>t+=num(hv[`${s}|${c}`]));if(t>mx)mx=t;});
-    band=v=>v>0.5*mx?'#7f1d1d':v>0.2*mx?'#dc2626':v>0.05*mx?'#d97706':v>0?'#2563eb':'#1b2a44'; }
-  else { band=v=>v>80?'#7f1d1d':v>20?'#dc2626':v>5?'#d97706':v>0?'#2563eb':'#1b2a44'; }
+  /* colours are relative WITHIN each category (column max) so every category reads on its own scale */
+  var colMax={}, totMax=0, rowTot={}; CAT.forEach(c=>colMax[c]=0);
+  sites.forEach(s=>{ var t=0; CAT.forEach(c=>{var v=num(hv[`${s}|${c}`]); if(v>colMax[c])colMax[c]=v; t+=v;}); rowTot[s]=t; if(t>totMax)totMax=t; });
+  var band=(v,mx)=>{ if(v<=0)return '#1b2a44'; var r=mx>0?v/mx:0; return r>0.66?'#7f1d1d':r>0.33?'#dc2626':r>0.1?'#d97706':'#2563eb'; };
   const cell=q?(v=>v>0?fmtQ(v):'–'):(v=>v>0?v.toFixed(1):'–'), unit=q?' (u)':' (M)';
   let html='<tr><th>Location</th>'+CAT.map(c=>`<th>${c}${unit}</th>`).join('')+`<th>Total${unit}</th></tr>`;
-  sites.forEach(s=>{ let row=`<tr><td>${s}</td>`,tot=0;
-    CAT.forEach(c=>{const v=num(hv[`${s}|${c}`]);tot+=v;row+=`<td style="background:${band(v)}">${cell(v)}</td>`;});
-    row+=`<td style="background:${band(tot)}">${q?fmtQ(tot):tot.toFixed(1)}</td></tr>`; html+=row;});
+  sites.forEach(s=>{ let row=`<tr><td>${s}</td>`;
+    CAT.forEach(c=>{const v=num(hv[`${s}|${c}`]);row+=`<td style="background:${band(v,colMax[c])}">${cell(v)}</td>`;});
+    row+=`<td style="background:${band(rowTot[s],totMax)}">${q?fmtQ(rowTot[s]):rowTot[s].toFixed(1)}</td></tr>`; html+=row;});
   document.getElementById('heatTable').innerHTML=html;
   var lg=document.getElementById('heatLegend');
-  if(lg)lg.innerHTML=q
-    ? '<span><i style="background:#7f1d1d"></i>Top 20%</span><span><i style="background:#dc2626"></i>20–50%</span><span><i style="background:#d97706"></i>5–20%</span><span><i style="background:#2563eb"></i>&lt;5%</span>'
-    : '<span><i style="background:#7f1d1d"></i>&gt;80M</span><span><i style="background:#dc2626"></i>20–80M</span><span><i style="background:#d97706"></i>5–20M</span><span><i style="background:#2563eb"></i>&lt;5M</span>';
+  if(lg)lg.innerHTML='<span style="color:var(--text3)">shaded relative to each category’s top site:</span><span><i style="background:#7f1d1d"></i>Top</span><span><i style="background:#dc2626"></i>High</span><span><i style="background:#d97706"></i>Medium</span><span><i style="background:#2563eb"></i>Low</span>';
 }
 function drawMvMonth(vw){ ioBars('c-mv-month',vw,isQ('mvmonth')); }
 function drawMvIn(vw){ var q=isQ('mvin'), src=q?vw.inByCatQ:vw.inByCat;
