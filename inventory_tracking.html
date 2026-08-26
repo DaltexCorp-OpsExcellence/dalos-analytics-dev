@@ -1442,40 +1442,72 @@ function renderFlowSection(side){
   });
 }
 /* ----- clicking a period opens a POPUP with that period's breakdown (section charts stay on full window) ----- */
-var FM={side:'in',from:null,to:null,grain:'month',label:'',metric:'v'};
+var FM={side:'in',from:null,to:null,grain:'month',label:'',metric:'v',drill:null};
+function flowDetailFetch(from,to,metric,dir,dim,val){
+  var key=['D',from,to,metric,dir,dim,val].join('|'); if(FLOWCACHE[key])return Promise.resolve(FLOWCACHE[key]);
+  var H={apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'};
+  return fetch(SB+'/rest/v1/rpc/inv_flow_detail',{method:'POST',headers:H,body:JSON.stringify({p_from:from,p_to:to,p_metric:metric,p_dir:dir,p_dim:dim,p_val:val})})
+    .then(rpcOk).then(function(d){ FLOWCACHE[key]=d; return d; });
+}
 function flowDrill(side,k,grain){
   var r=flowBucketRange(k,grain);
-  FM={side:side,from:r.from,to:r.to,grain:grain,label:bLabelYr(k,grain),metric:FLOW_METRIC};
+  FM={side:side,from:r.from,to:r.to,grain:grain,label:bLabelYr(k,grain),metric:FLOW_METRIC,drill:null};
   fmSyncMetric();
   var mo=document.getElementById('flowModal'); if(mo)mo.style.display='flex';
   fmLoad();
 }
 function fmFmt(v){ return FM.metric==='q'?Math.round(num(v)).toLocaleString():('EGP '+num(v).toFixed(1)+'M'); }
-function fmLoad(){
-  var t=document.getElementById('fmTitle'); if(t)t.textContent=(FM.side==='in'?'Inbound':'Outbound')+' · '+FM.label;
-  var body=document.getElementById('fmBody'); if(body)body.innerHTML='<div style="padding:26px 4px;color:var(--text3)">Loading…</div>';
-  flowFetch(FM.from,FM.to,FM.grain,FM.metric).then(function(d){ fmRender((FM.side==='in')?d.in:d.out); })
-    .catch(function(e){ if(body)body.innerHTML='<div style="color:#dc2626;font-weight:600;padding:8px">'+((e&&e.message)||e)+'</div>'; });
+function fmErr(e){ return '<div style="color:#dc2626;font-weight:600;padding:8px">'+((e&&e.message)||e)+'</div>'; }
+function fmTbl(obj,topN,color,tot,dim){   /* dim set => rows clickable to drill deeper */
+  var arr=Object.keys(obj||{}).map(function(k){return [k,num(obj[k])];}).filter(function(x){return x[1]>0;}).sort(function(a,b){return b[1]-a[1];});
+  if(topN)arr=arr.slice(0,topN);
+  if(!arr.length)return '<div style="color:var(--text3);font-size:12px;padding:2px 8px">none</div>';
+  var mx=arr[0][1]||1;
+  return '<table class="fm-tbl">'+arr.map(function(x){ var pct=tot>0?(100*x[1]/tot):0;
+    var attr=dim?(' data-dim="'+dim+'" data-val="'+fesc(''+x[0])+'" style="cursor:pointer"'):'';
+    return '<tr'+attr+'><td class="b">'+fesc(x[0])+(dim?' <span style="color:var(--text3);font-weight:400">›</span>':'')+'</td><td style="width:36%"><div class="fm-bar" style="width:'+Math.max(3,100*x[1]/mx)+'%;background:'+color+'"></div></td><td class="n">'+fmFmt(x[1])+'</td><td class="p">'+pct.toFixed(1)+'%</td></tr>'; }).join('')+'</table>';
 }
-function fmRender(br){
-  br=br||{}; var tot=num(br.total)||0;
-  function tbl(obj,topN,color){
-    var arr=Object.keys(obj||{}).map(function(k){return [k,num(obj[k])];}).filter(function(x){return x[1]>0;}).sort(function(a,b){return b[1]-a[1];});
-    if(topN)arr=arr.slice(0,topN);
-    if(!arr.length)return '<div style="color:var(--text3);font-size:12px;padding:2px 8px">none</div>';
-    var mx=arr[0][1]||1;
-    return '<table class="fm-tbl">'+arr.map(function(x){ var pct=tot>0?(100*x[1]/tot):0;
-      return '<tr><td class="b">'+fesc(x[0])+'</td><td style="width:38%"><div class="fm-bar" style="width:'+Math.max(3,100*x[1]/mx)+'%;background:'+color+'"></div></td><td class="n">'+fmFmt(x[1])+'</td><td class="p">'+pct.toFixed(1)+'%</td></tr>'; }).join('')+'</table>';
+function fmItems(items){
+  items=items||[]; if(!items.length)return '<div style="color:var(--text3);font-size:12px">no items</div>';
+  var h='<div style="max-height:280px;overflow:auto"><table class="fm-tbl"><tr><td class="b">Item</td><td class="b">Name</td><td class="b">Cat</td><td class="b">Brand</td><td class="n">'+(FM.metric==='q'?'Qty':'Value')+'</td></tr>';
+  h+=items.map(function(i){ return '<tr><td>'+fesc(i.n)+'</td><td style="max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+fesc(i.nm||'')+'">'+fesc(i.nm||'')+'</td><td>'+fesc(i.c||'')+'</td><td>'+fesc(i.b||'')+'</td><td class="n">'+fmFmt(num(i.v))+'</td></tr>'; }).join('');
+  return h+'</table></div>';
+}
+function fmLoad(){
+  var t=document.getElementById('fmTitle'), body=document.getElementById('fmBody');
+  var base=(FM.side==='in'?'Inbound':'Outbound')+' · '+FM.label;
+  if(body)body.innerHTML='<div style="padding:26px 4px;color:var(--text3)">Loading…</div>';
+  if(FM.drill){
+    if(t)t.textContent=base+' · '+FM.drill.val;
+    flowDetailFetch(FM.from,FM.to,FM.metric,FM.side,FM.drill.dim,FM.drill.val).then(fmRenderDetail).catch(function(e){ if(body)body.innerHTML=fmErr(e); });
+  } else {
+    if(t)t.textContent=base;
+    flowFetch(FM.from,FM.to,FM.grain,FM.metric).then(function(d){ fmRenderPeriod((FM.side==='in')?d.in:d.out); }).catch(function(e){ if(body)body.innerHTML=fmErr(e); });
   }
-  var h='<div style="font-size:13px;color:var(--text2);margin-bottom:14px">Total '+(FM.side==='in'?'inbound':'outbound')+': <b style="color:var(--navy);font-size:15px">'+fmFmt(tot)+'</b></div>';
-  h+='<div class="fm-sec"><h4>By Category — share</h4>'+tbl(br.byCat,null,NAVY)+'</div>';
-  h+='<div class="fm-sec"><h4>Top Brands — share</h4>'+tbl(br.byBrand,10,(FM.side==='in')?'#16a34a':ORANGE)+'</div>';
-  h+='<div class="fm-sec"><h4>By Site — share</h4>'+tbl(br.bySite,12,BLUE)+'</div>';
+}
+function fmRenderPeriod(br){
+  br=br||{}; var tot=num(br.total)||0;
+  var h='<div style="font-size:13px;color:var(--text2);margin-bottom:6px">Total '+(FM.side==='in'?'inbound':'outbound')+': <b style="color:var(--navy);font-size:15px">'+fmFmt(tot)+'</b></div>'
+    +'<div style="font-size:11px;color:var(--text3);margin-bottom:12px">click a category, brand or site to see its items ↓</div>';
+  h+='<div class="fm-sec"><h4>By Category</h4>'+fmTbl(br.byCat,null,NAVY,tot,'cat')+'</div>';
+  h+='<div class="fm-sec"><h4>Top Brands</h4>'+fmTbl(br.byBrand,10,(FM.side==='in')?'#16a34a':ORANGE,tot,'brand')+'</div>';
+  h+='<div class="fm-sec"><h4>By Site</h4>'+fmTbl(br.bySite,12,BLUE,tot,'site')+'</div>';
+  var body=document.getElementById('fmBody'); if(body)body.innerHTML=h;
+}
+function fmRenderDetail(d){
+  d=d||{}; var tot=num(d.total)||0, dim=FM.drill.dim;
+  var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="flowmodal-x" data-back="1" title="Back" style="width:auto;padding:0 12px;font-weight:700">← Back</button><span style="font-size:13px;color:var(--text2)">Total: <b style="color:var(--navy);font-size:15px">'+fmFmt(tot)+'</b></span></div>';
+  if(dim!=='cat')   h+='<div class="fm-sec"><h4>By Category</h4>'+fmTbl(d.byCat,null,NAVY,tot,null)+'</div>';
+  if(dim!=='brand') h+='<div class="fm-sec"><h4>By Brand</h4>'+fmTbl(d.byBrand,12,'#16a34a',tot,null)+'</div>';
+  if(dim!=='site')  h+='<div class="fm-sec"><h4>By Site</h4>'+fmTbl(d.bySite,12,BLUE,tot,null)+'</div>';
+  h+='<div class="fm-sec"><h4>Items ('+((d.items||[]).length)+')</h4>'+fmItems(d.items)+'</div>';
   var body=document.getElementById('fmBody'); if(body)body.innerHTML=h;
 }
 function fmSyncMetric(){ var mp=document.getElementById('fmMetric'); if(mp)mp.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on',b.dataset.fmm===FM.metric); }); }
 function fmSetMetric(m){ if(FM.metric===m)return; FM.metric=m; fmSyncMetric(); fmLoad(); }
-function fmClose(){ var mo=document.getElementById('flowModal'); if(mo)mo.style.display='none'; }
+function fmClose(){ var mo=document.getElementById('flowModal'); if(mo)mo.style.display='none'; FM.drill=null; }
+function fmBodyClick(e){ var back=e.target.closest('[data-back]'); if(back){ FM.drill=null; fmLoad(); return; }
+  var row=e.target.closest('[data-dim]'); if(row){ FM.drill={dim:row.getAttribute('data-dim'),val:row.getAttribute('data-val')}; fmLoad(); } }
 function flowSetGrain(side,g){
   if(side==='in'){ if(FIN_GRAIN===g)return; FIN_GRAIN=g; FIN_DRILL=null; }
   else { if(FOUT_GRAIN===g)return; FOUT_GRAIN=g; FOUT_DRILL=null; }
@@ -1500,6 +1532,7 @@ function wireMovement(){
   var fx=document.getElementById('fmClose'); if(fx)fx.onclick=fmClose;
   var fb=document.getElementById('fmBg'); if(fb)fb.onclick=fmClose;
   var fmm=document.getElementById('fmMetric'); if(fmm)fmm.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ fmSetMetric(b.dataset.fmm); }; });
+  var fbody=document.getElementById('fmBody'); if(fbody)fbody.onclick=fmBodyClick;
   document.addEventListener('keydown',function(e){ if(e.key==='Escape')fmClose(); });
 }
 function openMovement(){ if(FLOW_LOADED)return; FLOW_LOADED=true; flowUpdateTitles(); renderFlowSection('in'); renderFlowSection('out'); }
