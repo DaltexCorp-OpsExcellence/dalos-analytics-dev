@@ -402,6 +402,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <!-- INBOUND -->
     <div class="sec-title" style="margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-down-circle" style="color:var(--green)"></i>Inbound analysis</span><span class="gtoggle" data-fg="in"><button type="button" data-g="day">Day</button><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span><span id="flowInPeriod" style="font-size:11.5px;font-weight:600;color:var(--text2)"></span></div>
     <div class="card" style="margin:8px 0 14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-flow-in-ts">Inbound over time (M EGP)</span></span><span style="font-size:10.5px;font-weight:600;color:var(--text3)">click a bar to drill ↓</span></h3><div class="chart-box tall"><canvas id="c-flow-in-ts"></canvas></div></div>
+    <div class="card" style="margin:0 0 14px"><h3><i class="ti ti-chart-bar"></i><span id="h-flow-in-cats">Inbound by Category over time (M EGP)</span></h3><div class="chart-box tall"><canvas id="c-flow-in-cats"></canvas></div></div>
     <div class="grid g2" style="margin-bottom:14px">
       <div class="card"><h3><i class="ti ti-chart-donut"></i><span id="h-flow-in-cat">Inbound by Category (M EGP)</span></h3><div class="chart-box"><canvas id="c-flow-in-cat"></canvas></div></div>
       <div class="card"><h3><i class="ti ti-tags"></i><span id="h-flow-in-brand">Top Inbound Brands (M EGP)</span></h3><div class="chart-box"><canvas id="c-flow-in-brand"></canvas></div></div>
@@ -411,6 +412,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <!-- OUTBOUND -->
     <div class="sec-title" style="margin-top:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-up-circle" style="color:var(--red)"></i>Outbound analysis</span><span class="gtoggle" data-fg="out"><button type="button" data-g="day">Day</button><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span><span id="flowOutPeriod" style="font-size:11.5px;font-weight:600;color:var(--text2)"></span></div>
     <div class="card" style="margin:8px 0 14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-flow-out-ts">Outbound over time (M EGP)</span></span><span style="font-size:10.5px;font-weight:600;color:var(--text3)">click a bar to drill ↓</span></h3><div class="chart-box tall"><canvas id="c-flow-out-ts"></canvas></div></div>
+    <div class="card" style="margin:0 0 14px"><h3><i class="ti ti-chart-bar"></i><span id="h-flow-out-cats">Outbound by Category over time (M EGP)</span></h3><div class="chart-box tall"><canvas id="c-flow-out-cats"></canvas></div></div>
     <div class="grid g2" style="margin-bottom:14px">
       <div class="card"><h3><i class="ti ti-chart-donut"></i><span id="h-flow-out-cat">Outbound by Category (M EGP)</span></h3><div class="chart-box"><canvas id="c-flow-out-cat"></canvas></div></div>
       <div class="card"><h3><i class="ti ti-tags"></i><span id="h-flow-out-brand">Top Outbound Brands (M EGP)</span></h3><div class="chart-box"><canvas id="c-flow-out-brand"></canvas></div></div>
@@ -1458,8 +1460,20 @@ function renderFlowSection(side){
   var tsId=(side==='in')?'c-flow-in-ts':'c-flow-out-ts';
   return flowFetch(flowFullFrom(),flowAsOf(),g,metric).then(function(full){
     drawFlowTs(tsId,full,side);
+    drawFlowCatSeries(side,full);
     drawFlowShares(side,(side==='in')?full.in:full.out); flowHint(side);
   });
+}
+function drawFlowCatSeries(side,payload){
+  var id=(side==='in')?'c-flow-in-cats':'c-flow-out-cats';
+  var cs=(side==='in')?(payload&&payload.inCatSeries):(payload&&payload.outCatSeries); cs=cs||{};
+  var grain=(payload&&payload.meta&&payload.meta.grain)||'month';
+  var kset={}; CAT.forEach(function(c){ Object.keys(cs[c]||{}).forEach(function(k){kset[k]=1;}); });
+  var keys=Object.keys(kset).sort();
+  var labels=keys.map(function(k){return bLabel(k,grain);});
+  var q=flowIsQ();
+  var ds=CAT.map(function(c){ var o=cs[c]||{}; return {label:c,data:keys.map(function(k){return q?Math.round(num(o[k])):+num(o[k]).toFixed(1);}),backgroundColor:CATCOLOR[c],borderRadius:2,stack:'f',datalabels:{display:false}}; });
+  barChart(id,labels,ds,{plugins:{legend:{display:true,position:'bottom'}},scales:{x:{stacked:true,grid:{display:false},ticks:{maxRotation:60,minRotation:keys.length>8?60:0,font:{size:9}}},y:{stacked:true,beginAtZero:true,grid:{color:'#eef1f6'}}}});
 }
 /* ----- clicking a period opens a POPUP with that period's breakdown (section charts stay on full window) ----- */
 var FM={side:'in',from:null,to:null,grain:'month',label:'',metric:'v',drill:null};
@@ -1537,9 +1551,9 @@ function flowSetMetric(m){ if(FLOW_METRIC===m)return; FLOW_METRIC=m; flowSyncMet
 function flowSyncMetricUI(){ var mp=document.getElementById('flowMetric'); if(mp)mp.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on',b.dataset.fm===FLOW_METRIC); }); }
 function flowSyncGrainUI(side){ var g=(side==='in')?FIN_GRAIN:FOUT_GRAIN, tg=document.querySelector('#movement .gtoggle[data-fg="'+side+'"]'); if(tg)tg.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on',b.dataset.g===g); }); }
 function flowUpdateTitles(){ var u=flowUnit();
-  setTitle('h-flow-in-ts','Inbound over time ('+u+')'); setTitle('h-flow-in-cat','Inbound by Category ('+u+')');
+  setTitle('h-flow-in-ts','Inbound over time ('+u+')'); setTitle('h-flow-in-cat','Inbound by Category ('+u+')'); setTitle('h-flow-in-cats','Inbound by Category over time ('+u+')');
   setTitle('h-flow-in-brand','Top Inbound Brands ('+u+')'); setTitle('h-flow-in-site','Inbound by Site ('+u+')');
-  setTitle('h-flow-out-ts','Outbound over time ('+u+')'); setTitle('h-flow-out-cat','Outbound by Category ('+u+')');
+  setTitle('h-flow-out-ts','Outbound over time ('+u+')'); setTitle('h-flow-out-cat','Outbound by Category ('+u+')'); setTitle('h-flow-out-cats','Outbound by Category over time ('+u+')');
   setTitle('h-flow-out-brand','Top Outbound Brands ('+u+')'); setTitle('h-flow-out-site','Outbound by Site ('+u+')');
 }
 function wireMovement(){
