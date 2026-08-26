@@ -675,9 +675,9 @@ document.getElementById('kpiRow').innerHTML=kpis.map(k=>
   `<div class="kpi ${k.c}"><div class="kpi-val">${k.v}</div><div class="kpi-lbl">${k.l}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
 
 /* ---- helpers ---- */
-const dl = (color,fmt)=>({display:true,color:color||'#374151',font:{size:10,weight:'700'},formatter:fmt||(v=>v)});
+const dl = (color,fmt)=>({display:true,color:color||'#374151',font:{size:10,weight:'700'},clamp:true,clip:false,formatter:fmt||(v=>v)});
 const dlv = fmt=>({display:true,anchor:'end',align:'top',color:'#374151',font:{size:10,weight:'700'},clamp:true,formatter:fmt||(v=>v)});   /* vertical bars: label above */
-const dlh = fmt=>({display:true,anchor:'end',align:'right',color:'#374151',font:{size:10,weight:'700'},clip:false,formatter:fmt||(v=>v)}); /* horizontal bars: label past end */
+const dlh = fmt=>({display:true,anchor:'end',align:'right',color:'#374151',font:{size:10,weight:'700'},clip:false,clamp:true,formatter:fmt||(v=>v)}); /* horizontal bars: label past end */
 const CH={}; function killChart(id){ if(CH[id]){try{CH[id].destroy();}catch(e){} delete CH[id];} try{var _ex=Chart.getChart(id); if(_ex)_ex.destroy();}catch(e){} }
 function barChart(id,labels,datasets,opts={}){ killChart(id);
   CH[id]=new Chart(document.getElementById(id),{type:'bar',data:{labels,datasets},options:Object.assign({
