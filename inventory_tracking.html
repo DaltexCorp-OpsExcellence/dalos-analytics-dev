@@ -1420,7 +1420,7 @@ function flowRankBar(id,obj,total,topN,color){
   var labels=ent.map(function(e){return e[0];});
   var data=ent.map(function(e){return q?Math.round(num(e[1])):+num(e[1]).toFixed(1);});
   var tot=num(total)||ent.reduce(function(s,e){return s+num(e[1]);},0)||1;
-  var lf=function(v){ return (q?fmtQ(v):v.toFixed(1))+' · '+(100*v/tot).toFixed(0)+'%'; };
+  var lf=function(v){ return (q?fmtQ(v):(v.toFixed(1)+'M'))+' ('+(100*v/tot).toFixed(0)+'%)'; };
   barChart(id,labels,[{label:'',data:data,backgroundColor:color,borderRadius:4,datalabels:dlh(lf)}],
     {indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
 }
