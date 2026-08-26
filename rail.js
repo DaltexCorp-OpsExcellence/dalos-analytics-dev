@@ -20,7 +20,8 @@
     star:'<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>',
     shield:'<path d="M12 3l7 3v5.5c0 4-3 6.6-7 8-4-1.4-7-4-7-8V6z"/><path d="M12 10.5v3"/>',
     logout:'<path d="M14 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2v-2"/><path d="M9 12h11M17 9l3 3-3 3"/>',
-    x:'<path d="M6 6l12 12M18 6L6 18"/>'
+    x:'<path d="M6 6l12 12M18 6L6 18"/>',
+    search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.2-4.2"/>'
   };
   function ic(n,s,f){s=s||16;return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="'+(f?'currentColor':'none')+'" stroke="'+(f?'none':'currentColor')+'" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:block">'+P[n]+'</svg>';}
 
@@ -66,6 +67,11 @@
    +'.dal-acct-em{font-size:11px;color:#8a95b0;word-break:break-all;margin-top:1px}'
    +'.dal-acct-out{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:9px;border-radius:8px;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}'
    +'.dal-acct-out:hover{background:#dc2626;color:#fff;border-color:#dc2626}'
+   /* search panel */
+   +'.dal-srch-wrap{padding:12px 12px 6px}'
+   +'.dal-srch-in{width:100%;border:1px solid #e2e6f0;border-radius:8px;padding:9px 11px;font-family:inherit;font-size:13px;color:#142850;outline:none;box-sizing:border-box}'
+   +'.dal-srch-in:focus{border-color:#DC6428}'
+   +'.dal-srch-empty{font-size:12.5px;color:#8a95b0;padding:14px 12px;text-align:center;line-height:1.6}'
    /* card star */
    +'.dal-fav-host{position:relative}'
    +'.dal-fav-host .dc-header{padding-right:30px}'
@@ -139,6 +145,7 @@
   rail.innerHTML=''
     +'<div class="dal-rlogo"><svg viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#1a3668"/><rect x="14" y="32" width="8.5" height="18" rx="4" fill="#f08a4b"/><rect x="27.75" y="24" width="8.5" height="26" rx="4" fill="#DC6428"/><rect x="41.5" y="15" width="8.5" height="35" rx="4" fill="#DC6428"/><circle cx="45.75" cy="15" r="4.3" fill="#f7c948"/></svg></div>'
     +'<button class="dal-ric" id="dal-home" title="Home">'+ic('home',21)+'<span class="dal-tip">Home</span></button>'
+    +'<button class="dal-ric" id="dal-search">'+ic('search',21)+'<span class="dal-tip">Search dashboards</span></button>'
     +'<button class="dal-ric" id="dal-fav">'+ic('star',21)+'<span class="dal-cnt" id="dal-favcnt" style="display:none">0</span><span class="dal-tip">Favorites</span></button>'
     +'<button class="dal-ric" id="dal-access" style="display:none">'+ic('shield',21)+'<span class="dal-tip">Manage access</span></button>'
     +'<div class="dal-rsp"></div>'
@@ -158,6 +165,14 @@
     +'<div class="dal-fb" id="dal-flybody"></div>'
     +'<div class="dal-ffoot">Pin dashboards with the ★ on any card</div>';
   document.body.appendChild(fly);
+
+  // Search panel (same slide-out style as the flyout)
+  var srch=document.createElement('aside'); srch.className='dal-flyout dal-srch';
+  srch.innerHTML=''
+    +'<div class="dal-fh"><b>'+ic('search',15).replace('style="display:block"','style="display:block;color:#DC6428"')+' Search dashboards</b><button class="dal-fx" id="dal-srchx">'+ic('x',15)+'</button></div>'
+    +'<div class="dal-srch-wrap"><input id="dal-srch-in" class="dal-srch-in" placeholder="Type a dashboard name…" autocomplete="off"></div>'
+    +'<div class="dal-fb" id="dal-srch-body"></div>';
+  document.body.appendChild(srch);
 
   /* ---- flyout render / toggle ---- */
   function renderFlyout(){
@@ -179,12 +194,65 @@
   var flyOpen=false;
   function toggleFly(v){
     flyOpen=(v===undefined)?!flyOpen:v;
-    fly.classList.toggle('on',flyOpen); ov.classList.toggle('on',flyOpen);
+    if(flyOpen)toggleSearch(false);
+    fly.classList.toggle('on',flyOpen); ov.classList.toggle('on',flyOpen&&!searchOpen);
+    if(!flyOpen&&!searchOpen)ov.classList.remove('on');
     document.getElementById('dal-fav').classList.toggle('on',flyOpen);
   }
   document.getElementById('dal-fav').addEventListener('click',function(){toggleFly();});
   document.getElementById('dal-flyx').addEventListener('click',function(){toggleFly(false);});
-  ov.addEventListener('click',function(){toggleFly(false);});
+  ov.addEventListener('click',function(){toggleFly(false);toggleSearch(false);});
+
+  /* ---- dashboard search ---- */
+  var CATALOG=[
+    {group:'Grapes',emo:'🍇',items:[
+      {n:'Shipments',href:'grapes_overview_branded.html'},
+      {n:'Quality Control',href:'daltex_qc.html'},
+      {n:'Harvest Funnel',href:'daltex_harvest_funnel.html'},
+      {n:'Labor Budget',href:'labor_budget.html?product=Grapes'}
+    ]},
+    {group:'Mango',emo:'🥭',items:[
+      {n:'Shipments',href:'mango_overview.html'},
+      {n:'Labor Budget',href:'labor_budget.html?product=Mango'}
+    ]},
+    {group:'Pomegranate',emo:'🍎',items:[
+      {n:'Shipments',href:'pom_overview.html'},
+      {n:'Labor Budget',href:'labor_budget.html?product=Pomegranate'}
+    ]},
+    {group:'Finance',emo:'💰',items:[
+      {n:'Labor Budget',href:'labor_budget.html'},
+      {n:'Board Review 2026',href:'budget-2026-board-review.html'}
+    ]},
+    {group:'Project Management',emo:'📋',items:[
+      {n:'Procurement',href:'procurement_hub.html'},
+      {n:'Inventory',href:'inventory_tracking.html'}
+    ]}
+  ];
+  function renderSearch(q){
+    q=(q||'').trim().toLowerCase();
+    var body=document.getElementById('dal-srch-body'), html='', hits=0;
+    CATALOG.forEach(function(g){
+      var matches=g.items.filter(function(it){return !q || it.n.toLowerCase().indexOf(q)>-1 || g.group.toLowerCase().indexOf(q)>-1;});
+      if(!matches.length)return;
+      hits+=matches.length;
+      html+='<div class="dal-sect">'+g.emo+' '+g.group+'</div>'+matches.map(function(it){
+        return '<a class="dal-frow" href="'+it.href+'"><span class="dal-femo">'+g.emo+'</span>'
+          +'<div style="flex:1;min-width:0"><div class="dal-fnm">'+it.n+'</div><div class="dal-fcx">'+g.group+'</div></div></a>';
+      }).join('');
+    });
+    body.innerHTML=hits?html:'<div class="dal-srch-empty">No dashboards match “'+(q||'')+'”.</div>';
+  }
+  var searchOpen=false;
+  function toggleSearch(v){
+    searchOpen=(v===undefined)?!searchOpen:v;
+    if(searchOpen)toggleFly(false);
+    srch.classList.toggle('on',searchOpen); ov.classList.toggle('on',searchOpen||flyOpen);
+    document.getElementById('dal-search').classList.toggle('on',searchOpen);
+    if(searchOpen){ renderSearch(''); var inp=document.getElementById('dal-srch-in'); inp.value=''; setTimeout(function(){inp.focus();},60); }
+  }
+  document.getElementById('dal-search').addEventListener('click',function(){toggleSearch();});
+  document.getElementById('dal-srchx').addEventListener('click',function(){toggleSearch(false);});
+  document.getElementById('dal-srch-in').addEventListener('input',function(){renderSearch(this.value);});
 
   /* ---- rail actions ---- */
   document.getElementById('dal-home').addEventListener('click',function(){window.location='index.html';});
