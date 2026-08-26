@@ -537,6 +537,21 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
   </div>
 </div>
 
+<!-- On-hand click-to-drill popup (fed from the loaded ITEMS array) -->
+<div class="flowmodal" id="drillModal" style="display:none">
+  <div class="flowmodal-bg" id="dmBg"></div>
+  <div class="flowmodal-box">
+    <div class="flowmodal-head">
+      <span class="flowmodal-title" id="dmTitle">—</span>
+      <span style="display:inline-flex;gap:10px;align-items:center">
+        <span class="mtoggle" id="dmMetric"><button type="button" data-dmm="v" class="on">EGP</button><button type="button" data-dmm="q">Qty</button></span>
+        <button class="flowmodal-x" id="dmClose" title="Close">✕</button>
+      </span>
+    </div>
+    <div class="flowmodal-body" id="dmBody"></div>
+  </div>
+</div>
+
 <script>
 /* ============ DATA (computed locally from 266,654 ledger rows) ============ */
 var DATA={},BRAND={},ITEMS={items:[]};
@@ -671,9 +686,9 @@ function barChart(id,labels,datasets,opts={}){ killChart(id);
 /* ===== OVERVIEW ===== */
 // season chart drawn after CMET is declared (drawSeason -> isQ -> CMET), see below
 // category share donut
-function donut(id,labels,vals,colors){ killChart(id);
+function donut(id,labels,vals,colors,onClick){ killChart(id);
   CH[id]=new Chart(document.getElementById(id),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'right'},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',onClick:onClick||undefined,onHover:onClick?drillHover:undefined,plugins:{legend:{position:'right'},
       datalabels:{display:true,color:'#fff',font:{size:11,weight:'700'},formatter:(v,c)=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);const p=100*v/t;return p>4?p.toFixed(0)+'%':''}}}}});
 }
 
@@ -839,8 +854,9 @@ function drawSite(vw){ var q=isQ('site'), src=q?vw.onhandBySiteQ:vw.onhandBySite
   const sites=Object.entries(src).filter(([s,v])=>v>(q?0:0.05)).sort((a,b)=>b[1]-a[1]);
   const data=sites.map(s=>q?Math.round(+s[1]):+(+s[1]).toFixed(1));
   const dlf=q?dlh(v=>fmtQ(v)):dlh(v=>v.toFixed(1));
-  barChart('c-site',sites.map(s=>s[0]),[{label:'On-hand',data:data,backgroundColor:sites.map((s,i)=>i<5?NAVY:SLATE),borderRadius:4,datalabels:dlf}],
-    {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
+  const siteLabels=sites.map(s=>s[0]);
+  barChart('c-site',siteLabels,[{label:'On-hand',data:data,backgroundColor:sites.map((s,i)=>i<5?NAVY:SLATE),borderRadius:4,datalabels:dlf}],
+    {indexAxis:'y',onClick:drillClick('s',function(i){return siteLabels[i];}),onHover:drillHover,scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const tot=sites.reduce((s,x)=>s+x[1],0)||1, top2=sites.slice(0,2).reduce((s,x)=>s+x[1],0), top5=sites.slice(0,5).reduce((s,x)=>s+x[1],0);
   const fmtV=q?(v=>fmtQ(v)+' units'):(v=>'EGP '+(+v).toFixed(1)+'M');
   document.getElementById('concPanel').innerHTML=`<h4>Concentration Analysis</h4>
@@ -857,9 +873,9 @@ function drawHeat(vw){ var q=isQ('heat'), src=q?vw.onhandBySiteQ:vw.onhandBySite
   var band=(v,mx)=>{ if(v<=0)return '#1b2a44'; var r=mx>0?v/mx:0; return r>0.66?'#7f1d1d':r>0.33?'#dc2626':r>0.1?'#d97706':'#2563eb'; };
   const cell=q?(v=>v>0?fmtQ(v):'–'):(v=>v>0?v.toFixed(1):'–'), unit=q?' (u)':' (M)';
   let html='<tr><th>Location</th>'+CAT.map(c=>`<th>${c}${unit}</th>`).join('')+`<th>Total${unit}</th></tr>`;
-  sites.forEach(s=>{ let row=`<tr><td>${s}</td>`;
-    CAT.forEach(c=>{const v=num(hv[`${s}|${c}`]);row+=`<td style="background:${band(v,colMax[c])}">${cell(v)}</td>`;});
-    row+=`<td style="background:${band(rowTot[s],totMax)}">${q?fmtQ(rowTot[s]):rowTot[s].toFixed(1)}</td></tr>`; html+=row;});
+  sites.forEach(s=>{ let row=`<tr><td data-s="${fesc(s)}" style="cursor:pointer">${s}</td>`;
+    CAT.forEach(c=>{const v=num(hv[`${s}|${c}`]);row+=`<td data-s="${fesc(s)}" data-c="${fesc(c)}" style="background:${band(v,colMax[c])};cursor:pointer">${cell(v)}</td>`;});
+    row+=`<td data-s="${fesc(s)}" style="background:${band(rowTot[s],totMax)};cursor:pointer">${q?fmtQ(rowTot[s]):rowTot[s].toFixed(1)}</td></tr>`; html+=row;});
   document.getElementById('heatTable').innerHTML=html;
   var lg=document.getElementById('heatLegend');
   if(lg)lg.innerHTML='<span style="color:var(--text3)">shaded relative to each category’s top site:</span><span><i style="background:#7f1d1d"></i>Top</span><span><i style="background:#dc2626"></i>High</span><span><i style="background:#d97706"></i>Medium</span><span><i style="background:#2563eb"></i>Low</span>';
@@ -886,8 +902,9 @@ function brandTop12(egpObj,qtyObj,q){
 function drawBrandOh(vw){ var q=isQ('brandoh');
   var rows=brandTop12(vw.onhandByBrand,vw.onhandByBrandQ,q);
   var data=rows.map(function(r){return q?Math.round(r.qty):+(+r.egp).toFixed(1);});
-  barChart('c-brand-oh',rows.map(function(r){return r.b;}),[{label:'On-hand',data:data,backgroundColor:NAVY,borderRadius:4,datalabels:q?dlh(function(v){return fmtQ(v);}):dlh(function(v){return v.toFixed(1);})}],
-    {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
+  var brandLabels=rows.map(function(r){return r.b;});
+  barChart('c-brand-oh',brandLabels,[{label:'On-hand',data:data,backgroundColor:NAVY,borderRadius:4,datalabels:q?dlh(function(v){return fmtQ(v);}):dlh(function(v){return v.toFixed(1);})}],
+    {indexAxis:'y',onClick:drillClick('b',function(i){return brandLabels[i];}),onHover:drillHover,scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   var grand=rows.reduce(function(s,r){return s+(q?r.qty:r.egp);},0)||1;
   var col=q?'Units':'M EGP', numFmt=q?function(v){return fmtQ(v);}:function(v){return (+v).toFixed(1);};
   var html='<tr><th>#</th><th>Brand</th><th class="n">'+col+'</th><th class="n">Share</th></tr>';
@@ -905,12 +922,13 @@ function drawBrandIss(vw){ var q=isQ('brandiss'), src=q?vw.issueByBrandQ:vw.issu
 function drawBrand(vw){ drawBrandOh(vw); drawBrandIss(vw); }
 function drawCatOh(vw){ var q=isQ('catoh'), src=q?vw.onhandByCatQ:vw.onhandByCat;
   var data=CAT.map(c=>q?Math.round(num(src[c])):+num(src[c]).toFixed(1));
-  barChart('c-cat-oh',CAT,[{label:'On-hand',data:data,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:q?dlv(v=>fmtQ(v)):dlv(v=>v.toFixed(1)+'M')}]);
+  barChart('c-cat-oh',CAT,[{label:'On-hand',data:data,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:q?dlv(v=>fmtQ(v)):dlv(v=>v.toFixed(1)+'M')}],
+    {onClick:drillClick('c',function(i){return CAT[i];}),onHover:drillHover});
 }
 function drawBreakdowns(vw){
-  donut('c-share',CAT,CAT.map(c=>num(vw.onhandByCat[c])),CAT.map(c=>CATCOLOR[c]));
+  donut('c-share',CAT,CAT.map(c=>num(vw.onhandByCat[c])),CAT.map(c=>CATCOLOR[c]),drillClick('c',function(i){return CAT[i];}));
   drawCatOh(vw);
-  donut('c-cat-share',CAT,CAT.map(c=>num(vw.onhandByCat[c])),CAT.map(c=>CATCOLOR[c]));
+  donut('c-cat-share',CAT,CAT.map(c=>num(vw.onhandByCat[c])),CAT.map(c=>CATCOLOR[c]),drillClick('c',function(i){return CAT[i];}));
   paintHealth(vw.statusVal,vw.statusCnt,vw.statusValQ);
 }
 /* Health tab: charts + stat tiles + tier table + insight panel (sv in M EGP, sc counts) */
@@ -924,9 +942,9 @@ function paintHealth(sv,sc,svq){
   const totV=TS.reduce((s,t)=>s+v(t),0)||1, totC=TS.reduce((s,t)=>s+c(t),0)||1, totH=TS.reduce((s,t)=>s+hv(t),0)||1;
   const hFmt=q?(x=>fmtQ(x)):(x=>x.toFixed(1)), unitWord=q?'units':'value';
   const hHead=q?(t=>fmtQ(hv(t))+' units'):(t=>'EGP '+hv(t).toFixed(1)+'M');
-  donut('c-status-val',TL,TS.map(hv),TC);
+  donut('c-status-val',TL,TS.map(hv),TC,drillClick('t',function(i){return TS[i];}));
   barChart('c-status-cnt',TL,[{label:'Items',data:TS.map(c),backgroundColor:TC,borderRadius:5,datalabels:dlh()}],
-    {indexAxis:'y',scales:{x:{grid:{color:'#eef1f6'}},y:{grid:{display:false}}}});
+    {indexAxis:'y',onClick:drillClick('t',function(i){return TS[i];}),onHover:drillHover,scales:{x:{grid:{color:'#eef1f6'}},y:{grid:{display:false}}}});
   const tiles=document.getElementById('healthTiles');
   if(tiles)tiles.innerHTML=TS.map((t,i)=>`<div class="kpi k-${t.toLowerCase()}"><div class="kpi-val">${hHead(t)}</div><div class="kpi-lbl">${TL[i]}</div><div class="kpi-sub">${c(t).toLocaleString()} items · ${(100*hv(t)/totH).toFixed(0)}% of ${unitWord}</div></div>`).join('');
   const tbl=document.getElementById('healthTable');
@@ -1539,6 +1557,70 @@ function wireMovement(){
 }
 function openMovement(){ if(FLOW_LOADED)return; FLOW_LOADED=true; flowUpdateTitles(); renderFlowSection('in'); renderFlowSection('out'); }
 
+/* ================= CLICK-TO-DRILL popup (on-hand equivalent of the flow popup) =================
+   Fed entirely from the loaded ITEMS.items — no server calls. Filter keys c/d/b/s/t map 1:1
+   to the item fields (category/department/brand/site/tier). */
+var DRILL={f:{},order:[],metric:'v'};
+const DRILLDIM={c:'Category',d:'Department',b:'Brand',s:'Site',t:'Tier'};
+function drillHover(e,el){ var c=e&&e.native&&e.native.target; if(c)c.style.cursor=(el&&el.length)?'pointer':'default'; }
+function drillClick(dim,labelAt){ return function(e,el){ if(el&&el.length){ var v=labelAt(el[0].index); if(v!=null&&v!=='')openDrill(dim,v); } }; }
+function drillItems(){ return ITEMS.items.filter(function(i){ var f=DRILL.f; for(var k in f){ if(i[k]!==f[k])return false; } return true; }); }
+function dmVal(i){ return DRILL.metric==='q'?num(i.q):num(i.v); }
+function dmFmt(sum){ return DRILL.metric==='q'?Math.round(num(sum)).toLocaleString():((num(sum)/1e6).toFixed(1)+'M'); }
+function openDrill(dim,val){ if(val==null||val==='')return; DRILL.f={}; DRILL.order=[]; DRILL.f[dim]=val; DRILL.order.push(dim); DRILL.metric='v'; dmSyncMetric();
+  var mo=document.getElementById('drillModal'); if(mo)mo.style.display='flex'; drillRender(); }
+function drillAdd(dim,val){ if(dim in DRILL.f)return; DRILL.f[dim]=val; DRILL.order.push(dim); drillRender(); }
+function drillBack(){ var k=DRILL.order.pop(); if(k!=null)delete DRILL.f[k]; drillRender(); }
+function dmGroup(rows,dim){ var m={}; rows.forEach(function(i){ var key=i[dim]; if(key==null||key==='')return; m[key]=(m[key]||0)+dmVal(i); }); return m; }
+function dmTbl(rows,dim,color,tot,topN){
+  var m=dmGroup(rows,dim);
+  var arr=Object.keys(m).map(function(k){return [k,m[k]];}).filter(function(x){return x[1]>0;}).sort(function(a,b){return b[1]-a[1];});
+  if(topN)arr=arr.slice(0,topN);
+  if(!arr.length)return '<div style="color:var(--text3);font-size:12px;padding:2px 8px">none</div>';
+  var mx=arr[0][1]||1;
+  return '<table class="fm-tbl">'+arr.map(function(x){ var pct=tot>0?(100*x[1]/tot):0;
+    return '<tr data-dim="'+dim+'" data-val="'+fesc(''+x[0])+'" style="cursor:pointer"><td class="b">'+fesc(x[0])+' <span style="color:var(--text3);font-weight:400">›</span></td><td style="width:36%"><div class="fm-bar" style="width:'+Math.max(3,100*x[1]/mx)+'%;background:'+color+'"></div></td><td class="n">'+dmFmt(x[1])+'</td><td class="p">'+pct.toFixed(0)+'%</td></tr>'; }).join('')+'</table>';
+}
+function dmItems(rows){
+  var arr=rows.slice().sort(function(a,b){return dmVal(b)-dmVal(a);}).slice(0,200);
+  if(!arr.length)return '<div style="color:var(--text3);font-size:12px">no items</div>';
+  var h='<div style="max-height:280px;overflow:auto"><table class="fm-tbl"><tr><td class="b">Item</td><td class="b">Name</td><td class="b">Cat</td><td class="b">Brand</td><td class="b">Site</td><td class="b">Tier</td><td class="n">'+(DRILL.metric==='q'?'Qty':'Value')+'</td></tr>';
+  h+=arr.map(function(i){ return '<tr><td>'+fesc(i.n)+'</td><td style="max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+fesc(i.dsc||'')+'">'+fesc(i.dsc||'')+'</td><td>'+fesc(i.c||'')+'</td><td>'+fesc(i.b||'')+'</td><td>'+fesc(i.s||'')+'</td><td>'+fesc(i.t||'')+'</td><td class="n">'+dmFmt(dmVal(i))+'</td></tr>'; }).join('');
+  return h+'</table></div>';
+}
+function drillRender(){
+  var t=document.getElementById('dmTitle'), body=document.getElementById('dmBody');
+  var rows=drillItems();
+  var tot=rows.reduce(function(s,i){return s+dmVal(i);},0);
+  var totV=rows.reduce(function(s,i){return s+num(i.v);},0), totQ=rows.reduce(function(s,i){return s+num(i.q);},0);
+  var crumb=DRILL.order.map(function(k){return DRILLDIM[k]+': '+DRILL.f[k];}).join(' › ');
+  if(t)t.textContent=crumb||'On-hand drill';
+  var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">';
+  if(DRILL.order.length>1)h+='<button class="flowmodal-x" data-back="1" title="Back" style="width:auto;padding:0 12px;font-weight:700">← Back</button>';
+  h+='<span style="font-size:13px;color:var(--text2)">On-hand: <b style="color:var(--navy);font-size:15px">'+(totV/1e6).toFixed(1)+'M EGP</b> · <b style="color:var(--navy)">'+Math.round(totQ).toLocaleString()+'</b> units · <b style="color:var(--navy)">'+rows.length.toLocaleString()+'</b> items</span></div>';
+  h+='<div style="font-size:11px;color:var(--text3);margin-bottom:12px">click any row below to drill deeper ↓</div>';
+  var DIMSPEC=[['c','By Category',NAVY,null],['d','By Department','#0d9488',12],['b','By Brand','#16a34a',12],['s','By Site',BLUE,12],['t','By Tier',ORANGE,null]];
+  DIMSPEC.forEach(function(sp){ if(sp[0] in DRILL.f)return; h+='<div class="fm-sec"><h4>'+sp[1]+'</h4>'+dmTbl(rows,sp[0],sp[2],tot,sp[3])+'</div>'; });
+  h+='<div class="fm-sec"><h4>Items ('+rows.length.toLocaleString()+(rows.length>200?' · top 200':'')+')</h4>'+dmItems(rows)+'</div>';
+  if(body)body.innerHTML=h;
+}
+function dmSyncMetric(){ var mp=document.getElementById('dmMetric'); if(mp)mp.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on',b.dataset.dmm===DRILL.metric); }); }
+function dmSetMetric(m){ if(DRILL.metric===m)return; DRILL.metric=m; dmSyncMetric(); drillRender(); }
+function dmClose(){ var mo=document.getElementById('drillModal'); if(mo)mo.style.display='none'; DRILL.f={}; DRILL.order=[]; }
+function dmBodyClick(e){ var back=e.target.closest('[data-back]'); if(back){ drillBack(); return; }
+  var row=e.target.closest('[data-dim]'); if(row){ drillAdd(row.getAttribute('data-dim'),row.getAttribute('data-val')); } }
+function drillHeatClick(e){ var td=e.target.closest('td'); if(!td)return; var s=td.getAttribute('data-s'); if(s==null)return; var c=td.getAttribute('data-c');
+  DRILL.f={}; DRILL.order=[]; DRILL.f.s=s; DRILL.order.push('s'); if(c){ DRILL.f.c=c; DRILL.order.push('c'); } DRILL.metric='v'; dmSyncMetric();
+  var mo=document.getElementById('drillModal'); if(mo)mo.style.display='flex'; drillRender(); }
+function wireDrill(){
+  var x=document.getElementById('dmClose'); if(x)x.onclick=dmClose;
+  var bg=document.getElementById('dmBg'); if(bg)bg.onclick=dmClose;
+  var mp=document.getElementById('dmMetric'); if(mp)mp.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ dmSetMetric(b.dataset.dmm); }; });
+  var body=document.getElementById('dmBody'); if(body)body.onclick=dmBodyClick;
+  var ht=document.getElementById('heatTable'); if(ht)ht.onclick=drillHeatClick;
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape')dmClose(); });
+}
+
 /* ================= REORDER & SAFETY STOCK (lazy-loaded tab) ================= */
 var RO=null, RO_Z=1.6449, RO_LEAD=61, RO_LOADED=false;  /* RO_LEAD in DAYS; 61 ≈ 2 months */
 const RO_CAP=400; const ROF={q:'',cat:'',st:''};
@@ -1679,8 +1761,9 @@ drawCatTurn(buildFullVW());
 
 /* ===== SITE ===== */
 (()=>{ const sites=Object.entries(DATA.onhandBySite).filter(([s,v])=>v>0.05).sort((a,b)=>b[1]-a[1]);
-  barChart('c-site',sites.map(s=>s[0]),[{label:'On-hand',data:sites.map(s=>+s[1].toFixed(1)),backgroundColor:sites.map((s,i)=>i<5?NAVY:SLATE),borderRadius:4,datalabels:dlh(v=>v.toFixed(1))}],
-    {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
+  const siteLabels0=sites.map(s=>s[0]);
+  barChart('c-site',siteLabels0,[{label:'On-hand',data:sites.map(s=>+s[1].toFixed(1)),backgroundColor:sites.map((s,i)=>i<5?NAVY:SLATE),borderRadius:4,datalabels:dlh(v=>v.toFixed(1))}],
+    {indexAxis:'y',onClick:drillClick('s',function(i){return siteLabels0[i];}),onHover:drillHover,scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const tot=sites.reduce((s,x)=>s+x[1],0);
   const top2=sites.slice(0,2).reduce((s,x)=>s+x[1],0), top5=sites.slice(0,5).reduce((s,x)=>s+x[1],0);
   document.getElementById('concPanel').innerHTML=`<h4>Concentration Analysis</h4>
@@ -1738,15 +1821,17 @@ function renderFiltered(rows){
   /* value + qty sums per category so catoh honors its metric on the all/filtered client view */
   const byCat={},byCatQ={}; CAT.forEach(c=>{byCat[c]=0;byCatQ[c]=0;});
   rows.forEach(i=>{ if(byCat[i.c]!=null){byCat[i.c]+=i.v;byCatQ[i.c]+=num(i.q);} });
-  donut('c-share',CAT,CAT.map(c=>byCat[c]),CAT.map(c=>CATCOLOR[c]));
+  donut('c-share',CAT,CAT.map(c=>byCat[c]),CAT.map(c=>CATCOLOR[c]),drillClick('c',function(i){return CAT[i];}));
   const qc=isQ('catoh');
-  barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>qc?Math.round(byCatQ[c]):+M(byCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:qc?dlv(v=>fmtQ(v)):dlv(v=>v.toFixed(1)+'M')}]);
-  donut('c-cat-share',CAT,CAT.map(c=>byCat[c]),CAT.map(c=>CATCOLOR[c]));
+  barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>qc?Math.round(byCatQ[c]):+M(byCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:qc?dlv(v=>fmtQ(v)):dlv(v=>v.toFixed(1)+'M')}],
+    {onClick:drillClick('c',function(i){return CAT[i];}),onHover:drillHover});
+  donut('c-cat-share',CAT,CAT.map(c=>byCat[c]),CAT.map(c=>CATCOLOR[c]),drillClick('c',function(i){return CAT[i];}));
   const bbM={},bbq={}; rows.forEach(i=>{ if(i.b&&i.b!=='(Unbranded)'){bbM[i.b]=(bbM[i.b]||0)+M(i.v);bbq[i.b]=(bbq[i.b]||0)+num(i.q);} });
   const qb=isQ('brandoh');
   const rowsB=brandTop12(bbM,bbq,qb);   /* set = top 12 by EGP value, then show selected metric */
-  barChart('c-brand-oh',rowsB.map(r=>r.b),[{label:'On-hand',data:rowsB.map(r=>qb?Math.round(r.qty):+(+r.egp).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:qb?dlh(v=>fmtQ(v)):dlh(v=>v.toFixed(1))}],
-    {indexAxis:'y',scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
+  const brandLabelsB=rowsB.map(r=>r.b);
+  barChart('c-brand-oh',brandLabelsB,[{label:'On-hand',data:rowsB.map(r=>qb?Math.round(r.qty):+(+r.egp).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:qb?dlh(v=>fmtQ(v)):dlh(v=>v.toFixed(1))}],
+    {indexAxis:'y',onClick:drillClick('b',function(i){return brandLabelsB[i];}),onHover:drillHover,scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const TS=['Fast','Normal','Slow','Dead'];
   const tv={},tcnt={},tq={}; TS.forEach(t=>{tv[t]=0;tcnt[t]=0;tq[t]=0;}); rows.forEach(i=>{ if(tv[i.t]!=null){tv[i.t]+=i.v;tcnt[i.t]++;tq[i.t]+=num(i.q);} });
   const svM={}; TS.forEach(t=>svM[t]=M(tv[t])); paintHealth(svM,tcnt,tq);
@@ -1822,7 +1907,7 @@ function renderX(){
     var ab=document.getElementById('abcExport'); if(ab)ab.onclick=exportAbcCSV;
     var rb=document.getElementById('roExport'); if(rb)rb.onclick=exportReorderCSV;
   })();
-  wireRangeControls(); wireCompare(); wireMetric(); wireABC(); wireReorder(); wireMovement(); buildFilters(); renderX();
+  wireRangeControls(); wireCompare(); wireMetric(); wireABC(); wireReorder(); wireMovement(); wireDrill(); buildFilters(); renderX();
 })();
 
 /* env-aware staging badge (shared convention) — visible only on -dev/ paths */
