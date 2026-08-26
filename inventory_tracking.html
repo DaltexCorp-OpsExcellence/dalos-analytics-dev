@@ -373,6 +373,33 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
       <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-down-circle" style="color:var(--green)"></i><span id="h-mvin">Inbound by Category — Season (M EGP)</span></span><span class="h3ctl"><span class="mtoggle" data-mchart="mvin"><button type="button" data-m="v" class="on">EGP</button><button type="button" data-m="q">Qty</button></span><select class="cmpsel" data-cc="mvin"><option value="off">Compare…</option><option value="ly">vs same period last year</option></select></span></h3><div class="chart-box sm"><canvas id="c-mv-in"></canvas></div></div>
       <div class="card"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-up-circle" style="color:var(--red)"></i><span id="h-mvout">Outbound by Category — Season (M EGP)</span></span><span class="h3ctl"><span class="mtoggle" data-mchart="mvout"><button type="button" data-m="v" class="on">EGP</button><button type="button" data-m="q">Qty</button></span><select class="cmpsel" data-cc="mvout"><option value="off">Compare…</option><option value="ly">vs same period last year</option></select></span></h3><div class="chart-box sm"><canvas id="c-mv-out"></canvas></div></div>
     </div>
+
+    <!-- ===== FLOW DEEP-DIVE (Inbound / Outbound analysis over the full period) ===== -->
+    <div class="sec-title" style="margin-top:26px">Flow Analysis</div>
+    <div class="sec-sub">Inbound and outbound over the whole data period — pick a grain, then <b>click any bar</b> to break its category / brand / site mix down to that single period.</div>
+
+    <div class="rail" id="flowParams" style="margin-bottom:14px">
+      <div class="fl"><label>Values</label><span class="mtoggle" id="flowMetric"><button type="button" data-fm="v" class="on">EGP</button><button type="button" data-fm="q">Qty</button></span></div>
+      <div style="margin-left:auto;padding-bottom:2px"><span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 12px"><i class="ti ti-arrows-exchange" style="color:var(--orange);font-size:13px"></i><b style="color:var(--navy)">Full transaction history</b></span></div>
+    </div>
+
+    <!-- INBOUND -->
+    <div class="sec-title" style="margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-down-circle" style="color:var(--green)"></i>Inbound analysis</span><span class="gtoggle" data-fg="in"><button type="button" data-g="day">Day</button><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span><span id="flowInPeriod" style="font-size:11.5px;font-weight:600;color:var(--text2)"></span></div>
+    <div class="card" style="margin:8px 0 14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-flow-in-ts">Inbound over time (M EGP)</span></span><span style="font-size:10.5px;font-weight:600;color:var(--text3)">click a bar to drill ↓</span></h3><div class="chart-box tall"><canvas id="c-flow-in-ts"></canvas></div></div>
+    <div class="grid g2" style="margin-bottom:14px">
+      <div class="card"><h3><i class="ti ti-chart-donut"></i><span id="h-flow-in-cat">Inbound by Category (M EGP)</span></h3><div class="chart-box"><canvas id="c-flow-in-cat"></canvas></div></div>
+      <div class="card"><h3><i class="ti ti-tags"></i><span id="h-flow-in-brand">Top Inbound Brands (M EGP)</span></h3><div class="chart-box"><canvas id="c-flow-in-brand"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-bottom:14px"><h3><i class="ti ti-map-pin"></i><span id="h-flow-in-site">Inbound by Site (M EGP)</span></h3><div class="chart-box"><canvas id="c-flow-in-site"></canvas></div></div>
+
+    <!-- OUTBOUND -->
+    <div class="sec-title" style="margin-top:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-up-circle" style="color:var(--red)"></i>Outbound analysis</span><span class="gtoggle" data-fg="out"><button type="button" data-g="day">Day</button><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span><span id="flowOutPeriod" style="font-size:11.5px;font-weight:600;color:var(--text2)"></span></div>
+    <div class="card" style="margin:8px 0 14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-flow-out-ts">Outbound over time (M EGP)</span></span><span style="font-size:10.5px;font-weight:600;color:var(--text3)">click a bar to drill ↓</span></h3><div class="chart-box tall"><canvas id="c-flow-out-ts"></canvas></div></div>
+    <div class="grid g2" style="margin-bottom:14px">
+      <div class="card"><h3><i class="ti ti-chart-donut"></i><span id="h-flow-out-cat">Outbound by Category (M EGP)</span></h3><div class="chart-box"><canvas id="c-flow-out-cat"></canvas></div></div>
+      <div class="card"><h3><i class="ti ti-tags"></i><span id="h-flow-out-brand">Top Outbound Brands (M EGP)</span></h3><div class="chart-box"><canvas id="c-flow-out-brand"></canvas></div></div>
+    </div>
+    <div class="card"><h3><i class="ti ti-map-pin"></i><span id="h-flow-out-site">Outbound by Site (M EGP)</span></h3><div class="chart-box"><canvas id="c-flow-out-site"></canvas></div></div>
   </div>
 
   <!-- HEALTH -->
@@ -513,6 +540,7 @@ function setTab(btn){
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===t));
   if(t==='abc')openABC();
   if(t==='reorder')openReorder();
+  if(t==='movement')openMovement();
 }
 /* clickable ⓘ definition popovers — position:fixed near the icon so no parent can clip it */
 function closeInfo(){ document.querySelectorAll('.infopop.open').forEach(function(p){p.classList.remove('open');}); }
@@ -1306,6 +1334,132 @@ function wireABC(){
   var ca=document.getElementById('abcCatSel'); if(ca)ca.onchange=function(){ ABCF.cat=ca.value; renderAbcItems(); };
 }
 
+/* ================= MOVEMENT · FLOW DEEP-DIVE (lazy-loaded) =================
+   Two sections (Inbound / Outbound). Each: full-period time-series bar with its own
+   Day/Week/Month grain toggle + click-to-drill into that bucket's category/brand/site
+   share charts. Shared EGP/Qty metric toggle. Data from RPC inv_flow. */
+var FLOW_LOADED=false, FLOW_METRIC='v';
+var FIN_GRAIN='month', FOUT_GRAIN='month';
+var FIN_DRILL=null, FOUT_DRILL=null;   /* {from,to,label} | null */
+const FLOWCACHE={};                    /* key: from|to|grain|metric -> payload */
+function flowIsQ(){ return FLOW_METRIC==='q'; }
+function flowUnit(){ return flowIsQ()?'Units':'M EGP'; }
+function flowFullFrom(){ return FULL_FROM; }
+function flowAsOf(){ return asOfStr(); }
+function flowFetch(from,to,grain,metric){
+  var key=[from,to,grain,metric].join('|');
+  if(FLOWCACHE[key])return Promise.resolve(FLOWCACHE[key]);
+  var H={apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'};
+  var body=JSON.stringify({p_from:from,p_to:to,p_grain:grain,p_metric:metric});
+  return fetch(SB+'/rest/v1/rpc/inv_flow',{method:'POST',headers:H,body:body})
+    .then(rpcOk).then(function(d){ FLOWCACHE[key]=d; return d; });
+}
+/* month YYYY-MM -> 1st..last day · week YYYY-MM-DD(Mon) -> Mon..+6 · day -> itself */
+function flowBucketRange(k,grain){
+  var p=(''+k).split('-');
+  if(grain==='month'){ var y=+p[0],m=+p[1],last=new Date(y,m,0).getDate(); return {from:k+'-01',to:k+'-'+String(last).padStart(2,'0')}; }
+  if(grain==='week'){ var d=new Date(k+'T00:00:00'),e=new Date(d); e.setDate(e.getDate()+6); return {from:k,to:ymd(e)}; }
+  return {from:k,to:k};
+}
+function drawFlowTs(id,payload,side){
+  killChart(id);
+  var ser=(payload&&payload.series)||[], grain=(payload&&payload.meta&&payload.meta.grain)||'month';
+  var labels=ser.map(function(x){return bLabel(x.k,grain);});
+  var keys=ser.map(function(x){return x.k;});
+  var q=flowIsQ(), color=(side==='in')?NAVY:ORANGE;
+  var raw=ser.map(function(x){return num(side==='in'?x.inb:x.outb);});
+  var data=raw.map(function(v){return q?Math.round(v):+v.toFixed(1);});
+  var lf=q?function(v){return v>0?fmtQ(v):'';}:function(v){return v>0?v.toFixed(0):'';};
+  var rot=labels.length>18?-90:0;
+  CH[id]=new Chart(document.getElementById(id),{type:'bar',
+    data:{labels:labels,datasets:[{label:(side==='in'?'Inbound':'Outbound'),data:data,backgroundColor:color,borderRadius:3,
+      datalabels:{display:true,anchor:'end',align:'top',rotation:rot,clamp:true,color:color,font:{size:8,weight:'700'},formatter:lf}}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      onClick:function(e,el){ if(el&&el.length){ flowDrill(side,keys[el[0].index],grain); } },
+      plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,grace:'8%',grid:{color:'#eef1f6'}},x:{grid:{display:false},ticks:{maxRotation:60,minRotation:0,font:{size:9}}}}}});
+}
+/* horizontal ranked bar with value + % of total labels */
+function flowRankBar(id,obj,total,topN,color){
+  var q=flowIsQ();
+  var ent=Object.entries(obj||{}).filter(function(e){return e[0]&&e[0]!=='(Unbranded)'&&num(e[1])>0;})
+            .sort(function(a,b){return num(b[1])-num(a[1]);}).slice(0,topN);
+  var labels=ent.map(function(e){return e[0];});
+  var data=ent.map(function(e){return q?Math.round(num(e[1])):+num(e[1]).toFixed(1);});
+  var tot=num(total)||ent.reduce(function(s,e){return s+num(e[1]);},0)||1;
+  var lf=function(v){ return (q?fmtQ(v):v.toFixed(1))+' · '+(100*v/tot).toFixed(0)+'%'; };
+  barChart(id,labels,[{label:'',data:data,backgroundColor:color,borderRadius:4,datalabels:dlh(lf)}],
+    {indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
+}
+function drawFlowShares(side,br){
+  br=br||{};
+  var tot=num(br.total);
+  donut('c-flow-'+side+'-cat',CAT,CAT.map(function(c){return num(br.byCat&&br.byCat[c]);}),CAT.map(function(c){return CATCOLOR[c];}));
+  flowRankBar('c-flow-'+side+'-brand',br.byBrand,tot,10,(side==='in')?NAVY:ORANGE);
+  flowRankBar('c-flow-'+side+'-site',br.bySite,tot,12,BLUE);
+}
+function flowSetCaption(side,label){
+  var cap=document.getElementById(side==='in'?'flowInPeriod':'flowOutPeriod'); if(!cap)return;
+  if(label){
+    cap.innerHTML='· Showing: <b style="color:var(--navy)">'+fesc(label)+'</b> · <a href="#" class="flowreset" style="color:var(--orange);font-weight:700">Reset</a>';
+    var a=cap.querySelector('.flowreset'); if(a)a.onclick=function(ev){ ev.preventDefault(); flowReset(side); };
+  } else {
+    cap.innerHTML='· Showing: <b style="color:var(--navy)">full period</b>';
+  }
+}
+function renderFlowSection(side){
+  var g=(side==='in')?FIN_GRAIN:FOUT_GRAIN, metric=FLOW_METRIC;
+  var tsId=(side==='in')?'c-flow-in-ts':'c-flow-out-ts';
+  return flowFetch(flowFullFrom(),flowAsOf(),g,metric).then(function(full){
+    drawFlowTs(tsId,full,side);
+    var drill=(side==='in')?FIN_DRILL:FOUT_DRILL;
+    if(drill){
+      return flowFetch(drill.from,drill.to,g,metric).then(function(d){
+        drawFlowShares(side,(side==='in')?d.in:d.out); flowSetCaption(side,drill.label);
+      });
+    }
+    drawFlowShares(side,(side==='in')?full.in:full.out); flowSetCaption(side,null);
+  });
+}
+function flowDrill(side,k,grain){
+  var r=flowBucketRange(k,grain), lbl=bLabelYr(k,grain);
+  var d={from:r.from,to:r.to,label:lbl};
+  if(side==='in')FIN_DRILL=d; else FOUT_DRILL=d;
+  flowFetch(r.from,r.to,grain,FLOW_METRIC).then(function(pl){
+    drawFlowShares(side,(side==='in')?pl.in:pl.out); flowSetCaption(side,lbl);
+  });
+}
+function flowReset(side){
+  if(side==='in')FIN_DRILL=null; else FOUT_DRILL=null;
+  var g=(side==='in')?FIN_GRAIN:FOUT_GRAIN;
+  flowFetch(flowFullFrom(),flowAsOf(),g,FLOW_METRIC).then(function(full){
+    drawFlowShares(side,(side==='in')?full.in:full.out); flowSetCaption(side,null);
+  });
+}
+function flowSetGrain(side,g){
+  if(side==='in'){ if(FIN_GRAIN===g)return; FIN_GRAIN=g; FIN_DRILL=null; }
+  else { if(FOUT_GRAIN===g)return; FOUT_GRAIN=g; FOUT_DRILL=null; }
+  flowSyncGrainUI(side); renderFlowSection(side);
+}
+function flowSetMetric(m){ if(FLOW_METRIC===m)return; FLOW_METRIC=m; flowSyncMetricUI(); flowUpdateTitles(); renderFlowSection('in'); renderFlowSection('out'); }
+function flowSyncMetricUI(){ var mp=document.getElementById('flowMetric'); if(mp)mp.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on',b.dataset.fm===FLOW_METRIC); }); }
+function flowSyncGrainUI(side){ var g=(side==='in')?FIN_GRAIN:FOUT_GRAIN, tg=document.querySelector('#movement .gtoggle[data-fg="'+side+'"]'); if(tg)tg.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on',b.dataset.g===g); }); }
+function flowUpdateTitles(){ var u=flowUnit();
+  setTitle('h-flow-in-ts','Inbound over time ('+u+')'); setTitle('h-flow-in-cat','Inbound by Category ('+u+')');
+  setTitle('h-flow-in-brand','Top Inbound Brands ('+u+')'); setTitle('h-flow-in-site','Inbound by Site ('+u+')');
+  setTitle('h-flow-out-ts','Outbound over time ('+u+')'); setTitle('h-flow-out-cat','Outbound by Category ('+u+')');
+  setTitle('h-flow-out-brand','Top Outbound Brands ('+u+')'); setTitle('h-flow-out-site','Outbound by Site ('+u+')');
+}
+function wireMovement(){
+  var mp=document.getElementById('flowMetric');
+  if(mp)mp.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ flowSetMetric(b.dataset.fm); }; });
+  document.querySelectorAll('#movement .gtoggle[data-fg]').forEach(function(tg){
+    var side=tg.dataset.fg;
+    tg.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ flowSetGrain(side,b.dataset.g); }; });
+  });
+}
+function openMovement(){ if(FLOW_LOADED)return; FLOW_LOADED=true; flowUpdateTitles(); renderFlowSection('in'); renderFlowSection('out'); }
+
 /* ================= REORDER & SAFETY STOCK (lazy-loaded tab) ================= */
 var RO=null, RO_Z=1.6449, RO_LEAD=61, RO_LOADED=false;  /* RO_LEAD in DAYS; 61 ≈ 2 months */
 const RO_CAP=400; const ROF={q:'',cat:'',st:''};
@@ -1589,7 +1743,7 @@ function renderX(){
     var ab=document.getElementById('abcExport'); if(ab)ab.onclick=exportAbcCSV;
     var rb=document.getElementById('roExport'); if(rb)rb.onclick=exportReorderCSV;
   })();
-  wireRangeControls(); wireCompare(); wireMetric(); wireABC(); wireReorder(); buildFilters(); renderX();
+  wireRangeControls(); wireCompare(); wireMetric(); wireABC(); wireReorder(); wireMovement(); buildFilters(); renderX();
 })();
 
 /* env-aware staging badge (shared convention) — visible only on -dev/ paths */
