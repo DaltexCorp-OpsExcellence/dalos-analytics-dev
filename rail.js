@@ -67,11 +67,20 @@
    +'.dal-acct-em{font-size:11px;color:#8a95b0;word-break:break-all;margin-top:1px}'
    +'.dal-acct-out{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:9px;border-radius:8px;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}'
    +'.dal-acct-out:hover{background:#dc2626;color:#fff;border-color:#dc2626}'
-   /* search panel */
-   +'.dal-srch-wrap{padding:12px 12px 6px}'
-   +'.dal-srch-in{width:100%;border:1px solid #e2e6f0;border-radius:8px;padding:9px 11px;font-family:inherit;font-size:13px;color:#142850;outline:none;box-sizing:border-box}'
-   +'.dal-srch-in:focus{border-color:#DC6428}'
-   +'.dal-srch-empty{font-size:12.5px;color:#8a95b0;padding:14px 12px;text-align:center;line-height:1.6}'
+   /* top-bar search pill (glass) */
+   +'.dal-search-pill{display:inline-flex;align-items:center;gap:9px;height:34px;padding:0 12px;border-radius:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#dce6f5;cursor:pointer;font-family:var(--font,\'Plus Jakarta Sans\',system-ui,sans-serif);font-size:12.5px;font-weight:600;transition:.15s;white-space:nowrap;flex-shrink:0}'
+   +'.dal-search-pill:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.28)}'
+   +'.dal-search-pill .dal-kbd2{font-family:var(--mono,monospace);font-size:10px;color:#9fb3d6;border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:2px 6px;background:rgba(255,255,255,.08)}'
+   +'@media(max-width:640px){.dal-search-pill .pill-lbl,.dal-search-pill .dal-kbd2{display:none}.dal-search-pill{padding:0;width:34px;justify-content:center}}'
+   /* search command palette */
+   +'.dal-sov{position:fixed;inset:0;background:rgba(14,31,61,.42);z-index:360;display:none;align-items:flex-start;justify-content:center;padding:12vh 16px 16px}'
+   +'.dal-sov.on{display:flex}'
+   +'.dal-spal{width:480px;max-width:100%;background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(20,40,80,.32);overflow:hidden;font-family:var(--font,\'Plus Jakarta Sans\',system-ui,sans-serif)}'
+   +'.dal-sbar{display:flex;align-items:center;gap:11px;padding:15px 16px;border-bottom:1px solid #e2e6f0}'
+   +'.dal-sin{flex:1;border:none;outline:none;font-family:inherit;font-size:15px;color:#142850;background:none;min-width:0}'
+   +'.dal-kbd{font-family:var(--mono,monospace);font-size:10px;color:#8a95b0;border:1px solid #e2e6f0;border-radius:5px;padding:2px 6px;background:#f4f6fb}'
+   +'.dal-slist{max-height:342px;overflow-y:auto;padding:8px}'
+   +'.dal-srch-empty{font-size:12.5px;color:#8a95b0;padding:16px;text-align:center;line-height:1.6}'
    /* card star */
    +'.dal-fav-host{position:relative}'
    +'.dal-fav-host .dc-header{padding-right:30px}'
@@ -145,7 +154,6 @@
   rail.innerHTML=''
     +'<div class="dal-rlogo"><svg viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#1a3668"/><rect x="14" y="32" width="8.5" height="18" rx="4" fill="#f08a4b"/><rect x="27.75" y="24" width="8.5" height="26" rx="4" fill="#DC6428"/><rect x="41.5" y="15" width="8.5" height="35" rx="4" fill="#DC6428"/><circle cx="45.75" cy="15" r="4.3" fill="#f7c948"/></svg></div>'
     +'<button class="dal-ric" id="dal-home" title="Home">'+ic('home',21)+'<span class="dal-tip">Home</span></button>'
-    +'<button class="dal-ric" id="dal-search">'+ic('search',21)+'<span class="dal-tip">Search dashboards</span></button>'
     +'<button class="dal-ric" id="dal-fav">'+ic('star',21)+'<span class="dal-cnt" id="dal-favcnt" style="display:none">0</span><span class="dal-tip">Favorites</span></button>'
     +'<button class="dal-ric" id="dal-access" style="display:none">'+ic('shield',21)+'<span class="dal-tip">Manage access</span></button>'
     +'<div class="dal-rsp"></div>'
@@ -166,13 +174,14 @@
     +'<div class="dal-ffoot">Pin dashboards with the ★ on any card</div>';
   document.body.appendChild(fly);
 
-  // Search panel (same slide-out style as the flyout)
-  var srch=document.createElement('aside'); srch.className='dal-flyout dal-srch';
-  srch.innerHTML=''
-    +'<div class="dal-fh"><b>'+ic('search',15).replace('style="display:block"','style="display:block;color:#DC6428"')+' Search dashboards</b><button class="dal-fx" id="dal-srchx">'+ic('x',15)+'</button></div>'
-    +'<div class="dal-srch-wrap"><input id="dal-srch-in" class="dal-srch-in" placeholder="Type a dashboard name…" autocomplete="off"></div>'
-    +'<div class="dal-fb" id="dal-srch-body"></div>';
-  document.body.appendChild(srch);
+  // Search — centered command palette (opened by the top-bar pill or Ctrl/⌘K)
+  var sov=document.createElement('div'); sov.className='dal-sov'; sov.id='dal-sov';
+  sov.innerHTML=''
+    +'<div class="dal-spal">'
+    +'<div class="dal-sbar">'+ic('search',18).replace('style="display:block"','style="display:block;color:#8a95b0"')+'<input id="dal-srch-in" class="dal-sin" placeholder="Search dashboards…" autocomplete="off"><span class="dal-kbd">esc</span></div>'
+    +'<div class="dal-slist" id="dal-srch-body"></div>'
+    +'</div>';
+  document.body.appendChild(sov);
 
   /* ---- flyout render / toggle ---- */
   function renderFlyout(){
@@ -194,14 +203,12 @@
   var flyOpen=false;
   function toggleFly(v){
     flyOpen=(v===undefined)?!flyOpen:v;
-    if(flyOpen)toggleSearch(false);
-    fly.classList.toggle('on',flyOpen); ov.classList.toggle('on',flyOpen&&!searchOpen);
-    if(!flyOpen&&!searchOpen)ov.classList.remove('on');
+    fly.classList.toggle('on',flyOpen); ov.classList.toggle('on',flyOpen);
     document.getElementById('dal-fav').classList.toggle('on',flyOpen);
   }
   document.getElementById('dal-fav').addEventListener('click',function(){toggleFly();});
   document.getElementById('dal-flyx').addEventListener('click',function(){toggleFly(false);});
-  ov.addEventListener('click',function(){toggleFly(false);toggleSearch(false);});
+  ov.addEventListener('click',function(){toggleFly(false);});
 
   /* ---- dashboard search ---- */
   var CATALOG=[
@@ -246,13 +253,29 @@
   function toggleSearch(v){
     searchOpen=(v===undefined)?!searchOpen:v;
     if(searchOpen)toggleFly(false);
-    srch.classList.toggle('on',searchOpen); ov.classList.toggle('on',searchOpen||flyOpen);
-    document.getElementById('dal-search').classList.toggle('on',searchOpen);
+    sov.classList.toggle('on',searchOpen);
     if(searchOpen){ renderSearch(''); var inp=document.getElementById('dal-srch-in'); inp.value=''; setTimeout(function(){inp.focus();},60); }
   }
-  document.getElementById('dal-search').addEventListener('click',function(){toggleSearch();});
-  document.getElementById('dal-srchx').addEventListener('click',function(){toggleSearch(false);});
+  sov.addEventListener('click',function(e){ if(e.target===sov)toggleSearch(false); });
   document.getElementById('dal-srch-in').addEventListener('input',function(){renderSearch(this.value);});
+  document.addEventListener('keydown',function(e){
+    if((e.metaKey||e.ctrlKey)&&String(e.key).toLowerCase()==='k'){e.preventDefault();toggleSearch(true);}
+    else if(e.key==='Escape'&&searchOpen){toggleSearch(false);}
+  });
+
+  /* ---- top-bar "Search Dashboards" pill (injected into each page's topbar) ---- */
+  function injectPill(){
+    if(document.getElementById('dal-search-pill'))return;
+    var bar=document.querySelector('.topbar'); if(!bar)return;
+    var pill=document.createElement('button');
+    pill.id='dal-search-pill'; pill.className='dal-search-pill'; pill.type='button';
+    pill.innerHTML=ic('search',15)+'<span class="pill-lbl">Search Dashboards</span><span class="dal-kbd2">'+(navigator.platform&&/Mac/i.test(navigator.platform)?'⌘K':'Ctrl K')+'</span>';
+    pill.addEventListener('click',function(){toggleSearch(true);});
+    var host=bar.querySelector('.topbar-right')||bar.querySelector('.tb-right')||bar.lastElementChild;
+    if(host&&host!==bar&&host.appendChild){ host.insertBefore(pill,host.firstChild); if(!host.style.gap)host.style.gap='12px'; }
+    else { bar.appendChild(pill); }
+  }
+  injectPill(); setTimeout(injectPill,600); setTimeout(injectPill,2000);
 
   /* ---- rail actions ---- */
   document.getElementById('dal-home').addEventListener('click',function(){window.location='index.html';});
