@@ -681,7 +681,9 @@ function donut(id,labels,vals,colors){ killChart(id);
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const RANGE={active:false,from:null,to:null,grain:'week',grainOverride:null};
 function num(x){return (x==null||isNaN(x))?0:+x;}
-function bLabel(k,grain){var p=(''+k).split('-');if(grain==='month')return MON[(+p[1])-1]+'-'+p[0].slice(2);var mo=MON[(+p[1])-1];return (grain==='week'?'w/o ':'')+(+p[2])+' '+mo;}
+function wkNum(dt){ var d=new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate())); var day=d.getUTCDay()||7; d.setUTCDate(d.getUTCDate()+4-day); var ys=new Date(Date.UTC(d.getUTCFullYear(),0,1)); return Math.ceil((((d-ys)/86400000)+1)/7); }
+function wkLabel(k){ var d=new Date(k+'T00:00:00'); return 'W'+wkNum(d)+' '+MON[d.getMonth()]+"'"+(''+d.getFullYear()).slice(2); }
+function bLabel(k,grain){var p=(''+k).split('-');if(grain==='month')return MON[(+p[1])-1]+'-'+p[0].slice(2);if(grain==='week')return wkLabel(k);return (+p[2])+' '+MON[(+p[1])-1];}
 
 /* ---- per-chart metric (EGP value 'v' vs Qty units 'q'); each chart independent ---- */
 const CMET={season:'v',iomonth:'v',iocat:'v',cattrend:'v',catmonthly:'v',mvmonth:'v',mvin:'v',mvout:'v',catoh:'v',catturn:'v',site:'v',heat:'v',brandoh:'v',brandiss:'v',health:'v'};
@@ -980,7 +982,7 @@ function renderWindow(vw){
 /* ---- date-range apply / clear + controls ---- */
 function ymd(d){var m=(''+(d.getMonth()+1)).padStart(2,'0'),day=(''+d.getDate()).padStart(2,'0');return d.getFullYear()+'-'+m+'-'+day;}
 function asOfDate(){return new Date(((DATA.meta&&DATA.meta.asOf)||'2026-07-11')+'T00:00:00');}
-function mondayOf(d){var x=new Date(d);var wd=(x.getDay()+6)%7;x.setDate(x.getDate()-wd);return x;}
+function weekStartOf(d){var x=new Date(d);var wd=(x.getDay()+1)%7;x.setDate(x.getDate()-wd);return x;}  /* Saturday-start week */
 function syncRangeInputs(){document.getElementById('dFrom').value=RANGE.from||'';document.getElementById('dTo').value=RANGE.to||'';}
 function rpcRange(){
   var H={apikey:ANON,Authorization:'Bearer '+ANON,'Content-Type':'application/json'};
@@ -1117,7 +1119,7 @@ function periodLabel(win){
   return (+fp[2])+' '+MON[(+fp[1])-1]+'–'+(+tp[2])+' '+MON[(+tp[1])-1]+' '+tp[0].slice(2);
 }
 /* bucket label WITH year — for compare tooltips so each bar shows its own actual period */
-function bLabelYr(k,grain){ var p=(''+k).split('-'); if(grain==='month')return MON[(+p[1])-1]+' '+p[0]; var mo=MON[(+p[1])-1]; return (grain==='week'?'w/o ':'')+(+p[2])+' '+mo+' '+p[0]; }
+function bLabelYr(k,grain){ var p=(''+k).split('-'); if(grain==='month')return MON[(+p[1])-1]+' '+p[0]; if(grain==='week')return wkLabel(k); return (+p[2])+' '+MON[(+p[1])-1]+' '+p[0]; }
 var CMPMETA={
   season:{cv:'c-season',fam:'trend',metric:'onhand'},
   iomonth:{cv:'c-io-month',fam:'trend',metric:'io'},
