@@ -1429,7 +1429,7 @@ function drawFlowShares(side,br){
   var tot=num(br.total);
   donut('c-flow-'+side+'-cat',CAT,CAT.map(function(c){return num(br.byCat&&br.byCat[c]);}),CAT.map(function(c){return CATCOLOR[c];}));
   flowRankBar('c-flow-'+side+'-brand',br.byBrand,tot,10,(side==='in')?NAVY:ORANGE);
-  flowRankBar('c-flow-'+side+'-site',br.bySite,tot,12,BLUE);
+  flowRankBar('c-flow-'+side+'-site',br.bySite,tot,12,(side==='in')?NAVY:ORANGE);
 }
 function flowHint(side){
   var cap=document.getElementById(side==='in'?'flowInPeriod':'flowOutPeriod');
