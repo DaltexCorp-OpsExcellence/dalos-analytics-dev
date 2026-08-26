@@ -811,7 +811,7 @@ function drawIoCat(vw){ var q=isQ('iocat'), inb=q?vw.inByCatQ:vw.inByCat, outb=q
   barChart('c-io-cat',CAT,[
   {label:'Inbound',data:din,backgroundColor:NAVY,borderRadius:4,datalabels:{display:true,anchor:'end',align:'top',color:NAVY,font:{size:10,weight:'700'},formatter:f}},
   {label:'Outbound',data:dout,backgroundColor:ORANGE,borderRadius:4,datalabels:{display:true,anchor:'end',align:'top',color:ORANGE,font:{size:10,weight:'700'},formatter:f}}
-]); }
+],CATCLICK); }
 function ioBars(id,vw,q){
   var sIn=q?vw.sInQ:vw.sIn, sOut=q?vw.sOutQ:vw.sOut;
   var f=q?(v=>v>0?fmtQ(v):''):(v=>v>0?v.toFixed(0):'');
@@ -883,11 +883,11 @@ function drawHeat(vw){ var q=isQ('heat'), src=q?vw.onhandBySiteQ:vw.onhandBySite
 function drawMvMonth(vw){ ioBars('c-mv-month',vw,isQ('mvmonth')); }
 function drawMvIn(vw){ var q=isQ('mvin'), src=q?vw.inByCatQ:vw.inByCat;
   var data=CAT.map(c=>q?Math.round(num(src[c])):+num(src[c]).toFixed(1));
-  barChart('c-mv-in',CAT,[{label:'Inbound',data:data,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#fff',q?(v=>fmtQ(v)):(v=>v.toFixed(1)))}]);
+  barChart('c-mv-in',CAT,[{label:'Inbound',data:data,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#fff',q?(v=>fmtQ(v)):(v=>v.toFixed(1)))}],CATCLICK);
 }
 function drawMvOut(vw){ var q=isQ('mvout'), src=q?vw.outByCatQ:vw.outByCat;
   var data=CAT.map(c=>q?Math.round(Math.abs(num(src[c]))):+Math.abs(num(src[c])).toFixed(1));
-  barChart('c-mv-out',CAT,[{label:'Outbound',data:data,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#fff',q?(v=>fmtQ(v)):(v=>v.toFixed(1)))}]);
+  barChart('c-mv-out',CAT,[{label:'Outbound',data:data,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#fff',q?(v=>fmtQ(v)):(v=>v.toFixed(1)))}],CATCLICK);
 }
 function drawMovement(vw){ drawMvMonth(vw); drawMvIn(vw); drawMvOut(vw); }
 /* Brand set is ALWAYS the top 12 brands by on-hand EGP value; the metric toggle only
@@ -1564,6 +1564,7 @@ var DRILL={f:{},order:[],metric:'v'};
 const DRILLDIM={c:'Category',d:'Department',b:'Brand',s:'Site',t:'Tier'};
 function drillHover(e,el){ var c=e&&e.native&&e.native.target; if(c)c.style.cursor=(el&&el.length)?'pointer':'default'; }
 function drillClick(dim,labelAt){ return function(e,el){ if(el&&el.length){ var v=labelAt(el[0].index); if(v!=null&&v!=='')openDrill(dim,v); } }; }
+var CATCLICK={onClick:drillClick('c',function(i){return CAT[i];}),onHover:drillHover};  /* opts for category bars (io-cat, mv-in, mv-out) */
 function drillItems(){ return ITEMS.items.filter(function(i){ var f=DRILL.f; for(var k in f){ if(i[k]!==f[k])return false; } return true; }); }
 function dmVal(i){ return DRILL.metric==='q'?num(i.q):num(i.v); }
 function dmFmt(sum){ return DRILL.metric==='q'?Math.round(num(sum)).toLocaleString():((num(sum)/1e6).toFixed(1)+'M'); }
@@ -1726,7 +1727,7 @@ donut('c-share',CAT,CAT.map(c=>DATA.onhandByCat[c]),CAT.map(c=>CATCOLOR[c]));
 barChart('c-io-cat',CAT,[
   {label:'Inbound',data:CAT.map(c=>+(DATA.inboundByCatSeason[c]||0).toFixed(1)),backgroundColor:NAVY,borderRadius:4,datalabels:{display:true,anchor:'end',align:'top',color:NAVY,font:{size:10,weight:'700'},formatter:v=>v>0?v.toFixed(1):''}},
   {label:'Outbound',data:CAT.map(c=>+Math.abs(DATA.outboundByCatSeason[c]||0).toFixed(1)),backgroundColor:ORANGE,borderRadius:4,datalabels:{display:true,anchor:'end',align:'top',color:ORANGE,font:{size:10,weight:'700'},formatter:v=>v>0?v.toFixed(1):''}}
-]);
+],CATCLICK);
 // inbound vs outbound monthly
 barChart('c-io-month',seasonMonths.map(mLabel),[
   {label:'Inbound',data:seasonMonths.map(m=>+(DATA.inboundByMonth[m]||0).toFixed(1)),backgroundColor:NAVY,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:NAVY,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}},
@@ -1780,8 +1781,8 @@ barChart('c-mv-month',seasonMonths.map(mLabel),[
   {label:'Inbound',data:seasonMonths.map(m=>+(DATA.inboundByMonth[m]||0).toFixed(1)),backgroundColor:NAVY,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:NAVY,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}},
   {label:'Outbound',data:seasonMonths.map(m=>+Math.abs(DATA.outboundByMonth[m]||0).toFixed(1)),backgroundColor:ORANGE,borderRadius:3,datalabels:{display:true,anchor:'end',align:'top',rotation:-90,color:ORANGE,font:{size:8,weight:'700'},formatter:v=>v>0?v.toFixed(0):''}}
 ]);
-barChart('c-mv-in',CAT,[{label:'Inbound',data:CAT.map(c=>+(DATA.inboundByCatSeason[c]||0).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#fff',v=>v.toFixed(1))}]);
-barChart('c-mv-out',CAT,[{label:'Outbound',data:CAT.map(c=>+Math.abs(DATA.outboundByCatSeason[c]||0).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#fff',v=>v.toFixed(1))}]);
+barChart('c-mv-in',CAT,[{label:'Inbound',data:CAT.map(c=>+(DATA.inboundByCatSeason[c]||0).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#fff',v=>v.toFixed(1))}],CATCLICK);
+barChart('c-mv-out',CAT,[{label:'Outbound',data:CAT.map(c=>+Math.abs(DATA.outboundByCatSeason[c]||0).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dl('#fff',v=>v.toFixed(1))}],CATCLICK);
 
 /* ===== HEALTH ===== */
 paintHealth(DATA.statusVal,DATA.statusCnt);
