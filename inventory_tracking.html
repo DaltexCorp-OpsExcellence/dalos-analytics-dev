@@ -562,6 +562,8 @@ const CAT = ['Sp','IRR','Oil','Invest'];
 const CATCOLOR = {Sp:'#142850',IRR:'#2563eb',Oil:'#d97706',Invest:'#6d28d9'};
 const NAVY='#142850', ORANGE='#DC6428', BLUE='#2563eb', SLATE='#94a3b8', GREEN='#16a34a', RED='#dc2626';
 const fmtM = v => (v>=0?'':'-')+Math.abs(v).toLocaleString('en',{maximumFractionDigits:1});
+function mM(m){ m=+m||0; var a=Math.abs(m); if(a>=1) return m.toFixed(1)+'M'; if(a===0) return '0'; return Math.round(m*1000).toLocaleString()+'K'; }   // value is in MILLIONS: >=1M -> 'X.XM', else 'NNNK' (0.5 -> 500K, 0.05 -> 50K)
+function pP(p){ p=+p||0; if(p<=0) return '0%'; if(p<0.1) return '<0.1%'; if(p<1) return p.toFixed(1)+'%'; return p.toFixed(0)+'%'; }   // p is a percent 0..100: small non-zero -> one decimal (0.5%) instead of 0%
 function monthRangeYM(startYM,endYM){ var o=[],a=startYM.split('-'),b=endYM.split('-'),y=+a[0],m=+a[1],ey=+b[0],em=+b[1]; while(y<ey||(y===ey&&m<=em)){ o.push(y+'-'+String(m).padStart(2,'0')); m++; if(m>12){m=1;y++;} } return o; }
 const seasonMonths = monthRangeYM(((DATA.meta&&DATA.meta.seasonStart)||'2025-10'), (((DATA.meta&&DATA.meta.asOf)||'2026-08-15').slice(0,7)));
 const MON3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -640,7 +642,7 @@ function exportReorderCSV(){
 }
 
 /* ---- snapshot ---- */
-document.getElementById('s-onhand').textContent='EGP '+DATA.kpi.onhandTotal+'M';
+document.getElementById('s-onhand').textContent='EGP '+mM(DATA.kpi.onhandTotal);
 document.getElementById('s-sku').textContent=DATA.kpi.totalSku.toLocaleString();
 document.getElementById('s-sp').textContent=DATA.kpi.spDominance+'%';
 document.getElementById('s-rows').textContent=(DATA.meta&&DATA.meta.asOf)||'—';
@@ -660,14 +662,14 @@ const seasonIn = seasonMonths.reduce((s,m)=>s+(DATA.inboundByMonth[m]||0),0);
 const seasonOut = seasonMonths.reduce((s,m)=>s+Math.abs(DATA.outboundByMonth[m]||0),0);
 const turnover = (seasonOut/DATA.kpi.onhandTotal);
 const kpis=[
-  {v:'EGP '+DATA.kpi.onhandTotal+'M',l:'Total On-Hand Value',s:'Across all sites',c:''},
+  {v:'EGP '+mM(DATA.kpi.onhandTotal),l:'Total On-Hand Value',s:'Across all sites',c:''},
   {v:DATA.kpi.activeItems.toLocaleString(),l:'Active Moving Items',s:DATA.kpi.activeRate+'% active rate',c:'k-teal'},
   {v:DATA.kpi.totalSku.toLocaleString(),l:'Total SKUs',s:'Across 4 categories',c:'k-orange'},
   {v:DATA.kpi.spDominance+'%',l:'Spare Parts Dominance',s:'of total value',c:''},
   {v:'EGP '+fmtM(seasonIn)+'M',l:'Season Inbound',s:'Or Ty 1P/2P/FF',c:'k-in'},
   {v:'EGP '+fmtM(seasonOut)+'M',l:'Season Outbound',s:'Do Ty # (issues)',c:'k-out'},
   {v:turnover.toFixed(1)+'×',l:'Inventory Turnover',s:'season out / on-hand',c:'k-teal'},
-  {v:DATA.onhandByCat.Invest.toFixed(0)+'M',l:'Invest Category',s:'reclassified items',c:'k-orange'}
+  {v:mM(DATA.onhandByCat.Invest),l:'Invest Category',s:'reclassified items',c:'k-orange'}
 ];
 document.getElementById('kpiRow').innerHTML=kpis.map(k=>
   `<div class="kpi ${k.c}"><div class="kpi-val">${k.v}</div><div class="kpi-lbl">${k.l}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
@@ -691,7 +693,7 @@ function barChart(id,labels,datasets,opts={}){ killChart(id);
 function donut(id,labels,vals,colors,onClick){ killChart(id);
   CH[id]=new Chart(document.getElementById(id),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:'55%',onClick:onClick||undefined,onHover:onClick?drillHover:undefined,plugins:{legend:{position:'right'},
-      datalabels:{display:true,color:'#fff',font:{size:11,weight:'700'},formatter:(v,c)=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);const p=100*v/t;return p>4?p.toFixed(0)+'%':''}}}}});
+      datalabels:{display:true,color:'#fff',font:{size:11,weight:'700'},formatter:(v,c)=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);const p=100*v/t;return p>4?pP(p):''}}}}});
 }
 
 /* ================= DATE-RANGE ENGINE (day / week / month) ================= */
@@ -771,7 +773,7 @@ function buildRangeVW(p){
 
 /* ---- re-callable renderers (read from a view) ---- */
 function drawSnapshot(vw){
-  document.getElementById('s-onhand').textContent='EGP '+vw.onhandTotal+'M';
+  document.getElementById('s-onhand').textContent='EGP '+mM(vw.onhandTotal);
   document.getElementById('s-sku').textContent=(+vw.sku).toLocaleString();
   document.getElementById('s-sp').textContent=vw.sp+'%';
   document.getElementById('s-rows').textContent=vw.rowsLabel||'—';
@@ -779,19 +781,19 @@ function drawSnapshot(vw){
 function drawKpis(vw){
   const turnover=vw.onhandTotal?(vw.rangeOut/vw.onhandTotal):0;
   const kpis=[
-    {v:'EGP '+vw.onhandTotal+'M',l:'Total On-Hand Value',s:vw.rangeActive?vw.asofLabel:'Across all sites',c:''},
+    {v:'EGP '+mM(vw.onhandTotal),l:'Total On-Hand Value',s:vw.rangeActive?vw.asofLabel:'Across all sites',c:''},
     {v:(+vw.active).toLocaleString(),l:'Active Moving Items',s:vw.activeRate+'% active rate',c:'k-teal'},
     {v:(+vw.sku).toLocaleString(),l:'Total SKUs',s:'qty > 0',c:'k-orange'},
     {v:vw.sp+'%',l:'Spare Parts Dominance',s:'of total value',c:''},
     {v:'EGP '+fmtM(vw.rangeIn)+'M',l:vw.flowLabel+' Inbound',s:'Or Ty 1P/2P/FF',c:'k-in'},
     {v:'EGP '+fmtM(vw.rangeOut)+'M',l:vw.flowLabel+' Outbound',s:'Do Ty # (issues)',c:'k-out'},
     {v:turnover.toFixed(1)+'×',l:'Inventory Turnover',s:vw.flowLabel.toLowerCase()+' out / on-hand',c:'k-teal'},
-    {v:(+vw.invest).toFixed(0)+'M',l:'Invest Category',s:'reclassified items',c:'k-orange'}
+    {v:mM(+vw.invest),l:'Invest Category',s:'reclassified items',c:'k-orange'}
   ];
   document.getElementById('kpiRow').innerHTML=kpis.map(k=>`<div class="kpi ${k.c}"><div class="kpi-val">${k.v}</div><div class="kpi-lbl">${k.l}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
 }
 function drawSeason(vw){ killChart('c-season'); var q=isQ('season');
-  var data=q?vw.sOnhandQ:vw.sOnhand, lf=q?(v=>fmtQ(v)):(v=>v.toFixed(0)+'M');
+  var data=q?vw.sOnhandQ:vw.sOnhand, lf=q?(v=>fmtQ(v)):(v=>mM(v));
   /* same-period-last-year dotted line: only in the default month view (aligned month-for-month) */
   var showLast=!vw.rangeActive && data.length===seasonMonths.length;
   var ds=[
@@ -860,10 +862,10 @@ function drawSite(vw){ var q=isQ('site'), src=q?vw.onhandBySiteQ:vw.onhandBySite
   barChart('c-site',siteLabels,[{label:'On-hand',data:data,backgroundColor:sites.map((s,i)=>i<5?NAVY:SLATE),borderRadius:4,datalabels:dlf}],
     {indexAxis:'y',onClick:drillClick('s',function(i){return siteLabels[i];}),onHover:drillHover,scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
   const tot=sites.reduce((s,x)=>s+x[1],0)||1, top2=sites.slice(0,2).reduce((s,x)=>s+x[1],0), top5=sites.slice(0,5).reduce((s,x)=>s+x[1],0);
-  const fmtV=q?(v=>fmtQ(v)+' units'):(v=>'EGP '+(+v).toFixed(1)+'M');
+  const fmtV=q?(v=>fmtQ(v)+' units'):(v=>'EGP '+mM(+v));
   document.getElementById('concPanel').innerHTML=`<h4>Concentration Analysis</h4>
-    <div class="conc-item"><div class="v">${(100*top2/tot).toFixed(0)}%</div><div class="l">Top 2 sites share</div></div>
-    <div class="conc-item"><div class="v">${(100*top5/tot).toFixed(0)}%</div><div class="l">Top 5 sites share</div></div>
+    <div class="conc-item"><div class="v">${pP(100*top2/tot)}</div><div class="l">Top 2 sites share</div></div>
+    <div class="conc-item"><div class="v">${pP(100*top5/tot)}</div><div class="l">Top 5 sites share</div></div>
     <div class="conc-item"><div class="v">${fmtV(sites[0]?sites[0][1]:0)}</div><div class="l">${sites[0]?sites[0][0]:'—'} (largest)</div></div>
     <div class="conc-item"><div class="v">${fmtV(tot-top5)}</div><div class="l">Remaining ${Math.max(0,sites.length-5)} sites</div></div>`;
 }
@@ -910,7 +912,7 @@ function drawBrandOh(vw){ var q=isQ('brandoh');
   var grand=rows.reduce(function(s,r){return s+(q?r.qty:r.egp);},0)||1;
   var col=q?'Units':'M EGP', numFmt=q?function(v){return fmtQ(v);}:function(v){return (+v).toFixed(1);};
   var html='<tr><th>#</th><th>Brand</th><th class="n">'+col+'</th><th class="n">Share</th></tr>';
-  rows.forEach(function(r,i){ var v=q?r.qty:r.egp; html+='<tr><td>'+(i+1)+'</td><td class="b">'+r.b+'</td><td class="n">'+numFmt(v)+'</td><td class="n">'+(100*v/grand).toFixed(1)+'%</td></tr>';});
+  rows.forEach(function(r,i){ var v=q?r.qty:r.egp; html+='<tr><td>'+(i+1)+'</td><td class="b">'+r.b+'</td><td class="n">'+numFmt(v)+'</td><td class="n">'+pP(100*v/grand)+'</td></tr>';});
   document.getElementById('brandTable').innerHTML=html;
 }
 function drawBrandIss(vw){ var q=isQ('brandiss'), src=q?vw.issueByBrandQ:vw.issueByBrand;
@@ -924,7 +926,7 @@ function drawBrandIss(vw){ var q=isQ('brandiss'), src=q?vw.issueByBrandQ:vw.issu
 function drawBrand(vw){ drawBrandOh(vw); drawBrandIss(vw); }
 function drawCatOh(vw){ var q=isQ('catoh'), src=q?vw.onhandByCatQ:vw.onhandByCat;
   var data=CAT.map(c=>q?Math.round(num(src[c])):+num(src[c]).toFixed(1));
-  barChart('c-cat-oh',CAT,[{label:'On-hand',data:data,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:q?dlv(v=>fmtQ(v)):dlv(v=>v.toFixed(1)+'M')}],
+  barChart('c-cat-oh',CAT,[{label:'On-hand',data:data,backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:q?dlv(v=>fmtQ(v)):dlv(v=>mM(v))}],
     {onClick:drillClick('c',function(i){return CAT[i];}),onHover:drillHover});
 }
 function drawBreakdowns(vw){
@@ -943,28 +945,28 @@ function paintHealth(sv,sc,svq){
   const hv=q?vq:v;                /* metric-selected "value" accessor */
   const totV=TS.reduce((s,t)=>s+v(t),0)||1, totC=TS.reduce((s,t)=>s+c(t),0)||1, totH=TS.reduce((s,t)=>s+hv(t),0)||1;
   const hFmt=q?(x=>fmtQ(x)):(x=>x.toFixed(1)), unitWord=q?'units':'value';
-  const hHead=q?(t=>fmtQ(hv(t))+' units'):(t=>'EGP '+hv(t).toFixed(1)+'M');
+  const hHead=q?(t=>fmtQ(hv(t))+' units'):(t=>'EGP '+mM(hv(t)));
   donut('c-status-val',TL,TS.map(hv),TC,drillClick('t',function(i){return TS[i];}));
   barChart('c-status-cnt',TL,[{label:'Items',data:TS.map(c),backgroundColor:TC,borderRadius:5,datalabels:dlh()}],
     {indexAxis:'y',onClick:drillClick('t',function(i){return TS[i];}),onHover:drillHover,scales:{x:{grid:{color:'#eef1f6'}},y:{grid:{display:false}}}});
   const tiles=document.getElementById('healthTiles');
-  if(tiles)tiles.innerHTML=TS.map((t,i)=>`<div class="kpi k-${t.toLowerCase()}"><div class="kpi-val">${hHead(t)}</div><div class="kpi-lbl">${TL[i]}</div><div class="kpi-sub">${c(t).toLocaleString()} items · ${(100*hv(t)/totH).toFixed(0)}% of ${unitWord}</div></div>`).join('');
+  if(tiles)tiles.innerHTML=TS.map((t,i)=>`<div class="kpi k-${t.toLowerCase()}"><div class="kpi-val">${hHead(t)}</div><div class="kpi-lbl">${TL[i]}</div><div class="kpi-sub">${c(t).toLocaleString()} items · ${pP(100*hv(t)/totH)} of ${unitWord}</div></div>`).join('');
   const tbl=document.getElementById('healthTable');
   if(tbl){ const valHdr=q?'Units':'Value (M)', avgHdr=q?'Avg / item':'Avg / item (K)';
     let h=`<tr><th>Tier</th><th class="n">${valHdr}</th><th class="n">Items</th><th class="n">% ${q?'Units':'Value'}</th><th class="n">% Items</th><th class="n">${avgHdr}</th></tr>`;
     TS.forEach((t,i)=>{ const avg=c(t)?(q?(hv(t)/c(t)):(v(t)*1000/c(t))):0;
-      h+=`<tr><td class="b"><span class="tier-pill" style="background:${TC[i]}">${t}</span></td><td class="n">${hFmt(hv(t))}</td><td class="n">${c(t).toLocaleString()}</td><td class="n">${(100*hv(t)/totH).toFixed(1)}%</td><td class="n">${(100*c(t)/totC).toFixed(1)}%</td><td class="n">${q?fmtQ(avg):avg.toFixed(1)}</td></tr>`; });
+      h+=`<tr><td class="b"><span class="tier-pill" style="background:${TC[i]}">${t}</span></td><td class="n">${hFmt(hv(t))}</td><td class="n">${c(t).toLocaleString()}</td><td class="n">${pP(100*hv(t)/totH)}</td><td class="n">${pP(100*c(t)/totC)}</td><td class="n">${q?fmtQ(avg):avg.toFixed(1)}</td></tr>`; });
     h+=`<tr><td class="b">Total</td><td class="n">${hFmt(totH)}</td><td class="n">${totC.toLocaleString()}</td><td class="n">100%</td><td class="n">100%</td><td class="n">${q?fmtQ(totH/totC):(totV*1000/totC).toFixed(1)}</td></tr>`;
     tbl.innerHTML=h;
   }
   const panel=document.getElementById('healthPanel');
   if(panel){ const healthy=hv('Fast')+hv('Normal'), risk=hv('Slow')+hv('Dead'), dead=hv('Dead'), movingC=c('Fast')+c('Normal');
-    const rFmt=q?(x=>fmtQ(x)+' units'):(x=>'EGP '+x.toFixed(1)+'M');
+    const rFmt=q?(x=>fmtQ(x)+' units'):(x=>'EGP '+mM(x));
     panel.innerHTML=`<h4>Health Signals</h4>
-      <div class="conc-item"><div class="v">${(100*healthy/totH).toFixed(0)}%</div><div class="l">Healthy ${unitWord} (Fast + Normal)</div></div>
+      <div class="conc-item"><div class="v">${pP(100*healthy/totH)}</div><div class="l">Healthy ${unitWord} (Fast + Normal)</div></div>
       <div class="conc-item"><div class="v">${rFmt(risk)}</div><div class="l">At-risk ${unitWord} (Slow + Deadstock)</div></div>
-      <div class="conc-item"><div class="v">${rFmt(dead)}</div><div class="l">Deadstock · ${(100*dead/totH).toFixed(0)}% of ${unitWord} · ${c('Dead').toLocaleString()} items</div></div>
-      <div class="conc-item"><div class="v">${(100*movingC/totC).toFixed(0)}%</div><div class="l">Items moved within 12 months</div></div>`;
+      <div class="conc-item"><div class="v">${rFmt(dead)}</div><div class="l">Deadstock · ${pP(100*dead/totH)} of ${unitWord} · ${c('Dead').toLocaleString()} items</div></div>
+      <div class="conc-item"><div class="v">${pP(100*movingC/totC)}</div><div class="l">Items moved within 12 months</div></div>`;
   }
 }
 function gWord(g){return g==='day'?'Day':g==='week'?'Week':'Month';}
@@ -1295,9 +1297,9 @@ function renderAbcKpis(){
   function cnt(c){return byCls[c]?Math.round(num(byCls[c].count)):0;}
   var kpis=[
     {v:Math.round(num(t.count)).toLocaleString(),l:'Total Items',s:'classified',c:''},
-    {v:'EGP '+abcM(t.value).toFixed(1)+'M',l:'Total On-Hand Value',s:'all classes',c:'k-teal'},
+    {v:'EGP '+mM(abcM(t.value)),l:'Total On-Hand Value',s:'all classes',c:'k-teal'},
     {v:cnt('A').toLocaleString()+' / '+cnt('B').toLocaleString()+' / '+cnt('C').toLocaleString(),l:'Class A / B / C items',s:'vital few → long tail',c:'k-orange'},
-    {v:'EGP '+abcM(t.overValue).toFixed(1)+'M',l:'Overstock Value',s:Math.round(num(t.overQty)).toLocaleString()+' units over target',c:'k-out'}
+    {v:'EGP '+mM(abcM(t.overValue)),l:'Overstock Value',s:Math.round(num(t.overQty)).toLocaleString()+' units over target',c:'k-out'}
   ];
   document.getElementById('abcKpis').innerHTML=kpis.map(function(k){return '<div class="kpi '+k.c+'"><div class="kpi-val">'+k.v+'</div><div class="kpi-lbl">'+k.l+'</div><div class="kpi-sub">'+k.s+'</div></div>';}).join('');
 }
@@ -1339,12 +1341,12 @@ function renderAbcOver(){
   var d=ABC, t=d.totals||{}, CL=['A','B','C'], obc=d.overByClass||{}, obk=d.overByCat||{};
   document.getElementById('abcOverKpis').innerHTML=[
     {v:Math.round(num(t.overQty)).toLocaleString(),l:'Total Overstock Qty',s:'units above target',c:'k-orange'},
-    {v:'EGP '+abcM(t.overValue).toFixed(1)+'M',l:'Total Overstock Value',s:'over '+ABC_DAYS+'-day target',c:'k-out'}
+    {v:'EGP '+mM(abcM(t.overValue)),l:'Total Overstock Value',s:'over '+ABC_DAYS+'-day target',c:'k-out'}
   ].map(function(k){return '<div class="kpi '+k.c+'"><div class="kpi-val">'+k.v+'</div><div class="kpi-lbl">'+k.l+'</div><div class="kpi-sub">'+k.s+'</div></div>';}).join('');
   barChart('c-abc-overcls',CL.map(function(c){return 'Class '+c;}),
-    [{label:'Overstock',data:CL.map(function(c){return +abcM(obc[c]).toFixed(1);}),backgroundColor:CL.map(function(c){return ABC_CLSCOL[c];}),borderRadius:5,datalabels:dlv(function(v){return v.toFixed(1)+'M';})}]);
+    [{label:'Overstock',data:CL.map(function(c){return +abcM(obc[c]).toFixed(1);}),backgroundColor:CL.map(function(c){return ABC_CLSCOL[c];}),borderRadius:5,datalabels:dlv(function(v){return mM(v);})}]);
   barChart('c-abc-overcat',CAT,
-    [{label:'Overstock',data:CAT.map(function(c){return +abcM(obk[c]).toFixed(1);}),backgroundColor:CAT.map(function(c){return CATCOLOR[c];}),borderRadius:5,datalabels:dlv(function(v){return v.toFixed(1)+'M';})}]);
+    [{label:'Overstock',data:CAT.map(function(c){return +abcM(obk[c]).toFixed(1);}),backgroundColor:CAT.map(function(c){return CATCOLOR[c];}),borderRadius:5,datalabels:dlv(function(v){return mM(v);})}]);
 }
 function renderAbcItems(){
   var items=(ABC&&ABC.items)||[], q=ABCF.q, cls=ABCF.cls, cat=ABCF.cat;
@@ -1366,7 +1368,7 @@ function renderAbcItems(){
       +'<td>'+(i.c||'')+'</td>'
       +'<td><span class="tier-pill" style="background:'+(ABC_CLSCOL[i.cls]||SLATE)+'">'+(i.cls||'')+'</span></td>'
       +'<td class="num">'+Math.round(num(i.q)).toLocaleString()+'</td>'
-      +'<td class="num">'+abcM(i.v).toFixed(2)+'</td>'
+      +'<td class="num">'+mM(abcM(i.v))+'</td>'
       +'<td class="num">'+Math.round(num(i.u)).toLocaleString()+'</td>'
       +'<td class="num">'+Math.round(num(i.c24)).toLocaleString()+'</td>'
       +'<td class="num">'+Math.round(num(i.c25)).toLocaleString()+'</td>'
@@ -1375,7 +1377,7 @@ function renderAbcItems(){
       +'<td class="num">'+cov+'</td>'
       +'<td class="num">'+Math.round(num(i.tg)).toLocaleString()+'</td>'
       +'<td class="num">'+Math.round(num(i.oq)).toLocaleString()+'</td>'
-      +'<td class="num">'+abcM(i.ov).toFixed(2)+'</td></tr>';
+      +'<td class="num">'+mM(abcM(i.ov))+'</td></tr>';
   });
   document.getElementById('abcItems').innerHTML=h;
 }
@@ -1440,7 +1442,7 @@ function flowRankBar(id,obj,total,topN,color){
   var labels=ent.map(function(e){return e[0];});
   var data=ent.map(function(e){return q?Math.round(num(e[1])):+num(e[1]).toFixed(1);});
   var tot=num(total)||ent.reduce(function(s,e){return s+num(e[1]);},0)||1;
-  var lf=function(v){ return (q?fmtQ(v):(v.toFixed(1)+'M'))+' ('+(100*v/tot).toFixed(0)+'%)'; };
+  var lf=function(v){ return (q?fmtQ(v):mM(v))+' ('+pP(100*v/tot)+')'; };
   barChart(id,labels,[{label:'',data:data,backgroundColor:color,borderRadius:4,datalabels:dlh(lf)}],
     {indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#eef1f6'}},y:{grid:{display:false},ticks:{font:{size:11}}}}});
 }
@@ -1490,7 +1492,7 @@ function flowDrill(side,k,grain){
   var mo=document.getElementById('flowModal'); if(mo)mo.style.display='flex';
   fmLoad();
 }
-function fmFmt(v){ return FM.metric==='q'?Math.round(num(v)).toLocaleString():('EGP '+num(v).toFixed(1)+'M'); }
+function fmFmt(v){ return FM.metric==='q'?Math.round(num(v)).toLocaleString():('EGP '+mM(num(v))); }
 function fmErr(e){ return '<div style="color:#dc2626;font-weight:600;padding:8px">'+((e&&e.message)||e)+'</div>'; }
 function fmTbl(obj,topN,color,tot,dim){   /* dim set => rows clickable to drill deeper */
   var arr=Object.keys(obj||{}).map(function(k){return [k,num(obj[k])];}).filter(function(x){return x[1]>0;}).sort(function(a,b){return b[1]-a[1];});
@@ -1499,7 +1501,7 @@ function fmTbl(obj,topN,color,tot,dim){   /* dim set => rows clickable to drill 
   var mx=arr[0][1]||1;
   return '<table class="fm-tbl">'+arr.map(function(x){ var pct=tot>0?(100*x[1]/tot):0;
     var attr=dim?(' data-dim="'+dim+'" data-val="'+fesc(''+x[0])+'" style="cursor:pointer"'):'';
-    return '<tr'+attr+'><td class="b">'+fesc(x[0])+(dim?' <span style="color:var(--text3);font-weight:400">›</span>':'')+'</td><td style="width:36%"><div class="fm-bar" style="width:'+Math.max(3,100*x[1]/mx)+'%;background:'+color+'"></div></td><td class="n">'+fmFmt(x[1])+'</td><td class="p">'+pct.toFixed(1)+'%</td></tr>'; }).join('')+'</table>';
+    return '<tr'+attr+'><td class="b">'+fesc(x[0])+(dim?' <span style="color:var(--text3);font-weight:400">›</span>':'')+'</td><td style="width:36%"><div class="fm-bar" style="width:'+Math.max(3,100*x[1]/mx)+'%;background:'+color+'"></div></td><td class="n">'+fmFmt(x[1])+'</td><td class="p">'+pP(pct)+'</td></tr>'; }).join('')+'</table>';
 }
 function fmItems(items){
   items=items||[]; if(!items.length)return '<div style="color:var(--text3);font-size:12px">no items</div>';
@@ -1581,7 +1583,7 @@ function drillClick(dim,labelAt){ return function(e,el){ if(el&&el.length){ var 
 var CATCLICK={onClick:drillClick('c',function(i){return CAT[i];}),onHover:drillHover};  /* opts for category bars (io-cat, mv-in, mv-out) */
 function drillItems(){ return ITEMS.items.filter(function(i){ var f=DRILL.f; for(var k in f){ if(i[k]!==f[k])return false; } return true; }); }
 function dmVal(i){ return DRILL.metric==='q'?num(i.q):num(i.v); }
-function dmFmt(sum){ return DRILL.metric==='q'?Math.round(num(sum)).toLocaleString():((num(sum)/1e6).toFixed(1)+'M'); }
+function dmFmt(sum){ return DRILL.metric==='q'?Math.round(num(sum)).toLocaleString():mM(num(sum)/1e6); }
 function openDrill(dim,val){ if(val==null||val==='')return; DRILL.f={}; DRILL.order=[]; DRILL.f[dim]=val; DRILL.order.push(dim); DRILL.metric='v'; dmSyncMetric();
   var mo=document.getElementById('drillModal'); if(mo)mo.style.display='flex'; drillRender(); }
 function drillAdd(dim,val){ if(dim in DRILL.f)return; DRILL.f[dim]=val; DRILL.order.push(dim); drillRender(); }
@@ -1594,7 +1596,7 @@ function dmTbl(rows,dim,color,tot,topN){
   if(!arr.length)return '<div style="color:var(--text3);font-size:12px;padding:2px 8px">none</div>';
   var mx=arr[0][1]||1;
   return '<table class="fm-tbl">'+arr.map(function(x){ var pct=tot>0?(100*x[1]/tot):0;
-    return '<tr data-dim="'+dim+'" data-val="'+fesc(''+x[0])+'" style="cursor:pointer"><td class="b">'+fesc(x[0])+' <span style="color:var(--text3);font-weight:400">›</span></td><td style="width:36%"><div class="fm-bar" style="width:'+Math.max(3,100*x[1]/mx)+'%;background:'+color+'"></div></td><td class="n">'+dmFmt(x[1])+'</td><td class="p">'+pct.toFixed(0)+'%</td></tr>'; }).join('')+'</table>';
+    return '<tr data-dim="'+dim+'" data-val="'+fesc(''+x[0])+'" style="cursor:pointer"><td class="b">'+fesc(x[0])+' <span style="color:var(--text3);font-weight:400">›</span></td><td style="width:36%"><div class="fm-bar" style="width:'+Math.max(3,100*x[1]/mx)+'%;background:'+color+'"></div></td><td class="n">'+dmFmt(x[1])+'</td><td class="p">'+pP(pct)+'</td></tr>'; }).join('')+'</table>';
 }
 function dmItems(rows){
   var arr=rows.slice().sort(function(a,b){return dmVal(b)-dmVal(a);}).slice(0,200);
@@ -1683,8 +1685,8 @@ function renderRoKpis(){
   var kpis=[
     {v:Math.round(num(t.items)).toLocaleString(),l:'Items Analysed',s:'with demand history',c:'k-teal'},
     {v:Math.round(num(t.reorderNow)).toLocaleString(),l:'Items to Reorder Now',s:'on-hand ≤ reorder point',c:'k-out'},
-    {v:'EGP '+roM(t.ssValue).toFixed(1)+'M',l:'Safety-Stock Value',s:'buffer to hold',c:'k-orange'},
-    {v:'EGP '+roM(t.reorderValue).toFixed(1)+'M',l:'Value of Items to Reorder',s:'on-hand value of reorder items',c:'k-out'}
+    {v:'EGP '+mM(roM(t.ssValue)),l:'Safety-Stock Value',s:'buffer to hold',c:'k-orange'},
+    {v:'EGP '+mM(roM(t.reorderValue)),l:'Value of Items to Reorder',s:'on-hand value of reorder items',c:'k-out'}
   ];
   document.getElementById('roKpis').innerHTML=kpis.map(function(k){return '<div class="kpi '+k.c+'"><div class="kpi-val">'+k.v+'</div><div class="kpi-lbl">'+k.l+'</div><div class="kpi-sub">'+k.s+'</div></div>';}).join('');
 }
@@ -1694,7 +1696,7 @@ function renderRoCharts(){
     [{label:'Items to reorder',data:CAT.map(function(c){return by[c]?Math.round(num(by[c].reorderNow)):0;}),backgroundColor:CAT.map(function(c){return CATCOLOR[c];}),borderRadius:5,datalabels:dlv(function(v){return Math.round(v).toLocaleString();})}],
     {plugins:{legend:{display:false}}});
   barChart('c-ro-ss',CAT,
-    [{label:'Safety-stock value',data:CAT.map(function(c){return by[c]?+roM(by[c].ssValue).toFixed(1):0;}),backgroundColor:CAT.map(function(c){return CATCOLOR[c];}),borderRadius:5,datalabels:dlv(function(v){return v.toFixed(1)+'M';})}],
+    [{label:'Safety-stock value',data:CAT.map(function(c){return by[c]?+roM(by[c].ssValue).toFixed(1):0;}),backgroundColor:CAT.map(function(c){return CATCOLOR[c];}),borderRadius:5,datalabels:dlv(function(v){return mM(v);})}],
     {plugins:{legend:{display:false}}});
 }
 function renderRoItems(){
@@ -1723,7 +1725,7 @@ function renderRoItems(){
       +'<td class="num">'+Math.round(num(i.ss)).toLocaleString()+'</td>'
       +'<td class="num">'+Math.round(num(i.rop)).toLocaleString()+'</td>'
       +'<td><span class="tier-pill" style="background:'+(RO_STCOL[i.st]||SLATE)+'">'+stLbl+'</span></td>'
-      +'<td class="num">'+roM(i.ssv).toFixed(2)+'</td></tr>';
+      +'<td class="num">'+mM(roM(i.ssv))+'</td></tr>';
   });
   document.getElementById('roItems').innerHTML=h;
 }
@@ -1749,7 +1751,7 @@ barChart('c-io-month',seasonMonths.map(mLabel),[
 ]);
 
 /* ===== CATEGORY ===== */
-barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>+DATA.onhandByCat[c].toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>v.toFixed(1)+'M')}]);
+barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>+DATA.onhandByCat[c].toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>mM(v))}]);
 donut('c-cat-share',CAT,CAT.map(c=>DATA.onhandByCat[c]),CAT.map(c=>CATCOLOR[c]));
 drawCatTurn(buildFullVW());
 (()=>{ const ms=Object.keys(DATA.monthlyOnhand).filter(m=>m>='2024-09');
@@ -1782,10 +1784,10 @@ drawCatTurn(buildFullVW());
   const tot=sites.reduce((s,x)=>s+x[1],0);
   const top2=sites.slice(0,2).reduce((s,x)=>s+x[1],0), top5=sites.slice(0,5).reduce((s,x)=>s+x[1],0);
   document.getElementById('concPanel').innerHTML=`<h4>Concentration Analysis</h4>
-    <div class="conc-item"><div class="v">${(100*top2/tot).toFixed(0)}%</div><div class="l">Top 2 sites share</div></div>
-    <div class="conc-item"><div class="v">${(100*top5/tot).toFixed(0)}%</div><div class="l">Top 5 sites share</div></div>
-    <div class="conc-item"><div class="v">EGP ${sites[0][1].toFixed(1)}M</div><div class="l">${sites[0][0]} (largest)</div></div>
-    <div class="conc-item"><div class="v">EGP ${(tot-sites.slice(0,5).reduce((s,x)=>s+x[1],0)).toFixed(1)}M</div><div class="l">Remaining ${sites.length-5} sites</div></div>`;
+    <div class="conc-item"><div class="v">${pP(100*top2/tot)}</div><div class="l">Top 2 sites share</div></div>
+    <div class="conc-item"><div class="v">${pP(100*top5/tot)}</div><div class="l">Top 5 sites share</div></div>
+    <div class="conc-item"><div class="v">EGP ${mM(sites[0][1])}</div><div class="l">${sites[0][0]} (largest)</div></div>
+    <div class="conc-item"><div class="v">EGP ${mM(tot-sites.slice(0,5).reduce((s,x)=>s+x[1],0))}</div><div class="l">Remaining ${sites.length-5} sites</div></div>`;
 })();
 /* heat map — via drawHeat so the per-category relative colouring applies on load */
 drawHeat(buildFullVW());
@@ -1819,14 +1821,14 @@ function renderKPIs(rows){
   if(!anyActive()){ onh=DATA.kpi.onhandTotal; sku=DATA.kpi.totalSku; active=DATA.kpi.activeItems; spD=DATA.kpi.spDominance; inv=num(DATA.onhandByCat&&DATA.onhandByCat.Invest); }
   const turnover=(seasonOut/DATA.kpi.onhandTotal);
   const kpis=[
-    {v:'EGP '+onh.toFixed(1)+'M',l:'Total On-Hand Value',s:'filtered',c:''},
+    {v:'EGP '+mM(onh),l:'Total On-Hand Value',s:'filtered',c:''},
     {v:active.toLocaleString(),l:'Active Moving Items',s:'moved ≤12m',c:'k-teal'},
     {v:sku.toLocaleString(),l:'Total SKUs',s:'qty > 0',c:'k-orange'},
     {v:spD+'%',l:'Spare Parts Dominance',s:'of value',c:''},
     {v:'EGP '+fmtM(seasonIn)+'M',l:'Season Inbound',s:'all items',c:'k-in'},
     {v:'EGP '+fmtM(seasonOut)+'M',l:'Season Outbound',s:'all items',c:'k-out'},
     {v:turnover.toFixed(1)+'×',l:'Inventory Turnover',s:'season',c:'k-teal'},
-    {v:inv.toFixed(0)+'M',l:'Invest Category',s:'filtered',c:'k-orange'}
+    {v:mM(inv),l:'Invest Category',s:'filtered',c:'k-orange'}
   ];
   document.getElementById('kpiRow').innerHTML=kpis.map(k=>`<div class="kpi ${k.c}"><div class="kpi-val">${k.v}</div><div class="kpi-lbl">${k.l}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
 }
@@ -1838,7 +1840,7 @@ function renderFiltered(rows){
   rows.forEach(i=>{ if(byCat[i.c]!=null){byCat[i.c]+=i.v;byCatQ[i.c]+=num(i.q);} });
   donut('c-share',CAT,CAT.map(c=>byCat[c]),CAT.map(c=>CATCOLOR[c]),drillClick('c',function(i){return CAT[i];}));
   const qc=isQ('catoh');
-  barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>qc?Math.round(byCatQ[c]):+M(byCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:qc?dlv(v=>fmtQ(v)):dlv(v=>v.toFixed(1)+'M')}],
+  barChart('c-cat-oh',CAT,[{label:'On-hand',data:CAT.map(c=>qc?Math.round(byCatQ[c]):+M(byCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:qc?dlv(v=>fmtQ(v)):dlv(v=>mM(v))}],
     {onClick:drillClick('c',function(i){return CAT[i];}),onHover:drillHover});
   donut('c-cat-share',CAT,CAT.map(c=>byCat[c]),CAT.map(c=>CATCOLOR[c]),drillClick('c',function(i){return CAT[i];}));
   const bbM={},bbq={}; rows.forEach(i=>{ if(i.b&&i.b!=='(Unbranded)'){bbM[i.b]=(bbM[i.b]||0)+M(i.v);bbq[i.b]=(bbq[i.b]||0)+num(i.q);} });
@@ -1890,9 +1892,9 @@ function renderX(){
   const val=rows.reduce((s,i)=>s+i.v,0), qsum=rows.reduce((s,i)=>s+i.q,0), dead=rows.filter(i=>i.t==='Dead').reduce((s,i)=>s+i.v,0);
   document.getElementById('expKpis').innerHTML=[
     {v:rows.length.toLocaleString(),l:'Items',s:'in current filter',c:''},
-    {v:'EGP '+XM(val).toFixed(1)+'M',l:'On-Hand Value',s:'filtered',c:'k-teal'},
+    {v:'EGP '+mM(XM(val)),l:'On-Hand Value',s:'filtered',c:'k-teal'},
     {v:Math.round(qsum).toLocaleString(),l:'Total Qty',s:'units',c:'k-orange'},
-    {v:'EGP '+XM(dead).toFixed(1)+'M',l:'Deadstock Value',s:'>18m no move',c:'k-out'}
+    {v:'EGP '+mM(XM(dead)),l:'Deadstock Value',s:'>18m no move',c:'k-out'}
   ].map(k=>`<div class="kpi ${k.c}"><div class="kpi-val">${k.v}</div><div class="kpi-lbl">${k.l}</div><div class="kpi-sub">${k.s}</div></div>`).join('');
   const byCat={}; CAT.forEach(c=>byCat[c]=0); rows.forEach(i=>{if(byCat[i.c]==null)byCat[i.c]=0;byCat[i.c]+=i.v;});
   xdraw('c-exp-cat',{type:'bar',data:{labels:CAT,datasets:[{data:CAT.map(c=>+XM(byCat[c]).toFixed(1)),backgroundColor:CAT.map(c=>CATCOLOR[c]),borderRadius:5,datalabels:dlv(v=>v.toFixed(1))}]},options:{responsive:true,maintainAspectRatio:false,onClick:(e,el)=>{if(el.length)toggleX('cat',CAT[el[0].index]);},plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#eef1f6'}},x:{grid:{display:false}}}}});
