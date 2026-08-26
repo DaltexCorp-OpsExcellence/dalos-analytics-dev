@@ -1456,15 +1456,8 @@ drawCatTurn(buildFullVW());
     <div class="conc-item"><div class="v">EGP ${sites[0][1].toFixed(1)}M</div><div class="l">${sites[0][0]} (largest)</div></div>
     <div class="conc-item"><div class="v">EGP ${(tot-sites.slice(0,5).reduce((s,x)=>s+x[1],0)).toFixed(1)}M</div><div class="l">Remaining ${sites.length-5} sites</div></div>`;
 })();
-/* heat map */
-(()=>{ const sites=Object.keys(DATA.onhandBySite).filter(s=>DATA.onhandBySite[s]>0.05).sort((a,b)=>DATA.onhandBySite[b]-DATA.onhandBySite[a]);
-  const band=v=>v>80?'#7f1d1d':v>20?'#dc2626':v>5?'#d97706':v>0?'#2563eb':'#1b2a44';
-  let html='<tr><th>Location</th>'+CAT.map(c=>`<th>${c} (M)</th>`).join('')+'<th>Total (M)</th></tr>';
-  sites.forEach(s=>{ let row=`<tr><td>${s}</td>`; let tot=0;
-    CAT.forEach(c=>{const v=DATA.heat[`${s}|${c}`]||0;tot+=v;row+=`<td style="background:${band(v)}">${v>0?v.toFixed(1):'–'}</td>`;});
-    row+=`<td style="background:${band(tot)}">${tot.toFixed(1)}</td></tr>`; html+=row;});
-  document.getElementById('heatTable').innerHTML=html;
-})();
+/* heat map — via drawHeat so the per-category relative colouring applies on load */
+drawHeat(buildFullVW());
 
 /* ===== MOVEMENT ===== */
 barChart('c-mv-month',seasonMonths.map(mLabel),[
