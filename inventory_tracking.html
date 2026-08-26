@@ -1475,7 +1475,10 @@ function drawFlowCatSeries(side,payload){
   var labels=keys.map(function(k){return bLabel(k,grain);});
   var q=flowIsQ();
   var ds=CAT.map(function(c){ var o=cs[c]||{}; return {label:c,data:keys.map(function(k){return q?Math.round(num(o[k])):+num(o[k]).toFixed(1);}),backgroundColor:CATCOLOR[c],borderRadius:2,stack:'f',datalabels:{display:false}}; });
-  barChart(id,labels,ds,{plugins:{legend:{display:true,position:'bottom'}},scales:{x:{stacked:true,grid:{display:false},ticks:{maxRotation:60,minRotation:keys.length>8?60:0,font:{size:9}}},y:{stacked:true,beginAtZero:true,grid:{color:'#eef1f6'}}}});
+  barChart(id,labels,ds,{onHover:drillHover,onClick:function(e,el){ if(el&&el.length){ var k=keys[el[0].index], cat=CAT[el[0].datasetIndex], r=flowBucketRange(k,grain);
+      FM={side:side,from:r.from,to:r.to,grain:grain,label:bLabelYr(k,grain),metric:FLOW_METRIC,drill:{dim:'cat',val:cat}}; fmSyncMetric();
+      var mo=document.getElementById('flowModal'); if(mo)mo.style.display='flex'; fmLoad(); } },
+    plugins:{legend:{display:true,position:'bottom'}},scales:{x:{stacked:true,grid:{display:false},ticks:{maxRotation:60,minRotation:keys.length>8?60:0,font:{size:9}}},y:{stacked:true,beginAtZero:true,grid:{color:'#eef1f6'}}}});
 }
 /* ----- clicking a period opens a POPUP with that period's breakdown (section charts stay on full window) ----- */
 var FM={side:'in',from:null,to:null,grain:'month',label:'',metric:'v',drill:null};
