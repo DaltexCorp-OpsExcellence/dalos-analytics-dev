@@ -1,5 +1,6 @@
 (function(){
   if(window.__dalosSwitcher) return; window.__dalosSwitcher=1;
+  return; /* app-switcher floating button disabled across DalOS Analytics (per request). Remove this line to restore. */
 
   var SB_URL='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
   var SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmeWp2Z2p3dnR3a3JucXJ2cXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzIxNjYsImV4cCI6MjA5MDQ0ODE2Nn0.FjA75XZsp0Kx5Xam_rrnYoAHX4JHKey6vEFCH_zlMuQ';
