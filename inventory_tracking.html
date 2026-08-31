@@ -399,7 +399,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     </div>
 
     <!-- INBOUND -->
-    <div class="sec-title" style="margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-down-circle" style="color:var(--green)"></i>Inbound analysis</span><span class="gtoggle" data-fg="in"><button type="button" data-g="day">Day</button><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span><span id="flowInPeriod" style="font-size:11.5px;font-weight:600;color:var(--text2)"></span></div>
+    <div class="sec-title" style="margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-down-circle" style="color:var(--green)"></i>Inbound analysis</span><span class="gtoggle" data-fg="in"><button type="button" data-g="day">Day</button><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span><select class="fsel" data-fwin="in" style="height:28px;font-size:11px;padding:0 6px"><option value="all" selected>All time</option><option value="year">Last year</option><option value="m6">Last 6 months</option><option value="d90">Last 90 days</option><option value="d30">Last 30 days</option><option value="week">Last 7 days</option><option value="day">Last day</option></select><span id="flowInPeriod" style="font-size:11.5px;font-weight:600;color:var(--text2)"></span></div>
     <div class="card" style="margin:8px 0 14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-flow-in-ts">Inbound over time (M EGP)</span></span><span style="font-size:10.5px;font-weight:600;color:var(--text3)">click a bar to drill ↓</span></h3><div class="chart-box tall"><canvas id="c-flow-in-ts"></canvas></div></div>
     <div class="card" style="margin:0 0 14px"><h3><i class="ti ti-chart-bar"></i><span id="h-flow-in-cats">Inbound by Category over time (M EGP)</span></h3><div class="chart-box tall"><canvas id="c-flow-in-cats"></canvas></div></div>
     <div class="grid g2" style="margin-bottom:14px">
@@ -409,7 +409,7 @@ table.mom tr:last-child td{background:#f4f6fb;font-weight:700}
     <div class="card" style="margin-bottom:14px"><h3><i class="ti ti-map-pin"></i><span id="h-flow-in-site">Inbound by Site (M EGP)</span></h3><div class="chart-box"><canvas id="c-flow-in-site"></canvas></div></div>
 
     <!-- OUTBOUND -->
-    <div class="sec-title" style="margin-top:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-up-circle" style="color:var(--red)"></i>Outbound analysis</span><span class="gtoggle" data-fg="out"><button type="button" data-g="day">Day</button><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span><span id="flowOutPeriod" style="font-size:11.5px;font-weight:600;color:var(--text2)"></span></div>
+    <div class="sec-title" style="margin-top:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-arrow-up-circle" style="color:var(--red)"></i>Outbound analysis</span><span class="gtoggle" data-fg="out"><button type="button" data-g="day">Day</button><button type="button" data-g="week">Week</button><button type="button" data-g="month" class="on">Month</button></span><select class="fsel" data-fwin="out" style="height:28px;font-size:11px;padding:0 6px"><option value="all" selected>All time</option><option value="year">Last year</option><option value="m6">Last 6 months</option><option value="d90">Last 90 days</option><option value="d30">Last 30 days</option><option value="week">Last 7 days</option><option value="day">Last day</option></select><span id="flowOutPeriod" style="font-size:11.5px;font-weight:600;color:var(--text2)"></span></div>
     <div class="card" style="margin:8px 0 14px"><h3 style="justify-content:space-between"><span style="display:inline-flex;align-items:center;gap:7px"><i class="ti ti-chart-bar"></i><span id="h-flow-out-ts">Outbound over time (M EGP)</span></span><span style="font-size:10.5px;font-weight:600;color:var(--text3)">click a bar to drill ↓</span></h3><div class="chart-box tall"><canvas id="c-flow-out-ts"></canvas></div></div>
     <div class="card" style="margin:0 0 14px"><h3><i class="ti ti-chart-bar"></i><span id="h-flow-out-cats">Outbound by Category over time (M EGP)</span></h3><div class="chart-box tall"><canvas id="c-flow-out-cats"></canvas></div></div>
     <div class="grid g2" style="margin-bottom:14px">
@@ -1400,6 +1400,8 @@ function flowIsQ(){ return FLOW_METRIC==='q'; }
 function flowUnit(){ return flowIsQ()?'Units':'M EGP'; }
 function flowFullFrom(){ return FULL_FROM; }
 function flowAsOf(){ return asOfStr(); }
+var FIN_WIN='all', FOUT_WIN='all';
+function flowWinFrom(preset){ if(!preset||preset==='all')return FULL_FROM; var days={day:1,week:7,d30:30,d90:90,m6:182,year:365}[preset]; if(!days)return FULL_FROM; var d=new Date(flowAsOf()+'T00:00:00'); d.setDate(d.getDate()-days); return ymd(d); }
 function flowFetch(from,to,grain,metric){
   var key=[from,to,grain,metric].join('|');
   if(FLOWCACHE[key])return Promise.resolve(FLOWCACHE[key]);
@@ -1459,7 +1461,7 @@ function flowHint(side){
 function renderFlowSection(side){
   var g=(side==='in')?FIN_GRAIN:FOUT_GRAIN, metric=FLOW_METRIC;
   var tsId=(side==='in')?'c-flow-in-ts':'c-flow-out-ts';
-  return flowFetch(flowFullFrom(),flowAsOf(),g,metric).then(function(full){
+  return flowFetch(flowWinFrom((side==='in')?FIN_WIN:FOUT_WIN),flowAsOf(),g,metric).then(function(full){
     drawFlowTs(tsId,full,side);
     drawFlowCatSeries(side,full);
     drawFlowShares(side,(side==='in')?full.in:full.out); flowHint(side);
@@ -1567,6 +1569,8 @@ function wireMovement(){
     var side=tg.dataset.fg;
     tg.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ flowSetGrain(side,b.dataset.g); }; });
   });
+  document.querySelectorAll('#movement select[data-fwin]').forEach(function(sel){ var side=sel.dataset.fwin;
+    sel.onchange=function(){ if(side==='in')FIN_WIN=sel.value; else FOUT_WIN=sel.value; renderFlowSection(side); }; });
   var fx=document.getElementById('fmClose'); if(fx)fx.onclick=fmClose;
   var fb=document.getElementById('fmBg'); if(fb)fb.onclick=fmClose;
   var fmm=document.getElementById('fmMetric'); if(fmm)fmm.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ fmSetMetric(b.dataset.fmm); }; });
