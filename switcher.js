@@ -16,8 +16,8 @@
   function build(){
     if(!document.body || document.getElementById('dalos-switcher')) return;
     var isDev = location.pathname.indexOf('/dalos-analytics-dev/')===0;
-    var WS = isDev ? 'https://daltexcorp-opsexcellence.github.io/dalos-workspace-dev/' : 'https://daltexcorp-opsexcellence.github.io/dalos-workspace/workspace.html';
-    var VISION = isDev ? 'https://daltexcorp-opsexcellence.github.io/dalos-vision-dev/' : 'https://daltexcorp-opsexcellence.github.io/dalos-vision/';
+    var WS = isDev ? 'https://daltexcorp-opsexcellence.github.io/dalos-workspace-dev/' : 'https://daloshq.com/workspace/workspace.html';
+    var VISION = isDev ? 'https://daltexcorp-opsexcellence.github.io/dalos-vision-dev/' : 'https://daloshq.com/vision/';
 
     var APPS = '<svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/><path d="M17 4v6M14 7h6"/></svg>';
     var APPS_S = '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/><path d="M17 4v6M14 7h6"/></svg>';
