@@ -219,8 +219,8 @@ table.mx{border-collapse:collapse;font-size:11px}
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div class="tb-badge" id="tb-season"><i class="ti ti-circle-dot" style="font-size:10px"></i> FY —</div>
-    <div id="dalos-avatar" style="width:32px;height:32px;border-radius:50%;background:#DC6428;border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;cursor:default;font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px;flex-shrink:0" title="Profile">··</div>
-    <button onclick="dalSignOut()" style="display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;background:rgba(255,100,100,.12);border:1px solid rgba(255,100,100,.3);color:#ffb3b3;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s" onmouseover="this.style.background='rgba(255,100,100,.22)'" onmouseout="this.style.background='rgba(255,100,100,.12)'"><i class="ti ti-logout" style="font-size:12px"></i> Sign out</button>
+    <div id="dalos-avatar" style="display:none;align-items:center;justify-content:center;cursor:default;font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px;flex-shrink:0" title="Profile">··</div>
+    <button onclick="dalSignOut()" style="display:none;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;background:rgba(255,100,100,.12);border:1px solid rgba(255,100,100,.3);color:#ffb3b3;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s" onmouseover="this.style.background='rgba(255,100,100,.22)'" onmouseout="this.style.background='rgba(255,100,100,.12)'"><i class="ti ti-logout" style="font-size:12px"></i> Sign out</button>
   </div>
 </div>
 
@@ -2176,5 +2176,6 @@ function renderAll(){
 })();
 </script>
 <script src="switcher.js" defer></script>
+<script src="rail.js" defer></script>
 </body>
 </html>
