@@ -211,35 +211,70 @@
   ov.addEventListener('click',function(){toggleFly(false);});
 
   /* ---- dashboard search ---- */
+  // Each item carries its permission keys: pk = product/department key, dk = dashboard key
+  // (matches config.access = {pk:[dk,...]} written by the Manage-access wizard).
   var CATALOG=[
-    {group:'Grapes',emo:'🍇',items:[
-      {n:'Shipments',href:'grapes_overview_branded.html'},
-      {n:'Quality Control',href:'daltex_qc.html'},
-      {n:'Harvest Funnel',href:'daltex_harvest_funnel.html'},
-      {n:'Labor Budget',href:'labor_budget.html?product=Grapes'}
+    {group:'Grapes',emo:'🍇',pk:'grapes',items:[
+      {n:'Shipments',href:'grapes_overview_branded.html',dk:'shipments'},
+      {n:'Quality Control',href:'daltex_qc.html',dk:'qc'},
+      {n:'Harvest Funnel',href:'daltex_harvest_funnel.html',dk:'harvest'},
+      {n:'Labor Budget',href:'labor_budget.html?product=Grapes',dk:'budget'}
     ]},
-    {group:'Mango',emo:'🥭',items:[
-      {n:'Shipments',href:'mango_overview.html'},
-      {n:'Labor Budget',href:'labor_budget.html?product=Mango'}
+    {group:'Mango',emo:'🥭',pk:'mango',items:[
+      {n:'Shipments',href:'mango_overview.html',dk:'shipments'},
+      {n:'Labor Budget',href:'labor_budget.html?product=Mango',dk:'budget'}
     ]},
-    {group:'Pomegranate',emo:'🍎',items:[
-      {n:'Shipments',href:'pom_overview.html'},
-      {n:'Labor Budget',href:'labor_budget.html?product=Pomegranate'}
+    {group:'Pomegranate',emo:'🍎',pk:'pomegranate',items:[
+      {n:'Shipments',href:'pom_overview.html',dk:'shipments'},
+      {n:'Labor Budget',href:'labor_budget.html?product=Pomegranate',dk:'budget'}
     ]},
-    {group:'Finance',emo:'💰',items:[
-      {n:'Labor Budget',href:'labor_budget.html'},
-      {n:'Board Review 2026',href:'budget-2026-board-review.html'}
+    {group:'Finance',emo:'💰',pk:'finance',items:[
+      {n:'Labor Budget',href:'labor_budget.html',dk:'budget'},
+      {n:'Board Review 2026',href:'budget-2026-board-review.html',dk:'board_review'}
     ]},
-    {group:'Project Management',emo:'📋',items:[
-      {n:'Procurement',href:'procurement_hub.html'},
-      {n:'Inventory',href:'inventory_tracking.html'}
+    {group:'Project Management',emo:'📋',pk:'operations',items:[
+      {n:'Procurement',href:'procurement_hub.html',dk:'procurement'},
+      {n:'Inventory',href:'inventory_tracking.html',dk:'inventory'}
     ]}
   ];
+  // ── access gate for search results ──
+  // ACCESS: null = not loaded yet (show all briefly); {admin:bool, set:Set('pk::dk')}
+  var ACCESS=null;
+  function accessAllows(pk,dk){
+    if(!ACCESS) return true;              // not resolved yet → don't hide anything
+    if(ACCESS.admin) return true;         // admins see everything
+    return ACCESS.set.has(pk+'::'+dk);
+  }
+  function loadAccess(){
+    var s=getSession();
+    if(!s){ ACCESS={admin:false,set:new Set()}; if(searchOpen)renderSearch(document.getElementById('dal-srch-in').value); return; }
+    var h=sbHead(s.token);
+    Promise.all([
+      fetch(SB_URL+'/rest/v1/users?id=eq.'+s.id+'&select=role&limit=1',{headers:h}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];}),
+      fetch(SB_URL+'/rest/v1/dal_analytics_permissions?user_id=eq.'+s.id+'&select=role,config,expires_at&limit=1',{headers:h}).then(function(r){return r.ok?r.json():[];}).catch(function(){return [];})
+    ]).then(function(res){
+      var wsRole=((res[0][0]&&res[0][0].role)||'').toLowerCase();
+      var perm=res[1][0];
+      var admin = wsRole==='admin' || (perm && ['admin','director'].indexOf(((perm.role)||'').toLowerCase())>-1);
+      var set=new Set();
+      var expired = perm && perm.expires_at && (new Date(perm.expires_at) < new Date());
+      if(perm && perm.config && perm.config.access && !expired){
+        var acc=perm.config.access;
+        Object.keys(acc).forEach(function(pk){ (acc[pk]||[]).forEach(function(dk){ set.add(pk+'::'+dk); }); });
+      }
+      ACCESS={admin:!!admin,set:set};
+      if(searchOpen)renderSearch(document.getElementById('dal-srch-in').value);
+    }).catch(function(){ ACCESS={admin:false,set:new Set()}; });
+  }
   function renderSearch(q){
+    var body=document.getElementById('dal-srch-body');
+    if(ACCESS===null){ body.innerHTML='<div class="dal-srch-empty">Loading your dashboards…</div>'; loadAccess(); return; }
     q=(q||'').trim().toLowerCase();
-    var body=document.getElementById('dal-srch-body'), html='', hits=0;
+    var html='', hits=0, anyAccessible=0;
     CATALOG.forEach(function(g){
-      var matches=g.items.filter(function(it){return !q || it.n.toLowerCase().indexOf(q)>-1 || g.group.toLowerCase().indexOf(q)>-1;});
+      var allowed=g.items.filter(function(it){return accessAllows(g.pk,it.dk);});
+      anyAccessible+=allowed.length;
+      var matches=allowed.filter(function(it){return !q || it.n.toLowerCase().indexOf(q)>-1 || g.group.toLowerCase().indexOf(q)>-1;});
       if(!matches.length)return;
       hits+=matches.length;
       html+='<div class="dal-sect">'+g.emo+' '+g.group+'</div>'+matches.map(function(it){
@@ -247,7 +282,9 @@
           +'<div style="flex:1;min-width:0"><div class="dal-fnm">'+it.n+'</div><div class="dal-fcx">'+g.group+'</div></div></a>';
       }).join('');
     });
-    body.innerHTML=hits?html:'<div class="dal-srch-empty">No dashboards match “'+(q||'')+'”.</div>';
+    if(hits){ body.innerHTML=html; }
+    else if(!anyAccessible){ body.innerHTML='<div class="dal-srch-empty">You don’t have access to any dashboards yet.<br>Ask an admin to grant access.</div>'; }
+    else { body.innerHTML='<div class="dal-srch-empty">No dashboards match “'+(q||'')+'”.</div>'; }
   }
   var searchOpen=false;
   function toggleSearch(v){
@@ -363,6 +400,8 @@
   setTimeout(decorate,800); setTimeout(decorate,2500);
   // Sync favorites from Supabase for the signed-in user (retry once in case the session loads late).
   pullFavs(); setTimeout(pullFavs,1500);
+  // Resolve which dashboards this user may open, so search only lists accessible ones.
+  loadAccess(); setTimeout(loadAccess,1800);
 
   window.DalRail={toggleFav:toggleFav,showAccess:showAccess,refresh:function(){renderFlyout();updateCount();decorate();}};
 })();
