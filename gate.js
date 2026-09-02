@@ -159,4 +159,17 @@
     catch(e){bounce();}
   }
   if(document.readyState!=='loading'){wire();}else{document.addEventListener('DOMContentLoaded',wire);}
+
+  /* Auto-mount the shared left rail on every gated page (present + future).
+     gate.js loads on exactly the dashboard/hub pages (never login/approve/etc.),
+     so injecting rail.js here makes the rail universal with no per-page tag.
+     Skips if the page already includes rail.js; rail.js self-guards double-load. */
+  (function mountRail(){
+    try{
+      if(window.__dalRailLoaded) return;
+      if(document.querySelector('script[src*="rail.js"]')) return;
+      var s=document.createElement('script'); s.src='rail.js'; s.defer=true;
+      (document.head||document.documentElement).appendChild(s);
+    }catch(e){}
+  })();
 })();

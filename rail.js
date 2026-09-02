@@ -314,6 +314,20 @@
   }
   injectPill(); setTimeout(injectPill,600); setTimeout(injectPill,2000);
 
+  /* ---- de-dup: hide any legacy TOPBAR account avatar + Sign-out the page ships;
+          the rail owns account/sign-out now. Precise selectors so the rail's own
+          controls are never touched. Retried since the topbar can render late. ---- */
+  function hideLegacyTopbarAccount(){
+    try{
+      var av=document.getElementById('dalos-avatar');
+      if(av && !av.closest('.dal-rail')) av.style.display='none';
+      document.querySelectorAll('button[onclick*="dalSignOut"]').forEach(function(b){
+        if(!b.closest('.dal-rail')) b.style.display='none';
+      });
+    }catch(e){}
+  }
+  hideLegacyTopbarAccount(); setTimeout(hideLegacyTopbarAccount,600); setTimeout(hideLegacyTopbarAccount,2000);
+
   /* ---- rail actions ---- */
   document.getElementById('dal-home').addEventListener('click',function(){window.location='index.html';});
 
