@@ -164,12 +164,17 @@
      gate.js loads on exactly the dashboard/hub pages (never login/approve/etc.),
      so injecting rail.js here makes the rail universal with no per-page tag.
      Skips if the page already includes rail.js; rail.js self-guards double-load. */
-  (function mountRail(){
+  function mountRail(){
     try{
       if(window.__dalRailLoaded) return;
       if(document.querySelector('script[src*="rail.js"]')) return;
-      var s=document.createElement('script'); s.src='rail.js'; s.defer=true;
+      var s=document.createElement('script'); s.src='rail.js';
       (document.head||document.documentElement).appendChild(s);
     }catch(e){}
-  })();
+  }
+  /* Inject only once <body> exists. gate.js runs in <head> before <body> is
+     parsed, and a dynamically-injected script ignores `defer`, so rail.js could
+     otherwise execute before <body> and fail to mount (intermittent no-rail). */
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',mountRail); }
+  else { mountRail(); }
 })();
