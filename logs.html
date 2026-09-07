@@ -276,10 +276,11 @@ function sortBy(arr,k,dir){
   });
 }
 
+var NOT_DASH={index:1,logs:1};   /* Analytics Home + Usage Logs are not counted as dashboards */
 function renderStats(){
   var totalViews=DASHES.reduce(function(s,d){return s+Number(d.total_views);},0);
   var since=new Date(); since.setHours(0,0,0,0);
-  var today=RECENT.filter(function(r){return new Date(r.viewed_at)>=since;}).length;
+  var today=RECENT.filter(function(r){return !NOT_DASH[r.dashboard]&&new Date(r.viewed_at)>=since;}).length;
   var s=document.getElementById('stats');
   s.innerHTML=[
     ['ti-eye','Total Views',totalViews],
