@@ -99,6 +99,19 @@
     return _f.call(this,u,o);
   };
 
+  /* Best-effort usage log: one row per dashboard open. RLS lets a user insert
+     only their own rows (user_id defaults to auth.uid()); failures are swallowed
+     so logging can never affect the page. */
+  function logView(sb){
+    try{
+      var file=location.pathname.split('/').pop()||'index.html';
+      var slug=file.replace(/\.html?$/i,'')||'index';
+      sb.from('dal_dashboard_views')
+        .insert({dashboard:slug,path:location.pathname})
+        .then(function(){},function(){});
+    }catch(e){}
+  }
+
   function proceed(sb){
     window.__DALOS_SB=sb;
     // getSession() already refreshes an expired token internally, and does so under
@@ -114,7 +127,8 @@
       var fn=(chk&&chk.fn)||'has_analytics_access';
       var call=(chk&&chk.args)?sb.rpc(fn,chk.args):sb.rpc(fn);
       return call.then(function(a){
-        if(!(a&&!a.error&&a.data===true)){bounce();}
+        if(!(a&&!a.error&&a.data===true)){bounce();return;}
+        logView(sb);   /* access granted — record this dashboard open (best-effort) */
       });
     }).catch(function(){bounce();});
 

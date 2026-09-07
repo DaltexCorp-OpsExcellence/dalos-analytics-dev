@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>/* me-only gate: bounces anyone who isn't the owner (see can_view_dashboard_logs) */
+window.__DALOS_ACCESS_CHECK={fn:'can_view_dashboard_logs'};</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8"></script>
+<script src="gate.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Usage Logs · DalOS Analytics</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="alternate icon" href="favicon.ico">
+<meta name="theme-color" content="#142850">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#142850;--navy2:#1a3668;--orange:#DC6428;--orange2:#c2551f;
+  --bg:#f4f6fb;--white:#fff;--border:#e2e6f0;
+  --text:#0e1f3d;--text2:#4a5778;--text3:#8a95b0;
+  --font:'Plus Jakarta Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+  --shadow:0 1px 4px rgba(20,40,80,.08);
+  --shadow2:0 4px 20px rgba(20,40,80,.12);
+  --r:8px;--r2:12px;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+
+/* topbar */
+.topbar{background:var(--navy);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(20,40,80,.3)}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.logo-name{font-size:18px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.logo-sub{font-size:12px;color:rgba(255,255,255,.5);margin-left:4px;font-weight:400}
+.ws-switch{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#dce6f5;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;transition:.18s}
+.ws-switch:hover{background:rgba(255,255,255,.16)}
+.staging-badge{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#ff6b35,#f7c948);color:#fff;padding:5px 14px 5px 10px;border-radius:20px;font-size:10px;font-family:var(--mono);font-weight:700;letter-spacing:.2em;text-transform:uppercase}
+.staging-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.9);display:inline-block;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+
+/* hero */
+.hero{background:linear-gradient(135deg,var(--navy) 0%,#1e3a6e 60%,#1a3668 100%);padding:40px 32px 34px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:360px;height:360px;border-radius:50%;background:rgba(220,100,40,.08)}
+.hero-inner{max-width:1400px;margin:0 auto;position:relative;z-index:1}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(220,100,40,.16);border:1px solid rgba(220,100,40,.32);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;color:#f0a878;margin-bottom:16px;text-transform:uppercase;letter-spacing:.08em}
+.hero-title{font-size:32px;font-weight:800;color:#fff;line-height:1.1;margin-bottom:10px;letter-spacing:-.5px}
+.hero-title span{color:var(--orange)}
+.hero-sub{font-size:14px;color:rgba(255,255,255,.6);max-width:640px;line-height:1.6}
+
+.content{max-width:1400px;margin:0 auto;padding:32px}
+
+/* stat tiles */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
+.stat{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:18px 20px;box-shadow:var(--shadow)}
+.stat-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;font-weight:600;display:flex;align-items:center;gap:6px}
+.stat-lbl i{font-size:13px;color:var(--orange)}
+.stat-val{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--navy);margin-top:8px}
+
+/* section */
+.section{margin-bottom:36px}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+.section-title{font-size:16px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px}
+.section-title i{color:var(--orange)}
+.section-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.controls{display:flex;align-items:center;gap:8px}
+.search-bar{display:flex;align-items:center;gap:8px;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:7px 12px;box-shadow:var(--shadow)}
+.search-bar i{font-size:14px;color:var(--text3)}
+.search-bar input{border:none;outline:none;font-family:var(--font);font-size:12px;color:var(--text);background:transparent;width:180px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px;border:1px solid var(--border);background:var(--white);color:var(--text2);font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;box-shadow:var(--shadow);transition:.15s}
+.btn:hover{border-color:var(--navy);color:var(--navy)}
+.btn i{font-size:14px}
+
+/* table */
+.table-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);overflow:hidden}
+.tbl-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:13px 16px;border-bottom:1px solid var(--border);background:#fafbfd;white-space:nowrap;cursor:pointer;user-select:none}
+thead th.num{text-align:right}
+thead th .arw{font-size:10px;opacity:.5;margin-left:3px}
+tbody td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text2);white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fafbff}
+td.num{text-align:right;font-family:var(--mono);font-weight:600;color:var(--navy)}
+.u-name{font-weight:600;color:var(--navy)}
+.u-email{font-size:11px;color:var(--text3)}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.pill.admin{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.pill.user{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.dash-name{font-weight:600;color:var(--navy)}
+.dash-slug{font-family:var(--mono);font-size:11px;color:var(--text3)}
+.rel{font-size:11px;color:var(--text3);margin-top:1px}
+.muted{color:var(--text3)}
+.empty{padding:40px;text-align:center;color:var(--text3);font-size:13px}
+.loading{padding:60px;text-align:center;color:var(--text3);font-size:14px}
+.loading i{font-size:26px;color:var(--orange);display:block;margin-bottom:12px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.tab-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--white);color:var(--text2);font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:.15s;box-shadow:var(--shadow)}
+.tab-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.pane{display:none}.pane.active{display:block}
+@media(max-width:768px){
+  .topbar{padding:0 14px}.logo-sub{display:none}
+  .hero{padding:24px 16px}.hero-title{font-size:24px}
+  .content{padding:16px 12px}
+  .search-bar input{width:120px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">
+      <span class="logo-name">Dal<span style="color:#DC6428">OS</span> Analytics</span>
+      <span class="logo-sub">Usage Logs</span>
+    </div>
+    <a class="ws-switch" href="index.html" title="Back to Analytics home"><i class="ti ti-arrow-left"></i> Home</a>
+  </div>
+  <div class="topbar-right">
+    <span class="staging-badge" id="dalStgBadge" style="display:none"><span class="staging-dot"></span>Staging</span>
+    <script>if(location.pathname.indexOf("/dalos-analytics-dev/")===0){var _b=document.getElementById("dalStgBadge");if(_b)_b.style.display="inline-flex";}</script>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag"><i class="ti ti-chart-histogram"></i> Private · Owner only</div>
+    <div class="hero-title">Dashboard <span>Usage Logs</span></div>
+    <div class="hero-sub">Who is opening which dashboards, when they last opened them, and how many times. Tracking began the day this page went live — earlier activity was not recorded.</div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-pane="byuser" onclick="setTab(this)">By User</button>
+    <button class="tab-btn" data-pane="bydash" onclick="setTab(this)">By Dashboard</button>
+    <button class="tab-btn" data-pane="recent" onclick="setTab(this)">Recent Activity</button>
+  </div>
+
+  <!-- BY USER -->
+  <div class="pane active" id="pane-byuser">
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <div class="section-title"><i class="ti ti-users"></i> By User</div>
+          <div class="section-sub">Each user's most recent dashboard open and total views.</div>
+        </div>
+        <div class="controls">
+          <div class="search-bar"><i class="ti ti-search"></i><input id="uSearch" placeholder="Filter users…" oninput="renderUsers()"></div>
+        </div>
+      </div>
+      <div class="table-wrap"><div class="tbl-scroll">
+        <table id="uTable">
+          <thead><tr>
+            <th data-k="name">User<span class="arw"></span></th>
+            <th data-k="role">Role<span class="arw"></span></th>
+            <th data-k="last_open" class="num">Last Open<span class="arw"></span></th>
+            <th data-k="total_views" class="num">Views<span class="arw"></span></th>
+            <th data-k="distinct_dashboards" class="num">Dashboards<span class="arw"></span></th>
+            <th data-k="top_dashboard">Top Dashboard<span class="arw"></span></th>
+            <th data-k="last_login" class="num">Last Login<span class="arw"></span></th>
+          </tr></thead>
+          <tbody id="uBody"><tr><td colspan="7" class="loading"><i class="ti ti-loader-2"></i>Loading…</td></tr></tbody>
+        </table>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- BY DASHBOARD -->
+  <div class="pane" id="pane-bydash">
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <div class="section-title"><i class="ti ti-layout-dashboard"></i> By Dashboard</div>
+          <div class="section-sub">Total views and unique viewers per dashboard.</div>
+        </div>
+        <div class="controls">
+          <div class="search-bar"><i class="ti ti-search"></i><input id="dSearch" placeholder="Filter dashboards…" oninput="renderDash()"></div>
+        </div>
+      </div>
+      <div class="table-wrap"><div class="tbl-scroll">
+        <table id="dTable">
+          <thead><tr>
+            <th data-k="name">Dashboard<span class="arw"></span></th>
+            <th data-k="total_views" class="num">Views<span class="arw"></span></th>
+            <th data-k="distinct_users" class="num">Users<span class="arw"></span></th>
+            <th data-k="last_open" class="num">Last Open<span class="arw"></span></th>
+            <th data-k="first_open" class="num">First Seen<span class="arw"></span></th>
+          </tr></thead>
+          <tbody id="dBody"><tr><td colspan="5" class="loading"><i class="ti ti-loader-2"></i>Loading…</td></tr></tbody>
+        </table>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- RECENT -->
+  <div class="pane" id="pane-recent">
+    <div class="section">
+      <div class="section-head">
+        <div>
+          <div class="section-title"><i class="ti ti-history"></i> Recent Activity</div>
+          <div class="section-sub">Most recent 300 dashboard opens across all users.</div>
+        </div>
+        <div class="controls">
+          <div class="search-bar"><i class="ti ti-search"></i><input id="rSearch" placeholder="Filter…" oninput="renderRecent()"></div>
+        </div>
+      </div>
+      <div class="table-wrap"><div class="tbl-scroll">
+        <table id="rTable">
+          <thead><tr>
+            <th>When</th><th>User</th><th>Dashboard</th>
+          </tr></thead>
+          <tbody id="rBody"><tr><td colspan="3" class="loading"><i class="ti ti-loader-2"></i>Loading…</td></tr></tbody>
+        </table>
+      </div></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="switcher.js" defer></script>
+<script>
+/* ---- friendly dashboard names (fallback = prettified slug) ---- */
+var NAME={
+  index:'Analytics Home', daltex_home:'Daltex Home', logs:'Usage Logs',
+  finance_hub:'Finance Hub', project_management_hub:'Project Management Hub',
+  procurement_hub:'Procurement Hub', pom_hub:'Pomegranate Hub', mango_hub:'Mango Hub',
+  daltex_qc:'Grapes · QC', daltex_grapes:'Grapes · Overview', grapes_overview_branded:'Grapes · Overview',
+  daltex_cartons:'Grapes · Cartons', daltex_clients:'Grapes · Clients', daltex_extract:'Grapes · Extract',
+  daltex_farms:'Grapes · Farms', daltex_markets:'Grapes · Markets',
+  daltex_varieties_colors:'Grapes · Varieties & Colors', daltex_harvest_funnel:'Grapes · Harvest Funnel',
+  mango_overview:'Mango · Overview', mango_cartons:'Mango · Cartons', mango_clients:'Mango · Clients',
+  mango_extract:'Mango · Extract', mango_farms:'Mango · Farms', mango_markets:'Mango · Markets',
+  mango_varieties:'Mango · Varieties',
+  pom_overview:'Pomegranate · Overview', pom_cartons:'Pomegranate · Cartons', pom_clients:'Pomegranate · Clients',
+  pom_extract:'Pomegranate · Extract', pom_farms:'Pomegranate · Farms', pom_markets:'Pomegranate · Markets',
+  pom_varieties:'Pomegranate · Varieties',
+  labor_budget:'Labor Budget', inventory_tracking:'Inventory Tracking',
+  'budget-2026-board-review':'Budget 2026 · Board Review', 'analytics-approve':'Analytics · Access Approvals'
+};
+function dashName(s){return NAME[s]||s.replace(/[-_]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});}
+
+function fmtAbs(t){ if(!t) return '—'; var d=new Date(t);
+  return d.toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function fmtRel(t){ if(!t) return ''; var s=(Date.now()-new Date(t).getTime())/1000;
+  if(s<60)return 'just now'; if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago'; if(s<2592000)return Math.floor(s/86400)+'d ago';
+  return Math.floor(s/2592000)+'mo ago'; }
+function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+var USERS=[], DASHES=[], RECENT=[];
+var uSort={k:'last_open',dir:-1}, dSort={k:'total_views',dir:-1};
+
+function setTab(btn){
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('pane-'+btn.dataset.pane).classList.add('active');
+}
+
+function sortBy(arr,k,dir){
+  return arr.slice().sort(function(a,b){
+    var x=a[k],y=b[k];
+    if(k==='name'){x=dashName(a.dashboard||'');y=dashName(b.dashboard||'');}
+    if(x==null)return 1; if(y==null)return -1;
+    if(typeof x==='string'&&isNaN(Date.parse(x))){x=x.toLowerCase();y=String(y).toLowerCase();}
+    else if(!isNaN(Date.parse(x))&&typeof x==='string'){x=Date.parse(x);y=Date.parse(y);}
+    return (x<y?-1:x>y?1:0)*dir;
+  });
+}
+
+function renderStats(){
+  var totalViews=DASHES.reduce(function(s,d){return s+Number(d.total_views);},0);
+  var since=new Date(); since.setHours(0,0,0,0);
+  var today=RECENT.filter(function(r){return new Date(r.viewed_at)>=since;}).length;
+  var s=document.getElementById('stats');
+  s.innerHTML=[
+    ['ti-eye','Total Views',totalViews],
+    ['ti-users','Active Users',USERS.length],
+    ['ti-layout-dashboard','Dashboards Used',DASHES.length],
+    ['ti-calendar-event','Views Today',today]
+  ].map(function(x){
+    return '<div class="stat"><div class="stat-lbl"><i class="ti '+x[0]+'"></i>'+x[1]+'</div><div class="stat-val">'+x[2].toLocaleString()+'</div></div>';
+  }).join('');
+}
+
+function renderUsers(){
+  var q=(document.getElementById('uSearch').value||'').toLowerCase();
+  var rows=sortBy(USERS,uSort.k,uSort.dir).filter(function(u){
+    return !q||((u.full_name||'')+' '+(u.email||'')).toLowerCase().indexOf(q)>-1;
+  });
+  var b=document.getElementById('uBody');
+  if(!rows.length){b.innerHTML='<tr><td colspan="7" class="empty">No matching users.</td></tr>';return;}
+  b.innerHTML=rows.map(function(u){
+    var top=u.top_dashboard
+      ? '<div class="dash-name">'+esc(dashName(u.top_dashboard))+'</div><div class="rel">'+Number(u.top_dashboard_views).toLocaleString()+' views · '+esc(u.top_dashboard)+'</div>'
+      : '<span class="muted">—</span>';
+    return '<tr>'+
+      '<td><div class="u-name">'+esc(u.full_name||'—')+'</div><div class="u-email">'+esc(u.email)+'</div></td>'+
+      '<td><span class="pill '+(u.role==='admin'?'admin':'user')+'">'+esc(u.role||'user')+'</span></td>'+
+      '<td class="num">'+fmtAbs(u.last_open)+'<div class="rel">'+fmtRel(u.last_open)+'</div></td>'+
+      '<td class="num">'+Number(u.total_views).toLocaleString()+'</td>'+
+      '<td class="num">'+Number(u.distinct_dashboards).toLocaleString()+'</td>'+
+      '<td>'+top+'</td>'+
+      '<td class="num muted">'+fmtAbs(u.last_login)+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function renderDash(){
+  var q=(document.getElementById('dSearch').value||'').toLowerCase();
+  var rows=sortBy(DASHES,dSort.k,dSort.dir).filter(function(d){
+    return !q||(dashName(d.dashboard)+' '+d.dashboard).toLowerCase().indexOf(q)>-1;
+  });
+  var b=document.getElementById('dBody');
+  if(!rows.length){b.innerHTML='<tr><td colspan="5" class="empty">No matching dashboards.</td></tr>';return;}
+  b.innerHTML=rows.map(function(d){
+    return '<tr>'+
+      '<td><div class="dash-name">'+esc(dashName(d.dashboard))+'</div><div class="dash-slug">'+esc(d.dashboard)+'</div></td>'+
+      '<td class="num">'+Number(d.total_views).toLocaleString()+'</td>'+
+      '<td class="num">'+Number(d.distinct_users).toLocaleString()+'</td>'+
+      '<td class="num">'+fmtAbs(d.last_open)+'<div class="rel">'+fmtRel(d.last_open)+'</div></td>'+
+      '<td class="num muted">'+fmtAbs(d.first_open)+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function renderRecent(){
+  var q=(document.getElementById('rSearch').value||'').toLowerCase();
+  var rows=RECENT.filter(function(r){
+    return !q||((r.full_name||'')+' '+(r.email||'')+' '+dashName(r.dashboard)).toLowerCase().indexOf(q)>-1;
+  });
+  var b=document.getElementById('rBody');
+  if(!rows.length){b.innerHTML='<tr><td colspan="3" class="empty">No activity yet.</td></tr>';return;}
+  b.innerHTML=rows.map(function(r){
+    return '<tr>'+
+      '<td>'+fmtAbs(r.viewed_at)+'<div class="rel">'+fmtRel(r.viewed_at)+'</div></td>'+
+      '<td><div class="u-name">'+esc(r.full_name||'—')+'</div><div class="u-email">'+esc(r.email)+'</div></td>'+
+      '<td><div class="dash-name">'+esc(dashName(r.dashboard))+'</div><div class="dash-slug">'+esc(r.dashboard)+'</div></td>'+
+    '</tr>';
+  }).join('');
+}
+
+/* header sorting */
+function wireSort(tableId,state,render){
+  document.querySelectorAll('#'+tableId+' thead th[data-k]').forEach(function(th){
+    th.addEventListener('click',function(){
+      var k=th.dataset.k;
+      if(state.k===k)state.dir*=-1; else{state.k=k;state.dir=(k==='name'?1:-1);}
+      document.querySelectorAll('#'+tableId+' thead th .arw').forEach(function(a){a.textContent='';});
+      th.querySelector('.arw').textContent=state.dir<0?' ↓':' ↑';
+      render();
+    });
+  });
+}
+
+function waitForSB(cb,n){ n=n||0;
+  if(window.__DALOS_SB){cb(window.__DALOS_SB);return;}
+  if(n>200){return;} setTimeout(function(){waitForSB(cb,n+1);},50);
+}
+
+function fail(msg){
+  ['uBody','dBody','rBody'].forEach(function(id){
+    var el=document.getElementById(id); if(el)el.innerHTML='<tr><td colspan="6" class="empty">'+esc(msg)+'</td></tr>';
+  });
+}
+
+waitForSB(function(sb){
+  Promise.all([
+    sb.rpc('dashboard_log_by_user'),
+    sb.rpc('dashboard_log_by_dashboard'),
+    sb.rpc('dashboard_log_recent',{p_limit:300})
+  ]).then(function(res){
+    if(res[0].error||res[1].error||res[2].error){fail('Could not load logs.');return;}
+    USERS=res[0].data||[]; DASHES=res[1].data||[]; RECENT=res[2].data||[];
+    renderStats(); renderUsers(); renderDash(); renderRecent();
+    wireSort('uTable',uSort,renderUsers);
+    wireSort('dTable',dSort,renderDash);
+  }).catch(function(){fail('Could not load logs.');});
+});
+</script>
+</body>
+</html>
