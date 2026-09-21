@@ -763,7 +763,9 @@ function renderDim(rows,field,label){
   }).sort((a,b)=>b.tot-a.tot);
   const worst=items[0];
   const maxTot=Math.max(0.0001,...items.map(o=>o.tot));
-  const dh=Math.max(220,items.length*34);
+  // Grouped mode stacks 5 section bars inside each category band, so give the
+  // chart enough height for all of them; auto-fit (below) keeps them centred on the label.
+  const dh=Math.max(280,items.length*62);
   const HMD=['variety','farm','client','packhouse','country'];
   const bOpts=[['reasons','Defect Reasons'],['sections','Sections']].concat(HMD.filter(k=>DIMS[k]&&DIMS[k][0]!==field).map(k=>[k,'by '+DIMS[k][1]]));
   window.__DIM={field,label,g,items,rows};
@@ -826,7 +828,7 @@ function renderDim(rows,field,label){
       var isStacked=mode==='stacked';
       var bg=document.getElementById('dim-btn-grouped'),bs=document.getElementById('dim-btn-stacked');
       if(bg&&bs){bg.style.background=isStacked?'#fff':'#142850';bg.style.color=isStacked?'#4a5778':'#fff';bs.style.background=isStacked?'#142850':'#fff';bs.style.color=isStacked?'#fff':'#4a5778';}
-      mkChart('ch-dim',{type:'bar',data:{labels:items.map(o=>o.k),datasets:SECTIONS.map((s,si)=>({label:s.label,data:items.map(o=>r2(o.secv[si].v)),backgroundColor:s.color,stack:isStacked?'s':undefined,borderRadius:3,barThickness:isStacked?18:Math.max(6,Math.floor(60/SECTIONS.length)),datalabels:{display:false}}))},
+      mkChart('ch-dim',{type:'bar',data:{labels:items.map(o=>o.k),datasets:SECTIONS.map((s,si)=>({label:s.label,data:items.map(o=>r2(o.secv[si].v)),backgroundColor:s.color,stack:isStacked?'s':undefined,borderRadius:3,categoryPercentage:0.82,barPercentage:0.96,maxBarThickness:isStacked?26:15,datalabels:{display:false}}))},
       options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:10},padding:10}},datalabels:{display:false},tooltip:{mode:'index',axis:'y',intersect:false,callbacks:{title:function(it){return it&&it.length?it[0].label:'';},label:function(c){return ' '+c.dataset.label+': '+c.raw.toFixed(2)+'%';}}}},scales:{x:{stacked:isStacked,grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{family:"'IBM Plex Mono'",size:10},callback:function(v){return v+'%';}}},y:{stacked:isStacked,grid:{display:false},ticks:{autoSkip:false,font:{size:11,weight:'500'}}}},layout:{padding:{right:20}}}});
     }
     drawDimBar('grouped');window.setDimMode=function(mode,btn){drawDimBar(mode);};
