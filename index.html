@@ -460,26 +460,28 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       </div>
     </div>
 
-    <!-- CITRUS — COMING SOON -->
-    <div class="product-card coming">
-      <span class="pc-badge badge-coming">Coming Soon</span>
+    <!-- CITRUS -->
+    <div class="product-card" id="pc-citrus" onclick="window.location='citrus_hub.html'">
+      <span class="pc-badge badge-live"><i class="ti ti-circle-dot" style="font-size:9px"></i> Live</span>
       <div class="pc-header">
         <div class="pc-icon" style="background:#fff7ed">🍊</div>
         <div class="pc-info">
           <div class="pc-name">Citrus</div>
           <div class="pc-desc">Orange, lemon and grapefruit export tracking, quality control and market analytics.</div>
           <div class="pc-counts">
-            <span class="pc-count"><i class="ti ti-clock"></i>3 Coming Soon</span>
+            <span class="pc-count live"><i class="ti ti-circle-dot"></i>1 Live</span>
+            <span class="pc-count"><i class="ti ti-clock"></i>2 Coming Soon</span>
           </div>
         </div>
       </div>
       <div class="pc-divider"></div>
       <div class="pc-footer">
         <div class="pc-dashboards">
-          <span class="pc-dash-chip">Shipments</span>
-          <span class="pc-dash-chip">QC</span>
-          <span class="pc-dash-chip">Harvest</span>
+          <span class="pc-dash-chip live" data-db="shipments">Shipments</span>
+          <span class="pc-dash-chip" data-db="qc">QC</span>
+          <span class="pc-dash-chip" data-db="harvest">Harvest</span>
         </div>
+        <div class="pc-arrow"><i class="ti ti-arrow-right"></i></div>
       </div>
     </div>
 
