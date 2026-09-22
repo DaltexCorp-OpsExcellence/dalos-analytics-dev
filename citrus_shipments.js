@@ -23,13 +23,13 @@ var TABS=[
   {id:'markets',label:'Markets',icon:'ti-map-pin',href:'citrus_markets.html'},
   {id:'farms',label:'Farms',icon:'ti-building',href:'citrus_farms.html'},
   {id:'varieties',label:'Varieties',icon:'ti-palette',href:'citrus_varieties.html'},
-  {id:'clients',label:'Clients',icon:'ti-users',href:'citrus_clients.html'},
+  {id:'clients',label:'Sub Clients',icon:'ti-users',href:'citrus_clients.html'},
   {id:'cartons',label:'Cartons',icon:'ti-box',href:'citrus_cartons.html'},
   {id:'extract',label:'Data Explorer',icon:'ti-database',href:'citrus_extract.html'}
 ];
 
-var DIM_COL={category:'citrus_type',market:'receiving_country',farm:'farm_source',variety:'variety',source:'source_type',status:'shipping_status',grade:'daltex_class',client:'client',clientclass:'client_class',carton:'carton_type'};
-var DIM_LABEL={category:'Category',market:'Market',farm:'Farm',variety:'Variety',source:'Source',status:'Status',grade:'Grade',client:'Client',clientclass:'Client Class',carton:'Carton Type'};
+var DIM_COL={category:'citrus_type',market:'receiving_country',farm:'farm_source',variety:'variety',source:'source_type',status:'shipping_status',grade:'daltex_class',client:'client',subclient:'subclient',clientclass:'client_class',carton:'carton_type'};
+var DIM_LABEL={category:'Category',market:'Market',farm:'Farm',variety:'Variety',source:'Source',status:'Status',grade:'Grade',client:'Client',subclient:'Sub Client',clientclass:'Client Class',carton:'Carton Type'};
 
 /* filter fields shown in the bar */
 var FILTERS=[
@@ -438,7 +438,7 @@ function openDrill(dim,val){
   // weekly
   var byWeek={};rows.forEach(function(r){var w=parseInt(r.shipping_week)||0;if(w)byWeek[w]=(byWeek[w]||0)+nw(r);});
   // breakdown panels: all dims except drilled
-  var panelDims=[['category','Category','ti-category-2'],['market','Market','ti-map-pin'],['variety','Variety','ti-palette'],['farm','Farm','ti-building'],['grade','Grade','ti-award'],['source','Source','ti-plant-2']].filter(function(p){return p[0]!==dim;});
+  var panelDims=[['category','Category','ti-category-2'],['market','Market','ti-map-pin'],['variety','Variety','ti-palette'],['farm','Farm','ti-building'],['subclient','Sub Client','ti-users'],['grade','Grade','ti-award'],['source','Source','ti-plant-2']].filter(function(p){return p[0]!==dim;});
   var panelsHTML=panelDims.map(function(p){
     var agg=aggNW(rows,DIM_COL[p[0]]);var entries=Object.entries(agg).sort(function(a,b){return b[1]-a[1];}).slice(0,6);
     var mx=entries[0]?entries[0][1]:1, tot=Object.values(agg).reduce(function(a,v){return a+v;},0);
