@@ -35,6 +35,8 @@
         if(dsa){dsa.classList.remove('locked');dsa.setAttribute('href','labor_budget.html');}
         var dbr=document.getElementById('dc-budget-2026');
         if(dbr){dbr.classList.remove('locked');dbr.setAttribute('href','budget-2026-board-review.html');}
+        var dbr7=document.getElementById('dc-budget-2027');
+        if(dbr7){dbr7.classList.remove('locked');dbr7.setAttribute('href','budget-2027/index.html');}
         return;
       }
 
@@ -86,6 +88,31 @@
           }
         }
       });
+
+      // Budget 2027 Board Review shares the same 'board_review' permission as 2026.
+      (function(){
+        var card=document.getElementById('dc-budget-2027');
+        if(!card) return;
+        if(allowedDbs.indexOf('board_review')>-1){
+          card.classList.remove('locked');
+          card.setAttribute('href','budget-2027/index.html');
+          card.querySelectorAll('.dc-tag').forEach(function(t){t.classList.add('has-access');});
+        } else {
+          card.classList.add('locked');
+          card.removeAttribute('href');
+          card.querySelectorAll('.dc-tag').forEach(function(t){t.classList.remove('has-access');});
+          if(!card.querySelector('.dc-req-btn')){
+            var footer=card.querySelector('.dc-footer');
+            if(footer){
+              var btn=document.createElement('button');
+              btn.className='dc-req-btn';
+              btn.innerHTML='<i class="ti ti-send" style="font-size:12px"></i>Request access';
+              btn.onclick=function(e){e.preventDefault();e.stopPropagation();requestProductDashboardAccess('board_review','Budget Board Review',userId,btn,authH,SB_URL,PRODUCT);};
+              footer.appendChild(btn);
+            }
+          }
+        }
+      })();
     }catch(e){console.warn('Dashboard access check:',e.message);}
   }
 
@@ -321,6 +348,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       </div>
       <div class="dc-footer">
         <div class="dc-footer-left"><span class="dc-tag">P&amp;L</span><span class="dc-tag">Red Flags</span><span class="dc-tag">Board Asks</span></div>
+        <span class="dc-open">Open <i class="ti ti-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <a class="dash-card locked" id="dc-budget-2027">
+      <div class="dc-stripe" style="background:linear-gradient(90deg,#142850,#DC6428)"></div>
+      <div class="dc-body">
+        <div class="dc-header">
+          <div class="dc-icon" style="background:#eef2fb">📊</div>
+          <span class="dc-badge badge-beta"><i class="ti ti-lock" style="font-size:9px"></i> Protected</span>
+        </div>
+        <div class="dc-name">Budget 2027 · Board Review</div>
+        <div class="dc-desc">FY27 plan vs FY26 YTD — P&amp;L, mix, cost base, red flags, drill-through. Opens to a passphrase prompt; the passphrase is distributed separately.</div>
+      </div>
+      <div class="dc-footer">
+        <div class="dc-footer-left"><span class="dc-tag">P&amp;L</span><span class="dc-tag">Cost Base</span><span class="dc-tag">Red Flags</span></div>
         <span class="dc-open">Open <i class="ti ti-arrow-right"></i></span>
       </div>
     </a>
