@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8"></script>
+<script>window.__DALOS_ACCESS_CHECK={fn:'has_dashboard_access',args:{p_product:'citrus',p_dashboard:'shipments'}};</script>
+<script src="gate.js"></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Citrus Shipments — By Category · Daltex</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="alternate icon" href="favicon.ico">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#142850">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root{
+  --navy:#142850;--navy2:#1a3668;--navy3:#0e1f3d;--orange:#DC6428;--orange2:#c45520;--orange-lt:#fff3ed;
+  --white:#ffffff;--bg:#f4f6fb;--bg2:#eef0f7;--border:#e2e6f0;--border2:#cdd3e3;
+  --text:#0e1f3d;--text2:#4a5778;--text3:#8a95b0;
+  --green:#16a34a;--green-bg:#f0fdf4;--green-br:#bbf7d0;--red:#dc2626;--red-bg:#fef2f2;--red-br:#fecaca;
+  --amber:#d97706;--amber-bg:#fffbeb;--amber-br:#fde68a;--blue:#2563eb;--blue-bg:#eff6ff;--blue-br:#bfdbfe;
+  --r:6px;--r2:10px;--r3:14px;--shadow:0 1px 3px rgba(20,40,80,.06),0 1px 2px rgba(20,40,80,.04);--shadow2:0 4px 12px rgba(20,40,80,.08);
+  --font:'Plus Jakarta Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+input,select,button{font-family:var(--font)}
+.shell{display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--navy);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(14,31,61,.3)}
+.logo-icon{width:32px;height:32px;background:var(--white);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo-divider{width:1px;height:18px;background:rgba(255,255,255,.2);margin:0 4px}
+.tbadge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px}
+.tbadge-warn{background:rgba(220,100,40,.2);color:#ffb380;border:1px solid rgba(220,100,40,.3)}
+.tbadge-live{background:rgba(22,163,74,.2);color:#6ee7a0;border:1px solid rgba(22,163,74,.3)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:#6ee7a0;animation:pulse 2s infinite;display:inline-block}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tabs{background:var(--white);border-bottom:2px solid var(--border);padding:0 24px;display:flex;overflow-x:auto;box-shadow:var(--shadow);position:sticky;top:54px;z-index:100;scrollbar-width:none;-ms-overflow-style:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:12px 18px;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:color .15s,border-color .15s}
+.tab:hover{color:var(--text2)}
+.tab.on{color:var(--navy);border-bottom-color:var(--orange);font-weight:600}
+.tab-coming{opacity:.4;cursor:default}
+.tab-soon{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--bg2);color:var(--text3);padding:1px 5px;border-radius:10px;margin-left:2px}
+.main{flex:1;overflow-y:auto}
+.page{padding:20px 24px;max-width:1600px;margin:0 auto}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.page-title{font-size:18px;font-weight:700;color:var(--navy);letter-spacing:-.4px}
+.page-title span{color:var(--orange)}
+.page-subtitle{font-size:12px;color:var(--text3);margin-top:2px}
+.fbar{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:12px 16px;margin-bottom:16px;box-shadow:var(--shadow)}
+.fbar-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fbar-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);white-space:nowrap;display:flex;align-items:center;gap:4px}
+.fbar-label i{color:var(--navy)}
+.fbar-sep{width:1px;height:18px;background:var(--border)}
+.date-grp{display:flex;align-items:center;gap:5px}
+.date-lbl{font-size:11px;color:var(--text3);font-weight:500}
+.finput{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);color:var(--text);padding:5px 10px;font-size:11px;outline:none;font-family:var(--mono);transition:border-color .15s}
+.finput:focus{border-color:var(--navy)}
+.factions{display:flex;gap:6px;margin-left:auto}
+.fbtn{font-size:11px;font-weight:600;padding:6px 14px;border-radius:var(--r);cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;border:1px solid}
+.fbtn-reset{background:var(--white);color:var(--text2);border-color:var(--border2)}
+.fbtn-reset:hover{background:var(--bg)}
+.fctx{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:none;align-items:center;gap:8px;flex-wrap:wrap}
+.fctx.show{display:flex}
+.ctx-note{font-size:11px;color:var(--text3);margin-left:auto}
+.ctx-note b{color:var(--text2);font-weight:600}
+.ms{position:relative;display:inline-block}
+.ms-btn{min-width:118px;max-width:180px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--white);font-size:11px;font-weight:500;color:var(--navy);cursor:pointer;display:flex;align-items:center;gap:5px;justify-content:space-between;white-space:nowrap;overflow:hidden;font-family:inherit}
+.ms-btn:hover{border-color:var(--navy)}
+.ms-btn.ms-cat{border-color:var(--orange);color:var(--orange2)}
+.ms-btn .cnt{font-family:var(--mono);font-size:9px;background:var(--navy);color:#fff;border-radius:8px;padding:1px 6px}
+.ms-dd{position:absolute;top:calc(100% + 4px);left:0;z-index:60;background:#fff;border:1px solid var(--border);border-radius:9px;box-shadow:0 8px 24px rgba(14,31,61,.16);min-width:200px;max-height:260px;overflow-y:auto;padding:6px;display:none}
+.ms-dd.open{display:block}
+.ms-opt{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:6px;font-size:12px;cursor:pointer;color:var(--navy)}
+.ms-opt:hover{background:var(--bg)}
+.ms-opt input{accent-color:var(--navy)}
+.ms-all{border-bottom:1px solid var(--border);margin-bottom:4px;padding-bottom:6px;font-weight:600}
+.ms-unavail{opacity:.4}
+.fctx-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;background:var(--navy);color:#fff}
+.fctx-chip button{background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;padding:0;display:flex;align-items:center;font-size:11px}
+.fctx-chip button:hover{color:#fff}
+
+.wide-stats{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow)}
+.ws-item{padding:14px 18px;border-right:1px solid var(--border)}
+.ws-item:last-child{border-right:none}
+.ws-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px}
+.ws-val{font-size:22px;font-weight:700;color:var(--navy);letter-spacing:-1px;font-variant-numeric:tabular-nums;margin-bottom:3px}
+.ws-unit{font-size:12px;font-weight:400;color:var(--text3)}
+.ws-sub{font-size:10px;color:var(--text3)}
+.ws-highlight{color:var(--orange)}
+
+.panel{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px}
+.p-title{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:3px}
+.p-sub{font-size:11px;color:var(--text3);margin-bottom:14px}
+
+/* category leaderboard */
+.lead-row{display:grid;grid-template-columns:22px 130px 1fr 150px;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.lead-row:last-child{border-bottom:none}
+.lead-row:hover .lead-name{color:var(--orange)}
+.lead-rank{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text3);text-align:center}
+.lead-name{font-size:12.5px;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:8px;min-width:0}
+.lead-name .sw{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.lead-track{height:16px;background:var(--bg2);border-radius:5px;overflow:hidden}
+.lead-fill{height:100%;border-radius:5px}
+.lead-val{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--navy);text-align:right}
+.lead-val span{color:var(--text3);font-weight:500}
+
+/* category cards */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.cat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);overflow:hidden;cursor:pointer;transition:box-shadow .2s,border-color .2s,transform .15s;position:relative}
+.cat-card:hover{box-shadow:var(--shadow2);transform:translateY(-2px);border-color:var(--border2)}
+.cat-card .stripe{height:4px}
+.cat-body{padding:15px 16px}
+.cat-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:2px}
+.cat-name{font-size:15px;font-weight:700;color:var(--navy)}
+.cat-share{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--orange)}
+.cat-vars{font-size:11px;color:var(--text3);margin-bottom:12px}
+.cat-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.cat-m .mv{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--navy);letter-spacing:-.5px}
+.cat-m .ml{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-top:1px}
+.cat-grades{display:flex;height:7px;border-radius:4px;overflow:hidden;margin-bottom:6px;background:var(--bg2)}
+.cat-grades i{height:100%}
+.cat-foot{display:flex;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--text3)}
+.cat-foot b{color:var(--text2);font-weight:600}
+.cat-open{font-size:11px;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:4px}
+.cat-card:hover .cat-open{color:var(--orange)}
+
+/* table */
+.ctbl-wrap{overflow-x:auto}
+.ctbl{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}
+.ctbl th{text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:10px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.ctbl th.num,.ctbl td.num{text-align:right}
+.ctbl td{padding:10px;border-bottom:1px solid #f1f4f9;color:var(--text2);white-space:nowrap;cursor:pointer}
+.ctbl tr:hover td{background:var(--bg)}
+.ctbl td.name{font-weight:600;color:var(--navy)}
+.ctbl td.num{font-family:var(--mono);color:var(--navy);font-weight:600}
+.ctbl .sw{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:7px;vertical-align:middle}
+
+/* drill modal */
+.clickable{cursor:pointer}
+.drill-ov{display:none;position:fixed;inset:0;background:rgba(14,31,61,.55);backdrop-filter:blur(2px);z-index:9999;align-items:center;justify-content:center;padding:20px}
+.drill-ov.show{display:flex}
+.drill-modal{background:#fff;border-radius:16px;max-width:920px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.drill-head{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px;border-bottom:1px solid var(--border);gap:16px}
+.drill-title{font-size:15px;font-weight:700;color:var(--navy)}
+.drill-title .pill{display:inline-block;margin-left:8px;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:var(--orange-lt);color:var(--orange);vertical-align:middle}
+.drill-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.drill-x{background:#f1f4f9;border:none;width:30px;height:30px;border-radius:8px;cursor:pointer;color:#475569;font-size:16px;flex-shrink:0}
+.drill-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 22px;border-bottom:1px solid var(--border)}
+.drill-stat .v{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--navy);letter-spacing:-.5px}
+.drill-stat .l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-top:2px}
+.drill-break{display:flex;gap:8px;flex-wrap:wrap;padding:12px 22px 0}
+.drill-chip{font-size:10.5px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 10px;color:var(--text2)}
+.drill-chip b{color:var(--navy);font-weight:700}
+.drill-body{overflow:auto;padding:12px 22px 18px;flex:1}
+.drill-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.drill-tbl th{position:sticky;top:0;background:#fff;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:9px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+.drill-tbl td{padding:8px;border-bottom:1px solid #f1f4f9;color:var(--text2);white-space:nowrap}
+.drill-tbl td.num{font-family:var(--mono);text-align:right;color:var(--navy);font-weight:600}
+.drill-tbl tr:hover td{background:var(--bg)}
+.drill-note{font-size:11px;color:var(--text3);padding:12px 0 0}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.sk{background:var(--bg);background-image:linear-gradient(90deg,transparent 0,rgba(0,0,0,.06) 40px,transparent 80px);background-size:600px 100%;background-repeat:no-repeat;animation:shimmer 1.4s infinite linear;border-radius:8px;display:inline-block}
+@media(max-width:960px){.wide-stats{grid-template-columns:repeat(2,1fr)}.wide-stats .ws-item{border-bottom:1px solid var(--border)}.drill-stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){.topbar{height:auto;padding:10px 14px;flex-wrap:wrap;gap:6px}.logo-divider{display:none}.page{padding:12px 10px}.lead-row{grid-template-columns:20px 96px 1fr 96px;gap:8px}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:0">
+    <a href="index.html" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+      <div class="logo-icon">🍊</div><span style="font-size:16px;font-weight:700;letter-spacing:-.3px;margin-left:8px;white-space:nowrap;color:#fff">Dal<span style="color:#DC6428">OS</span> <span style="color:#fff">Analytics</span></span>
+    </a>
+    <div class="logo-divider" style="margin:0 12px"></div>
+    <a href="citrus_hub.html" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:rgba(255,255,255,.75);text-decoration:none;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15)"><i class="ti ti-arrow-left" style="font-size:12px"></i>Citrus</a>
+    <span style="color:rgba(255,255,255,.2);margin:0 8px;font-size:14px">/</span>
+    <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,.9)">Citrus Shipments</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="tbadge tbadge-warn" id="season-badge"><i class="ti ti-clock" style="font-size:11px"></i> <span>Season</span></div>
+    <div class="tbadge tbadge-live"><i class="ti ti-table" style="font-size:11px"></i> Excel Data</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px"><div id="dalos-avatar" style="display:none"></div></div>
+</div>
+<div class="tabs">
+  <div class="tab" onclick="window.location='citrus_overview.html'"><i class="ti ti-layout-dashboard"></i>Overview</div>
+  <div class="tab on"><i class="ti ti-category-2"></i>By Category</div>
+  <div class="tab tab-coming"><i class="ti ti-map-pin"></i>Markets<span class="tab-soon">soon</span></div>
+  <div class="tab tab-coming"><i class="ti ti-building"></i>Farms<span class="tab-soon">soon</span></div>
+  <div class="tab tab-coming"><i class="ti ti-palette"></i>Varieties<span class="tab-soon">soon</span></div>
+  <div class="tab tab-coming"><i class="ti ti-users"></i>Clients<span class="tab-soon">soon</span></div>
+  <div class="tab tab-coming"><i class="ti ti-box"></i>Cartons<span class="tab-soon">soon</span></div>
+  <div class="tab tab-coming"><i class="ti ti-database"></i>Data Explorer<span class="tab-soon">soon</span></div>
+</div>
+<div class="main">
+<div class="page">
+
+<div class="page-header">
+  <div>
+    <div class="page-title">Citrus Shipments <span>— By Category</span></div>
+    <div class="page-subtitle" id="page-sub">Loading season data…</div>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="fbar">
+  <div class="fbar-top">
+    <span class="fbar-label"><i class="ti ti-sliders-horizontal"></i> Filters</span>
+    <div class="fbar-sep"></div>
+    <div class="date-grp"><span class="date-lbl">From</span><input type="date" class="finput" id="f-from" onchange="applyFilters()"></div>
+    <div class="date-grp"><span class="date-lbl">To</span><input type="date" class="finput" id="f-to" onchange="applyFilters()"></div>
+    <div class="fbar-sep"></div>
+    <div class="ms" data-f="category" data-col="citrus_type" data-label="Category" data-accent="cat"></div>
+    <div class="ms" data-f="week" data-col="shipping_week" data-label="Week" data-special="wk"></div>
+    <div class="ms" data-f="status" data-col="shipping_status" data-label="Status"></div>
+    <div class="ms" data-f="source" data-col="source_type" data-label="Source"></div>
+    <div class="ms" data-f="farm" data-col="farm_source" data-label="Farm"></div>
+    <div class="ms" data-f="market" data-col="receiving_country" data-label="Market"></div>
+    <div class="ms" data-f="variety" data-col="variety" data-label="Variety"></div>
+    <div class="ms" data-f="clientclass" data-col="client_class" data-label="Client Class"></div>
+    <div class="factions"><button class="fbtn fbtn-reset" onclick="resetFilters()"><i class="ti ti-refresh" style="font-size:11px"></i> Reset</button></div>
+  </div>
+  <div class="fctx" id="fctx"></div>
+</div>
+
+<!-- STAT STRIP -->
+<div class="wide-stats" id="cat-stats"></div>
+
+<!-- LEADERBOARD -->
+<div class="panel">
+  <div class="p-title">Category ranking</div>
+  <div class="p-sub">Net weight by citrus category · click a row to drill into its shipments</div>
+  <div id="cat-leader"></div>
+</div>
+
+<!-- CATEGORY CARDS -->
+<div class="panel" style="background:transparent;border:none;box-shadow:none;padding:0">
+  <div class="p-title" style="margin-bottom:12px">All categories <span style="font-weight:500;color:var(--text3);font-size:11px">— click any card for the full shipment list</span></div>
+  <div class="cat-grid" id="cat-cards"></div>
+</div>
+
+<!-- COMPARISON TABLE -->
+<div class="panel">
+  <div class="p-title">Category comparison</div>
+  <div class="p-sub">All metrics side by side · click a row to drill</div>
+  <div class="ctbl-wrap">
+    <table class="ctbl">
+      <thead><tr>
+        <th>Category</th><th class="num">Net (T)</th><th class="num">Cartons</th><th class="num">Share</th><th class="num">Containers</th><th class="num">Class 1</th><th>Top market</th><th>Top variety</th>
+      </tr></thead>
+      <tbody id="cat-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div></div></div>
+
+<!-- DRILL MODAL -->
+<div class="drill-ov" id="drill-ov" onclick="if(event.target===this)closeDrill()">
+  <div class="drill-modal">
+    <div class="drill-head">
+      <div><div class="drill-title" id="drill-title"></div><div class="drill-sub" id="drill-sub"></div></div>
+      <button class="drill-x" onclick="closeDrill()">&times;</button>
+    </div>
+    <div class="drill-stats" id="drill-stats"></div>
+    <div class="drill-break" id="drill-break"></div>
+    <div class="drill-body">
+      <table class="drill-tbl">
+        <thead><tr><th>Loading date</th><th>Container</th><th>Category</th><th>Variety</th><th>Market</th><th>Farm</th><th>Grade</th><th>Client</th><th style="text-align:right">Cartons</th><th style="text-align:right">Net (T)</th><th>Status</th></tr></thead>
+        <tbody id="drill-tbody"></tbody>
+      </table>
+      <div class="drill-note" id="drill-note"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB_URL='https://sfyjvgjwvtwkrnqrvqyc.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmeWp2Z2p3dnR3a3JucXJ2cXljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NzIxNjYsImV4cCI6MjA5MDQ0ODE2Nn0.FjA75XZsp0Kx5Xam_rrnYoAHX4JHKey6vEFCH_zlMuQ';
+const PRODUCT='citrus';
+const CAT_COLORS={'Valencia':'#DC6428','Soft Citrus':'#e08e1e','White Orange':'#c9a227','Navel':'#2563EB','Lemon':'#eab308','GrapeFruit':'#e0466b','Grapefruit':'#e0466b'};
+const CAT_FALLBACK=['#142850','#5a7cc2','#16a34a','#6d28d9','#0891b2','#be185d'];
+function catColor(n,i){return CAT_COLORS[n]||CAT_FALLBACK[i%CAT_FALLBACK.length];}
+const GRADE_COL={'1':'#16a34a','1.5':'#84cc16','2':'#d97706','Juicing':'#8a95b0'};
+
+let __ROWS=[],__FULL_CT=0,__FULL_NW=0,DEF_FROM='',DEF_TO='';
+let F={from:'',to:'',category:[],week:[],status:[],source:[],farm:[],market:[],variety:[],clientclass:[]};
+
+// helpers
+function __ctWS(s){return (s||'').replace(/\s+/g,' ').trim();}
+function fmtT(v){return (Math.round(v*10)/10).toLocaleString('en-GB',{minimumFractionDigits:1,maximumFractionDigits:1});}
+function fmtN(v){return Math.round(v).toLocaleString('en-GB');}
+function fmtCartons(v){if(v>=1e6)return (v/1e6).toFixed(2)+'M';if(v>=1e3)return (v/1e3).toFixed(0)+'K';return fmtN(v);}
+const __esc=v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function __ctCount(rows){
+  const g={};(rows||[]).forEach(r=>{const cn=__ctWS(r.container_number);if(!cn)return;(g[cn]=g[cn]||[]).push(r.loading_date);});
+  let t=0;for(const cn in g){const ds=g[cn].filter(Boolean).map(d=>+new Date(d+'T00:00:00')).sort((a,b)=>a-b);if(!ds.length){t++;continue;}let c=1,prev=ds[0];for(let i=1;i<ds.length;i++){if((ds[i]-prev)/86400000>7)c++;prev=ds[i];}t+=c;}return t;
+}
+
+async function loadLiveData(){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/grapes_shipments_view?product_id=eq.${PRODUCT}&select=*`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Range':'0-99999'}});
+    if(!r.ok)throw new Error('SB '+r.status);
+    __ROWS=await r.json();
+    __FULL_CT=__ctCount(__ROWS);__FULL_NW=__ROWS.reduce((a,x)=>a+(parseFloat(x.net_weight)||0),0);
+    const lds=__ROWS.map(x=>x.loading_date).filter(Boolean).sort();
+    if(lds.length){DEF_FROM=lds[0];DEF_TO=lds[lds.length-1];F.from=DEF_FROM;F.to=DEF_TO;const ff=document.getElementById('f-from'),ft=document.getElementById('f-to');ff.value=DEF_FROM;ff.min=DEF_FROM;ff.max=DEF_TO;ft.value=DEF_TO;ft.min=DEF_FROM;ft.max=DEF_TO;}
+    const season=(__ROWS.find(x=>x.season_year)||{}).season_year||'';
+    const sb=document.getElementById('season-badge');if(sb)sb.querySelector('span').textContent='Season '+season;
+    const nCat=new Set(__ROWS.map(x=>__ctWS(x.citrus_type)).filter(Boolean)).size;
+    const sub=document.getElementById('page-sub');if(sub)sub.textContent=`Season ${season} · ${nCat} citrus categories · ${fmtN(__ROWS.length)} shipment lines · ${__FULL_CT} containers`;
+    document.querySelectorAll('.tbadge-live').forEach(b=>{b.innerHTML='<span class="live-dot"></span> Live · '+__ROWS.length+' shipments';b.style.background='rgba(22,163,74,.2)';b.style.color='#6ee7a0';b.style.border='1px solid rgba(22,163,74,.3)';});
+    buildMS();refreshFilterOptions();renderAll();
+  }catch(e){console.warn('By Category: Supabase unavailable:',e.message);const sub=document.getElementById('page-sub');if(sub)sub.textContent='Could not load season data — please retry.';document.querySelectorAll('.tbadge-live').forEach(b=>{b.innerHTML='⚠ Offline';b.style.background='rgba(220,100,40,.2)';b.style.color='#ffb380';});}
+}
+
+// filters
+function inSel(a,v){return !a||a.length===0||a.includes(v);}
+const __COLMAP={category:'citrus_type',status:'shipping_status',source:'source_type',farm:'farm_source',market:'receiving_country',variety:'variety',clientclass:'client_class'};
+const __FIELDS=['category','week','status','source','farm','market','variety','clientclass'];
+function __msVal(r,f){if(f==='week')return String(parseInt(r.shipping_week)||0);return __ctWS(r[__COLMAP[f]]);}
+function __passField(r,f){if(f==='week')return inSel(F.week,String(parseInt(r.shipping_week)||0));return inSel(F[f],__ctWS(r[__COLMAP[f]]));}
+function __filteredRows(){return __ROWS.filter(r=>{const d=r.loading_date||'';if(d<F.from||d>F.to)return false;for(const f of __FIELDS){if(F[f].length&&!__passField(r,f))return false;}return true;});}
+function __rowsExcept(skip){return __ROWS.filter(r=>{const d=r.loading_date||'';if(d<F.from||d>F.to)return false;for(const f of __FIELDS){if(f!==skip&&F[f].length&&!__passField(r,f))return false;}return true;});}
+function buildMS(){
+  document.querySelectorAll('.ms[data-f]').forEach(el=>{
+    const fld=el.dataset.f,col=el.dataset.col,special=el.dataset.special,accent=el.dataset.accent;
+    const vals=special==='wk'?[...new Set(__ROWS.map(r=>String(parseInt(r.shipping_week)||0)).filter(v=>v!=='0'))].sort((a,b)=>+a-+b):[...new Set(__ROWS.map(r=>__ctWS(r[col])).filter(x=>x!=null&&String(x).trim()!==''))].map(x=>String(x).trim()).sort();
+    el.innerHTML='<button class="ms-btn'+(accent==='cat'?' ms-cat':'')+'" onclick="toggleDD(event,this)"><span class="ms-lbl">'+(el.dataset.label||'All')+'</span><span class="cnt" style="display:none"></span><i class="ti ti-chevron-down" style="font-size:10px"></i></button><div class="ms-dd"><div style="padding:4px 6px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2"><input type="text" placeholder="Search…" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;outline:none;font-family:inherit;box-sizing:border-box" oninput="filterMS(this,\''+fld+'\')" onclick="event.stopPropagation()"></div><label class="ms-opt ms-all"><input type="checkbox" checked onchange="msAll(\''+fld+'\',this)"> All</label>'+vals.map(v=>'<label class="ms-opt" data-val="'+__esc(v).toLowerCase()+'"><input type="checkbox" data-v="'+__esc(v)+'" onchange="msPick(\''+fld+'\')"> '+__esc(special==='wk'?('Week '+v):v)+'</label>').join('')+'</div>';
+  });
+  document.addEventListener('click',e=>{if(!e.target.closest('.ms'))document.querySelectorAll('.ms-dd').forEach(d=>d.classList.remove('open'));});
+}
+function toggleDD(e,btn){e.stopPropagation();const dd=btn.parentElement.querySelector('.ms-dd');const was=dd.classList.contains('open');document.querySelectorAll('.ms-dd').forEach(d=>d.classList.remove('open'));if(!was)dd.classList.add('open');}
+function filterMS(input,fld){const q=input.value.toLowerCase().trim();input.closest('.ms-dd').querySelectorAll('.ms-opt:not(.ms-all)').forEach(opt=>{const val=opt.dataset.val||'';opt.style.display=((!q||val.includes(q))&&!opt.classList.contains('ms-unavail'))?'':'none';});}
+function msPick(fld){const el=document.querySelector('.ms[data-f="'+fld+'"]');F[fld]=[...el.querySelectorAll('input[data-v]:checked')].map(i=>i.dataset.v);el.querySelector('.ms-all input').checked=F[fld].length===0;syncMS(el,fld);applyFilters();}
+function msAll(fld,cb){const el=document.querySelector('.ms[data-f="'+fld+'"]');el.querySelectorAll('input[data-v]').forEach(i=>i.checked=false);cb.checked=true;F[fld]=[];syncMS(el,fld);applyFilters();}
+function syncMS(el,fld){const n=F[fld].length,lbl=el.querySelector('.ms-lbl'),cnt=el.querySelector('.cnt'),special=el.dataset.special,label=el.dataset.label||'All';if(n===0){lbl.textContent=label;cnt.style.display='none';}else if(n===1){lbl.textContent=special==='wk'?('Week '+F[fld][0]):F[fld][0];cnt.style.display='none';}else{lbl.textContent=label;cnt.style.display='';cnt.textContent=n;}}
+function refreshFilterOptions(){document.querySelectorAll('.ms[data-f]').forEach(el=>{const fld=el.dataset.f;const avail=new Set(__rowsExcept(fld).map(r=>__msVal(r,fld)).filter(Boolean));el.querySelectorAll('.ms-opt:not(.ms-all)').forEach(opt=>{const inp=opt.querySelector('input[data-v]');if(!inp)return;const ok=avail.has(inp.dataset.v)||inp.checked;if(ok){opt.classList.remove('ms-unavail');opt.style.display='';}else{opt.classList.add('ms-unavail');opt.style.display='none';}});});}
+function applyFilters(){F.from=document.getElementById('f-from').value;F.to=document.getElementById('f-to').value;refreshFilterOptions();renderAll();}
+function resetFilters(){F={from:DEF_FROM,to:DEF_TO,category:[],week:[],status:[],source:[],farm:[],market:[],variety:[],clientclass:[]};document.getElementById('f-from').value=DEF_FROM;document.getElementById('f-to').value=DEF_TO;document.querySelectorAll('.ms[data-f]').forEach(el=>{el.querySelectorAll('input[data-v]').forEach(i=>i.checked=false);const all=el.querySelector('.ms-all input');if(all)all.checked=true;syncMS(el,el.dataset.f);});refreshFilterOptions();renderAll();}
+function removeChip(key,val){if(key==='date'){F.from=DEF_FROM;F.to=DEF_TO;document.getElementById('f-from').value=DEF_FROM;document.getElementById('f-to').value=DEF_TO;refreshFilterOptions();renderAll();return;}F[key]=(F[key]||[]).filter(v=>v!==val);const el=document.querySelector('.ms[data-f="'+key+'"]');if(el){const inp=[...el.querySelectorAll('input[data-v]')].find(i=>i.dataset.v===val);if(inp)inp.checked=false;if(F[key].length===0){const all=el.querySelector('.ms-all input');if(all)all.checked=true;}syncMS(el,key);}refreshFilterOptions();renderAll();}
+
+// aggregate by category
+function catAgg(rows){
+  const map={};
+  rows.forEach(r=>{
+    const c=__ctWS(r.citrus_type);if(!c)return;
+    const nw=parseFloat(r.net_weight)||0,ct=parseInt(r.carton_count)||0;
+    if(!map[c])map[c]={cat:c,nw:0,cartons:0,rows:[],markets:{},varieties:{},grades:{}};
+    const m=map[c];m.nw+=nw;m.cartons+=ct;m.rows.push(r);
+    const mk=__ctWS(r.receiving_country);if(mk)m.markets[mk]=(m.markets[mk]||0)+nw;
+    const vv=__ctWS(r.variety);if(vv)m.varieties[vv]=(m.varieties[vv]||0)+nw;
+    const g=__ctWS(r.daltex_class);if(g)m.grades[g]=(m.grades[g]||0)+nw;
+  });
+  return Object.values(map).sort((a,b)=>b.nw-a.nw);
+}
+function top1(o){const t=Object.entries(o).sort((a,b)=>b[1]-a[1])[0];return t?t[0]:'—';}
+
+function renderAll(){
+  const rows=__filteredRows();
+  const cats=catAgg(rows);
+  const totNw=rows.reduce((a,r)=>a+(parseFloat(r.net_weight)||0),0);
+  const totCt=rows.reduce((a,r)=>a+(parseInt(r.carton_count)||0),0);
+  const containers=__ctCount(rows);
+  renderContext(rows,totNw,containers);
+  renderStats(cats,totNw,totCt,containers);
+  renderLeader(cats,totNw);
+  renderCards(cats,totNw);
+  renderTable(cats,totNw);
+}
+
+function renderContext(rows,totNw,containers){
+  const el=document.getElementById('fctx');const fmt=d=>new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  const defs=[['category','Category'],['week','Week'],['status','Status'],['source','Source'],['farm','Farm'],['market','Market'],['variety','Variety'],['clientclass','Client Class']];
+  const out=[];if(F.from!==DEF_FROM||F.to!==DEF_TO)out.push({label:`${fmt(F.from)} – ${fmt(F.to)}`,key:'date',val:''});
+  defs.forEach(([k,lbl])=>{(F[k]||[]).forEach(v=>out.push({label:lbl+': '+(k==='week'?('Week '+v):v),key:k,val:v}));});
+  if(!out.length){el.classList.remove('show');el.innerHTML='';return;}
+  el.classList.add('show');
+  el.innerHTML=out.map(c=>`<span class="fctx-chip">${__esc(c.label)}<button onclick="removeChip('${c.key}','${String(c.val).replace(/'/g,"\\'")}')"><i class="ti ti-x" style="font-size:9px"></i></button></span>`).join('')+`<span class="ctx-note"><b>${fmtT(totNw)}T</b> · ${containers} containers</span>`;
+}
+function renderStats(cats,totNw,totCt,containers){
+  const lead=cats[0];
+  document.getElementById('cat-stats').innerHTML=[
+    `<div class="ws-item"><div class="ws-label">Categories</div><div class="ws-val">${cats.length}</div><div class="ws-sub">citrus categories in scope</div></div>`,
+    `<div class="ws-item"><div class="ws-label">Total net weight</div><div class="ws-val">${fmtT(totNw)}<span class="ws-unit"> T</span></div><div class="ws-sub">${fmtCartons(totCt)} cartons</div></div>`,
+    `<div class="ws-item"><div class="ws-label">Containers</div><div class="ws-val">${containers}</div><div class="ws-sub">distinct shipping containers</div></div>`,
+    `<div class="ws-item"><div class="ws-label">Leading category</div><div class="ws-val ws-highlight" style="font-size:18px">${lead?__esc(lead.cat):'—'}</div><div class="ws-sub">${lead&&totNw>0?(lead.nw/totNw*100).toFixed(1)+'% of volume':'—'}</div></div>`,
+  ].join('');
+}
+function renderLeader(cats,totNw){
+  const max=cats[0]?cats[0].nw:1;
+  document.getElementById('cat-leader').innerHTML=cats.map((c,i)=>`
+    <div class="lead-row" data-dim="category" data-val="${__esc(c.cat)}" title="Click for shipment details">
+      <div class="lead-rank">${i+1}</div>
+      <div class="lead-name"><span class="sw" style="background:${catColor(c.cat,i)}"></span>${__esc(c.cat)}</div>
+      <div class="lead-track"><div class="lead-fill" style="width:${c.nw/max*100}%;background:${catColor(c.cat,i)}"></div></div>
+      <div class="lead-val">${fmtT(c.nw)}T <span>· ${totNw>0?(c.nw/totNw*100).toFixed(1):0}%</span></div>
+    </div>`).join('')||'<div style="color:var(--text3);font-size:12px;padding:8px 0">No data in selected range</div>';
+}
+function renderCards(cats,totNw){
+  document.getElementById('cat-cards').innerHTML=cats.map((c,i)=>{
+    const col=catColor(c.cat,i);
+    const nVar=Object.keys(c.varieties).length;
+    const ct=__ctCount(c.rows);
+    const gtot=Object.values(c.grades).reduce((a,v)=>a+v,0)||1;
+    const gorder=['1','1.5','2','Juicing'];
+    const gkeys=[...new Set([...gorder.filter(g=>c.grades[g]),...Object.keys(c.grades)])];
+    const gbar=gkeys.map(g=>`<i style="width:${c.grades[g]/gtot*100}%;background:${GRADE_COL[g]||'#b0b8ca'}" title="${__esc(g)}: ${fmtT(c.grades[g])}T"></i>`).join('');
+    return `<div class="cat-card" data-dim="category" data-val="${__esc(c.cat)}" title="Click for shipment details">
+      <div class="stripe" style="background:${col}"></div>
+      <div class="cat-body">
+        <div class="cat-top"><div class="cat-name">${__esc(c.cat)}</div><div class="cat-share">${totNw>0?(c.nw/totNw*100).toFixed(1):0}%</div></div>
+        <div class="cat-vars">${nVar} varieties · ${ct} containers</div>
+        <div class="cat-metrics">
+          <div class="cat-m"><div class="mv">${fmtT(c.nw)}<span style="font-size:11px;color:var(--text3)"> T</span></div><div class="ml">Net weight</div></div>
+          <div class="cat-m"><div class="mv">${fmtCartons(c.cartons)}</div><div class="ml">Cartons</div></div>
+        </div>
+        <div class="cat-grades">${gbar}</div>
+        <div class="cat-foot"><span>Top mkt: <b>${__esc(top1(c.markets))}</b></span><span class="cat-open">Details <i class="ti ti-arrow-right"></i></span></div>
+      </div>
+    </div>`;
+  }).join('')||'<div style="color:var(--text3);font-size:12px">No data in selected range</div>';
+}
+function renderTable(cats,totNw){
+  document.getElementById('cat-tbody').innerHTML=cats.map((c,i)=>{
+    const ct=__ctCount(c.rows);const c1=(c.grades['1']||0);const c1pct=c.nw>0?c1/c.nw*100:0;
+    return `<tr data-dim="category" data-val="${__esc(c.cat)}" title="Click for shipment details">
+      <td class="name"><span class="sw" style="background:${catColor(c.cat,i)}"></span>${__esc(c.cat)}</td>
+      <td class="num">${fmtT(c.nw)}</td><td class="num">${fmtN(c.cartons)}</td>
+      <td class="num">${totNw>0?(c.nw/totNw*100).toFixed(1):0}%</td><td class="num">${ct}</td>
+      <td class="num">${c1pct.toFixed(1)}%</td>
+      <td>${__esc(top1(c.markets))}</td><td>${__esc(top1(c.varieties))}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8" style="color:var(--text3);padding:14px">No data in selected range</td></tr>';
+}
+
+// drill
+const DIM_COL={category:'citrus_type',market:'receiving_country',farm:'farm_source',variety:'variety',source:'source_type',status:'shipping_status',grade:'daltex_class',client:'client'};
+const DIM_LABEL={category:'Category',market:'Market',farm:'Farm',variety:'Variety',source:'Source',status:'Status',grade:'Grade',client:'Client'};
+function openDrill(dim,val){
+  const col=DIM_COL[dim];if(!col)return;
+  const base=__filteredRows();const rows=base.filter(r=>__ctWS(r[col])===__ctWS(val));if(!rows.length)return;
+  const nw=rows.reduce((a,r)=>a+(parseFloat(r.net_weight)||0),0);const cartons=rows.reduce((a,r)=>a+(parseInt(r.carton_count)||0),0);const ct=__ctCount(rows);
+  const baseNw=base.reduce((a,r)=>a+(parseFloat(r.net_weight)||0),0);const share=baseNw>0?nw/baseNw*100:0;
+  document.getElementById('drill-title').innerHTML=`${__esc(val)} <span class="pill">${DIM_LABEL[dim]}</span>`;
+  document.getElementById('drill-sub').textContent=`${rows.length} shipment line${rows.length!==1?'s':''} matching the current filters`;
+  document.getElementById('drill-stats').innerHTML=[['Net weight',fmtT(nw)+' T'],['Cartons',fmtN(cartons)],['Containers',ct],['Share of scope',share.toFixed(1)+'%']].map(([l,v])=>`<div class="drill-stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  const bdDims=dim==='category'?['market','variety']:(dim==='market'?['category','variety']:['category','market']);
+  const mkTop=k=>{const c=DIM_COL[k];const o={};rows.forEach(r=>{const v=__ctWS(r[c]);if(v)o[v]=(o[v]||0)+(parseFloat(r.net_weight)||0);});const t=Object.entries(o).sort((a,b)=>b[1]-a[1])[0];return t?`Top ${DIM_LABEL[k].toLowerCase()}: <b>${__esc(t[0])}</b> ${fmtT(t[1])}T`:'';};
+  document.getElementById('drill-break').innerHTML=bdDims.map(k=>{const h=mkTop(k);return h?`<span class="drill-chip">${h}</span>`:'';}).join('');
+  const sorted=[...rows].sort((a,b)=>String(b.loading_date||'').localeCompare(String(a.loading_date||'')));
+  const cap=300,shown=sorted.slice(0,cap);const td=v=>`<td>${v==null||v===''?'—':__esc(String(v))}</td>`;
+  document.getElementById('drill-tbody').innerHTML=shown.map(r=>`<tr>${td(r.loading_date)}${td(r.container_number)}${td(r.citrus_type)}${td(r.variety)}${td(r.receiving_country)}${td(r.farm_source)}${td(r.daltex_class)}${td(r.client)}<td class="num">${fmtN(parseInt(r.carton_count)||0)}</td><td class="num">${fmtT(parseFloat(r.net_weight)||0)}</td>${td(r.shipping_status)}</tr>`).join('');
+  document.getElementById('drill-note').textContent=sorted.length>cap?`Showing first ${cap} of ${sorted.length} lines.`:`${sorted.length} line${sorted.length!==1?'s':''} total.`;
+  document.getElementById('drill-ov').classList.add('show');
+}
+function closeDrill(){document.getElementById('drill-ov').classList.remove('show');}
+document.addEventListener('click',e=>{const el=e.target.closest('[data-dim][data-val]');if(el){openDrill(el.dataset.dim,el.dataset.val);}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrill();});
+
+// init skeleton
+document.getElementById('cat-stats').innerHTML=Array(4).fill(0).map(()=>'<div class="sk" style="height:54px;margin:4px"></div>').join('');
+document.getElementById('cat-cards').innerHTML=Array(6).fill(0).map(()=>'<div class="sk" style="height:150px"></div>').join('');
+loadLiveData();
+</script>
+<script>
+(function(){var SKEY='sb-sfyjvgjwvtwkrnqrvqyc-auth-token';function gi(){try{var raw=localStorage.getItem(SKEY);if(!raw)return'?';var s=JSON.parse(raw);var sess=(s&&s.access_token)?s:((s&&s.currentSession)?s.currentSession:null);var meta=(sess&&sess.user&&sess.user.user_metadata)||{};var name=(meta.full_name||meta.name||'').trim();if(!name){var email=(sess&&sess.user&&sess.user.email)||'';name=email.split('@')[0].replace(/[._-]/g,' ');}var p=name.trim().split(/\s+/).filter(Boolean);if(p.length>=2)return(p[0][0]+p[1][0]).toUpperCase();if(p.length===1)return p[0].slice(0,2).toUpperCase();}catch(e){}return'?';}document.addEventListener('DOMContentLoaded',function(){var av=document.getElementById('dalos-avatar');if(av){av.textContent=gi();}});})();
+</script>
+<script src="switcher.js" defer></script>
+</body>
+</html>

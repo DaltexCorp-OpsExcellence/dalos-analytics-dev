@@ -264,9 +264,38 @@ input, select, button { font-family: var(--font); }
 .fade-in > *:nth-child(5){animation-delay:.15s}
 .fade-in > *:nth-child(6){animation-delay:.18s}
 
+/* DRILL-DOWN MODAL */
+.clickable{cursor:pointer}
+.bar-item.clickable:hover .bar-name{color:var(--orange)}
+.donut-row.clickable:hover .donut-name{color:var(--orange)}
+.src-box.clickable:hover, .status-seg.clickable:hover{filter:brightness(.96)}
+.kcard.clickable:hover{outline:2px solid var(--orange);outline-offset:-1px}
+.drill-ov{display:none;position:fixed;inset:0;background:rgba(14,31,61,.55);backdrop-filter:blur(2px);z-index:9999;align-items:center;justify-content:center;padding:20px}
+.drill-ov.show{display:flex}
+.drill-modal{background:#fff;border-radius:16px;max-width:920px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.drill-head{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px;border-bottom:1px solid var(--border);gap:16px}
+.drill-title{font-size:15px;font-weight:700;color:var(--navy)}
+.drill-title .pill{display:inline-block;margin-left:8px;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:var(--orange-lt);color:var(--orange);vertical-align:middle}
+.drill-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.drill-x{background:#f1f4f9;border:none;width:30px;height:30px;border-radius:8px;cursor:pointer;color:#475569;font-size:16px;flex-shrink:0}
+.drill-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 22px;border-bottom:1px solid var(--border)}
+.drill-stat .v{font-family:var(--mono);font-size:19px;font-weight:700;color:var(--navy);letter-spacing:-.5px}
+.drill-stat .l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-top:2px}
+.drill-break{display:flex;gap:8px;flex-wrap:wrap;padding:12px 22px 0}
+.drill-chip{font-size:10.5px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 10px;color:var(--text2)}
+.drill-chip b{color:var(--navy);font-weight:700}
+.drill-body{overflow:auto;padding:12px 22px 18px;flex:1}
+.drill-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.drill-tbl th{position:sticky;top:0;background:#fff;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:9px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+.drill-tbl td{padding:8px;border-bottom:1px solid #f1f4f9;color:var(--text2);white-space:nowrap}
+.drill-tbl td.num{font-family:var(--mono);text-align:right;color:var(--navy);font-weight:600}
+.drill-tbl tr:hover td{background:var(--bg)}
+.drill-note{font-size:11px;color:var(--text3);padding:12px 0 0}
+
 @media(max-width:960px){
   .kgrid{grid-template-columns:repeat(2,1fr)}
   .grid2,.grid3{grid-template-columns:1fr}
+  .drill-stats{grid-template-columns:repeat(2,1fr)}
   .wide-stats{grid-template-columns:repeat(2,1fr)}
   .wide-stats .ws-item{border-bottom:1px solid var(--border)}
 }
@@ -313,7 +342,7 @@ input, select, button { font-family: var(--font); }
 </div>
 <div class="tabs">
   <div class="tab on" onclick="window.location='citrus_overview.html'"><i class="ti ti-layout-dashboard"></i>Overview</div>
-  <div class="tab tab-coming" title="Coming next"><i class="ti ti-category-2"></i>By Category<span class="tab-soon">soon</span></div>
+  <div class="tab" onclick="window.location='citrus_bycategory.html'"><i class="ti ti-category-2"></i>By Category</div>
   <div class="tab tab-coming" title="Coming soon"><i class="ti ti-map-pin"></i>Markets<span class="tab-soon">soon</span></div>
   <div class="tab tab-coming" title="Coming soon"><i class="ti ti-building"></i>Farms<span class="tab-soon">soon</span></div>
   <div class="tab tab-coming" title="Coming soon"><i class="ti ti-palette"></i>Varieties<span class="tab-soon">soon</span></div>
@@ -719,8 +748,9 @@ function fmtN(v){ return Math.round(v).toLocaleString('en-GB'); }
 function fmtCartons(v){ if(v>=1e6) return (v/1e6).toFixed(2)+'M'; if(v>=1e3) return (v/1e3).toFixed(0)+'K'; return fmtN(v); }
 
 // ── KPI CARDS ──
-function kcard(label,val,unit,pill1,pill2,sub,stripe,barPct,barCol){
-  return `<div class="kcard">
+function kcard(label,val,unit,pill1,pill2,sub,stripe,barPct,barCol,drill){
+  const da = drill ? ` clickable" data-dim="${drill.dim}" data-val="${__esc(drill.val)}" title="Click for shipment details` : '';
+  return `<div class="kcard${da}">
     <div class="kcard-stripe" style="background:${stripe}"></div>
     <div class="kcard-label">${label}</div>
     <div class="kcard-val">${val}${unit?`<span class="kcard-unit"> ${unit}</span>`:''}</div>
@@ -767,13 +797,13 @@ function renderKPIs(s){
       pill(topMkt[0],'kp-or'),
       pill(`${fmtT(topMkt[1])}T`,'kp-nt'),
       `${Object.keys(s.markets).length} receiving markets in current scope`,
-      'var(--orange)', topMktPct, 'var(--orange)'),
+      'var(--orange)', topMktPct, 'var(--orange)', topMkt[0]!=='—'?{dim:'market',val:topMkt[0]}:null),
 
     kcard('Leading category', topCat[0], '',
       pill(`${topCatPct.toFixed(1)}% share`,'kp-or'),
       pill(`${fmtCartons(s.categories[topCat[0]]?__filteredRows().filter(r=>__ctWS(r.citrus_type)===topCat[0]).reduce((a,r)=>a+(parseInt(r.carton_count)||0),0):0)} ctn`,'kp-nt'),
       `${fmtT(topCat[1])}T · ${catVarieties} varieties in this category`,
-      'var(--orange)', topCatPct, 'var(--orange)'),
+      'var(--orange)', topCatPct, 'var(--orange)', topCat[0]!=='—'?{dim:'category',val:topCat[0]}:null),
   ].join('');
 }
 
@@ -840,7 +870,7 @@ function renderCategoryDonut(s){
   });
   paths+=`<text x="${cx}" y="${cy-1}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--navy)" font-family="'IBM Plex Mono',monospace">${fmtCartons(s.cartons)}</text><text x="${cx}" y="${cy+9}" text-anchor="middle" font-size="7" fill="var(--text3)" font-family="'IBM Plex Mono',monospace">cartons</text>`;
   const rows=data.map(([k,v],i)=>`
-    <div class="donut-row">
+    <div class="donut-row clickable" data-dim="category" data-val="${__esc(k)}" title="Click for shipment details">
       <div class="donut-name"><div class="donut-swatch" style="background:${catColor(k,i)}"></div>${__esc(k)}</div>
       <div class="donut-val">${fmtT(v)}T · ${(v/tot*100).toFixed(1)}%</div>
     </div>`).join('');
@@ -853,12 +883,12 @@ function renderSourceSplit(s){
   const o=Object.entries(s.sources).filter(([k])=>k!=='Daltex Farms').reduce((a,[,v])=>a+v,0);
   const tot=d+o;
   document.getElementById('src-split').innerHTML=`
-    <div class="src-box" style="background:#eff3fb;border-color:#cdd3e3">
+    <div class="src-box clickable" data-dim="source" data-val="Daltex Farms" title="Click for shipment details" style="background:#eff3fb;border-color:#cdd3e3">
       <div class="src-val" style="color:var(--navy)">${tot>0?(d/tot*100).toFixed(1):0}%</div>
       <div class="src-lbl" style="color:var(--navy)">Daltex Farms</div>
       <div class="src-sub">${fmtT(d)} T</div>
     </div>
-    <div class="src-box" style="background:var(--orange-lt);border-color:#f4c9af">
+    <div class="src-box clickable" data-dim="source" data-val="Out Source" title="Click for shipment details" style="background:var(--orange-lt);border-color:#f4c9af">
       <div class="src-val" style="color:var(--orange)">${tot>0?(o/tot*100).toFixed(1):0}%</div>
       <div class="src-lbl" style="color:var(--orange)">Out Source</div>
       <div class="src-sub">${fmtT(o)} T</div>
@@ -873,18 +903,18 @@ function renderStatusBar(s){
   const bar=document.getElementById('status-bar'),leg=document.getElementById('status-legend');
   if(!tot){bar.innerHTML='';leg.innerHTML='<span style="color:var(--text3);font-size:11px">No data</span>';return;}
   bar.innerHTML=data.map(([k,v],i)=>{const p=v/tot*100;const c=STCOL[k]||{bg:'var(--bg2)',fg:'var(--text2)'};return `<div class="status-seg" style="flex:${p};background:${c.bg};color:${c.fg}">${p>=6?p.toFixed(0)+'%':''}</div>`;}).join('');
-  leg.innerHTML=data.map(([k,v],i)=>{const c=STCOL[k]||{dot:'var(--text3)'};return `<div class="sl-item"><div class="sl-dot" style="background:${c.dot||'var(--text3)'}"></div>${__esc(k)} · ${fmtT(v)}T</div>`;}).join('');
+  leg.innerHTML=data.map(([k,v],i)=>{const c=STCOL[k]||{dot:'var(--text3)'};return `<div class="sl-item clickable" data-dim="status" data-val="${__esc(k)}" title="Click for shipment details"><div class="sl-dot" style="background:${c.dot||'var(--text3)'}"></div>${__esc(k)} · ${fmtT(v)}T</div>`;}).join('');
 }
 
 // ── BAR CHARTS ──
-function renderBarList(elId,entries,accent){
+function renderBarList(elId,entries,accent,dim){
   const sorted=[...entries].sort((a,b)=>b[1]-a[1]).slice(0,6);
   const maxV=sorted[0]?sorted[0][1]:1;
   const tot=entries.reduce((a,[,v])=>a+v,0);
   const el=document.getElementById(elId);
   if(!sorted.length){el.innerHTML='<div style="color:var(--text3);font-size:11px;padding:8px 0">No data</div>';return;}
   el.innerHTML=sorted.map(([k,v])=>`
-    <div class="bar-item">
+    <div class="bar-item clickable" data-dim="${dim}" data-val="${__esc(k)}" title="Click for shipment details">
       <div class="bar-row">
         <span class="bar-name">${__esc(k)}</span>
         <span class="bar-vals">${fmtT(v)}T<span class="bar-contrib">${tot>0?'('+(v/tot*100).toFixed(1)+'%)':''}</span></span>
@@ -893,9 +923,9 @@ function renderBarList(elId,entries,accent){
     </div>`).join('');
 }
 function renderBarCharts(s){
-  renderBarList('chart-markets',   Object.entries(s.markets),   'var(--navy)');
-  renderBarList('chart-farms',     Object.entries(s.farms),     'var(--orange)');
-  renderBarList('chart-varieties', Object.entries(s.varieties), '#5a7cc2');
+  renderBarList('chart-markets',   Object.entries(s.markets),   'var(--navy)',   'market');
+  renderBarList('chart-farms',     Object.entries(s.farms),     'var(--orange)', 'farm');
+  renderBarList('chart-varieties', Object.entries(s.varieties), '#5a7cc2',       'variety');
 }
 
 // ── AUTO INSIGHTS (fully computed — no hardcoded facts) ──
@@ -970,6 +1000,42 @@ async function runAI(){
 }
 function aiQ(q){document.getElementById('ai-in').value=q;runAI();}
 
+// ── DRILL-DOWN ──
+const DIM_COL={category:'citrus_type',market:'receiving_country',farm:'farm_source',variety:'variety',source:'source_type',status:'shipping_status',grade:'daltex_class',client:'client'};
+const DIM_LABEL={category:'Category',market:'Market',farm:'Farm',variety:'Variety',source:'Source',status:'Status',grade:'Grade',client:'Client'};
+function openDrill(dim,val){
+  const col=DIM_COL[dim]; if(!col) return;
+  const base=__filteredRows();
+  const rows=base.filter(r=>__ctWS(r[col])===__ctWS(val));
+  if(!rows.length) return;
+  const nw=rows.reduce((a,r)=>a+(parseFloat(r.net_weight)||0),0);
+  const cartons=rows.reduce((a,r)=>a+(parseInt(r.carton_count)||0),0);
+  const ct=__ctCount(rows);
+  const baseNw=base.reduce((a,r)=>a+(parseFloat(r.net_weight)||0),0);
+  const share=baseNw>0?nw/baseNw*100:0;
+  document.getElementById('drill-title').innerHTML=`${__esc(val)} <span class="pill">${DIM_LABEL[dim]}</span>`;
+  document.getElementById('drill-sub').textContent=`${rows.length} shipment line${rows.length!==1?'s':''} matching the current filters`;
+  document.getElementById('drill-stats').innerHTML=[
+    ['Net weight',fmtT(nw)+' T'],['Cartons',fmtN(cartons)],['Containers',ct],['Share of scope',share.toFixed(1)+'%']
+  ].map(([l,v])=>`<div class="drill-stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  const bdDims=(dim==='category'||dim==='grade'||dim==='source'||dim==='status')?['market','variety']
+    :(dim==='market'?['category','variety']:(dim==='variety'?['market','farm']:['category','market']));
+  const mkTop=(k)=>{const c=DIM_COL[k];const o={};rows.forEach(r=>{const v=__ctWS(r[c]);if(v)o[v]=(o[v]||0)+(parseFloat(r.net_weight)||0);});const t=Object.entries(o).sort((a,b)=>b[1]-a[1])[0];return t?`Top ${DIM_LABEL[k].toLowerCase()}: <b>${__esc(t[0])}</b> ${fmtT(t[1])}T`:'';};
+  document.getElementById('drill-break').innerHTML=bdDims.map(k=>{const h=mkTop(k);return h?`<span class="drill-chip">${h}</span>`:'';}).join('');
+  const sorted=[...rows].sort((a,b)=>String(b.loading_date||'').localeCompare(String(a.loading_date||'')));
+  const cap=300, shown=sorted.slice(0,cap);
+  const td=v=>`<td>${v==null||v===''?'—':__esc(String(v))}</td>`;
+  document.getElementById('drill-tbody').innerHTML=shown.map(r=>`<tr>
+    ${td(r.loading_date)}${td(r.container_number)}${td(r.citrus_type)}${td(r.variety)}${td(r.receiving_country)}${td(r.farm_source)}${td(r.daltex_class)}${td(r.client)}
+    <td class="num">${fmtN(parseInt(r.carton_count)||0)}</td><td class="num">${fmtT(parseFloat(r.net_weight)||0)}</td>${td(r.shipping_status)}
+  </tr>`).join('');
+  document.getElementById('drill-note').textContent=sorted.length>cap?`Showing first ${cap} of ${sorted.length} lines.`:`${sorted.length} line${sorted.length!==1?'s':''} total.`;
+  document.getElementById('drill-ov').classList.add('show');
+}
+function closeDrill(){document.getElementById('drill-ov').classList.remove('show');}
+document.addEventListener('click',e=>{const el=e.target.closest('[data-dim][data-val]');if(el){openDrill(el.dataset.dim,el.dataset.val);}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrill();});
+
 // ── SKELETONS + INIT ──
 function showSkeletons(){
   const kg=document.getElementById('kpi-grid');
@@ -1015,6 +1081,30 @@ loadLiveData();
   document.addEventListener('DOMContentLoaded',function(){var av=document.getElementById('dalos-avatar');if(av){av.textContent=getInitials();}});
 })();
 </script>
+
+<!-- DRILL-DOWN MODAL -->
+<div class="drill-ov" id="drill-ov" onclick="if(event.target===this)closeDrill()">
+  <div class="drill-modal">
+    <div class="drill-head">
+      <div>
+        <div class="drill-title" id="drill-title"></div>
+        <div class="drill-sub" id="drill-sub"></div>
+      </div>
+      <button class="drill-x" onclick="closeDrill()">&times;</button>
+    </div>
+    <div class="drill-stats" id="drill-stats"></div>
+    <div class="drill-break" id="drill-break"></div>
+    <div class="drill-body">
+      <table class="drill-tbl">
+        <thead><tr>
+          <th>Loading date</th><th>Container</th><th>Category</th><th>Variety</th><th>Market</th><th>Farm</th><th>Grade</th><th>Client</th><th style="text-align:right">Cartons</th><th style="text-align:right">Net (T)</th><th>Status</th>
+        </tr></thead>
+        <tbody id="drill-tbody"></tbody>
+      </table>
+      <div class="drill-note" id="drill-note"></div>
+    </div>
+  </div>
+</div>
 
 <div id="kpi-modal" onclick="if(event.target===this)closeKpiDefs()" style="display:none;position:fixed;inset:0;background:rgba(14,31,61,.55);backdrop-filter:blur(2px);z-index:9999;align-items:center;justify-content:center;padding:20px">
   <div style="background:#fff;border-radius:16px;max-width:680px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
