@@ -155,9 +155,19 @@ function aiHTML(){
 }
 
 /* ---- data load ---- */
+function fetchAllRows(){
+  // Supabase REST caps each response at 1000 rows, so page through with the
+  // Range header (ordered by id for a stable, non-overlapping sequence).
+  var PAGE=1000, all=[];
+  function next(from){
+    return fetch(SB_URL+'/rest/v1/grapes_shipments_view?product_id=eq.'+PRODUCT+'&select=*&order=id.asc',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Range-Unit':'items','Range':from+'-'+(from+PAGE-1)}})
+      .then(function(r){if(!r.ok)throw new Error('SB '+r.status);return r.json();})
+      .then(function(chunk){all=all.concat(chunk);if(chunk.length===PAGE&&from<500000)return next(from+PAGE);return all;});
+  }
+  return next(0);
+}
 function load(){
-  fetch(SB_URL+'/rest/v1/grapes_shipments_view?product_id=eq.'+PRODUCT+'&select=*',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,Range:'0-99999'}})
-  .then(function(r){if(!r.ok)throw new Error('SB '+r.status);return r.json();})
+  fetchAllRows()
   .then(function(rows){
     ROWS=rows; FULL_CT=ctCount(ROWS); FULL_NW=ROWS.reduce(function(a,r){return a+nw(r);},0);
     var lds=ROWS.map(function(x){return x.loading_date;}).filter(Boolean).sort();
