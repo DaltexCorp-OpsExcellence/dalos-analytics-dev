@@ -144,6 +144,7 @@ function contentSkeleton(){
     +'</div>'
     +'<div class="ex-cols" id="ex-cols" hidden></div>'
     +'<div class="dtbl-wrap" style="max-height:68vh;overflow:auto"><table class="dtbl" id="ex-tbl"><thead id="ex-thead"></thead><tbody id="ex-tbody"></tbody></table></div>'
+    +'<div class="ex-pager" id="ex-pager"></div>'
     +'<div class="drill-note" id="ex-note"></div></div>';
   return '';
 }
@@ -425,7 +426,7 @@ var EX_COLS=[
   {k:'brand',l:'Brand'},{k:'size',l:'Size'},{k:'carta',l:'Carta'},{k:'season_year',l:'Season'}
 ];
 var EX_DEFAULT=['loading_date','container_number','citrus_type','variety','daltex_class','client','subclient','receiving_country','farm_source','source_type','carton_count','net_weight','shipping_status'];
-var exSort={k:'loading_date',dir:-1}, exQuery='', exVisible=null;
+var exSort={k:'loading_date',dir:-1}, exQuery='', exVisible=null, exPage=1, exPer=100;
 function exColMeta(k){return EX_COLS.filter(function(c){return c.k===k;})[0];}
 function exVisibleCols(){if(!exVisible)exVisible=new Set(EX_DEFAULT);return EX_COLS.filter(function(c){return exVisible.has(c.k);});}
 function exRows(){
@@ -448,10 +449,30 @@ function renderExtract(){
   var cols=exVisibleCols();
   document.getElementById('ex-cols').innerHTML='<span class="hint">Show / hide columns</span>'+EX_COLS.map(function(c){return '<span class="col-chip'+(exVisible.has(c.k)?' on':'')+'" onclick="CIT.exToggleCol(\''+c.k+'\')">'+c.l+'</span>';}).join('');
   document.getElementById('ex-thead').innerHTML='<tr>'+cols.map(function(c){return '<th class="'+(c.num?'num':'')+'" onclick="CIT.sortExtract(\''+c.k+'\')">'+c.l+(exSort.k===c.k?(exSort.dir<0?' ▾':' ▴'):'')+'</th>';}).join('')+'</tr>';
-  var data=exRows(), cap=500, shown=data.slice(0,cap);
+  var data=exRows();
+  var per=(exPer==='all')?(data.length||1):exPer;
+  var totalPages=Math.max(1,Math.ceil(data.length/per));
+  if(exPage>totalPages)exPage=totalPages; if(exPage<1)exPage=1;
+  var start=(exPage-1)*per, shown=data.slice(start,start+per);
   document.getElementById('ex-tbody').innerHTML=shown.map(function(r){return '<tr>'+cols.map(function(c){return exCell(r,c);}).join('')+'</tr>';}).join('')||'<tr><td class="d-empty" colspan="'+cols.length+'">No rows match the filters.</td></tr>';
-  document.getElementById('ex-count').textContent=fmtN(data.length)+' rows'+(data.length>cap?' (showing '+cap+')':'');
-  document.getElementById('ex-note').textContent=data.length>cap?'Showing first '+cap+' of '+fmtN(data.length)+' rows in the table. CSV / Excel export ALL '+fmtN(data.length)+' matching rows with the columns shown above.':fmtN(data.length)+' rows. CSV / Excel export these '+fmtN(data.length)+' rows.';
+  document.getElementById('ex-count').textContent=fmtN(data.length)+' rows';
+  document.getElementById('ex-note').textContent='CSV / Excel export ALL '+fmtN(data.length)+' matching rows with the columns shown above.';
+  renderExPager(data.length,totalPages,per,start,shown.length);
+}
+function renderExPager(total,totalPages,per,start,shownN){
+  var el=document.getElementById('ex-pager');if(!el)return;
+  var info=total?('Showing '+fmtN(start+1)+'–'+fmtN(start+shownN)+' of '+fmtN(total)+' rows'):'0 rows';
+  var opts=[['100','100'],['250','250'],['1000','1000'],['all','All']].map(function(o){return '<option value="'+o[0]+'"'+(String(exPer)===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('');
+  var btns='';
+  if(exPer!=='all'&&totalPages>1){
+    btns+='<button class="pg-btn" '+(exPage<=1?'disabled':'')+' onclick="CIT.exGoPage('+(exPage-1)+')">‹</button>';
+    for(var i=1;i<=totalPages;i++){
+      if(totalPages<=7||i===1||i===totalPages||Math.abs(i-exPage)<=2)btns+='<button class="pg-btn'+(i===exPage?' on':'')+'" onclick="CIT.exGoPage('+i+')">'+i+'</button>';
+      else if(Math.abs(i-exPage)===3)btns+='<span class="pg-ellipsis">…</span>';
+    }
+    btns+='<button class="pg-btn" '+(exPage>=totalPages?'disabled':'')+' onclick="CIT.exGoPage('+(exPage+1)+')">›</button>';
+  }
+  el.innerHTML='<div class="pg-info">'+info+'</div><div class="ex-pg-right"><div class="ex-pg-btns">'+btns+'</div><div style="display:flex;align-items:center;gap:6px"><span style="font-size:11px;color:var(--text3)">Rows per page</span><select class="pg-sel" onchange="CIT.exPerPage(this.value)">'+opts+'</select></div></div>';
 }
 
 /* ---- ANALYSIS DRILL (no raw table) ---- */
@@ -529,7 +550,9 @@ window.CIT={
   openDrill:openDrill, closeDrill:closeDrill, runAI:runAI,
   aiQ:function(q){document.getElementById('ai-in').value=q;runAI();},
   sortExtract:function(k){var m=exColMeta(k)||{};if(exSort.k===k)exSort.dir*=-1;else{exSort.k=k;exSort.dir=m.num?-1:1;}renderExtract();},
-  exFilter:function(v){exQuery=v;renderExtract();},
+  exFilter:function(v){exQuery=v;exPage=1;renderExtract();},
+  exPerPage:function(v){exPer=(v==='all')?'all':parseInt(v);exPage=1;renderExtract();},
+  exGoPage:function(p){exPage=p;renderExtract();},
   exToggleCols:function(){var el=document.getElementById('ex-cols');if(el)el.hidden=!el.hidden;},
   exToggleCol:function(k){if(!exVisible)exVisible=new Set(EX_DEFAULT);if(exVisible.has(k)){if(exVisible.size>1)exVisible.delete(k);}else{exVisible.add(k);}renderExtract();},
   exCopy:function(ev){var cols=exVisibleCols(),data=exRows();var head=cols.map(function(c){return c.l;}).join('\t');var body=data.map(function(r){return cols.map(function(c){return exVal(r,c);}).join('\t');}).join('\n');var txt=head+'\n'+body;var b=ev&&ev.target&&ev.target.closest?ev.target.closest('button'):null;function done(){if(b){var o=b.innerHTML;b.innerHTML='<i class="ti ti-check" style="font-size:12px"></i> Copied '+fmtN(data.length);setTimeout(function(){b.innerHTML=o;},1800);}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done).catch(function(){});}else{done();}},

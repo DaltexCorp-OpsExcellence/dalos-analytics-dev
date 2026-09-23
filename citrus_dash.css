@@ -257,6 +257,16 @@ input,select,button{font-family:var(--font)}
 .col-chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .col-chip.on::before{content:'✓';font-size:9px}
 .dtbl thead th{position:sticky;top:0;background:#fff;z-index:2}
+.ex-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:12px;margin-top:4px;border-top:1px solid var(--border)}
+.ex-pager .pg-info{font-size:11px;color:var(--text3)}
+.ex-pg-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ex-pg-btns{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.pg-btn{min-width:28px;height:28px;padding:0 8px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:11px;color:var(--text2);display:inline-flex;align-items:center;justify-content:center}
+.pg-btn:hover{border-color:var(--navy);color:var(--navy)}
+.pg-btn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.pg-btn:disabled{opacity:.4;cursor:default}
+.pg-sel{padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:#fff;color:var(--text2)}
+.pg-ellipsis{padding:0 2px;color:var(--text3)}
 
 /* drill modal (analysis, not raw rows) */
 .drill-ov{display:none;position:fixed;inset:0;background:rgba(14,31,61,.55);backdrop-filter:blur(2px);z-index:9999;align-items:center;justify-content:center;padding:20px}
