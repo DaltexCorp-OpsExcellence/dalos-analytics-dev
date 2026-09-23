@@ -65,6 +65,13 @@ function ctCount(rows){
 }
 function aggNW(rows,col){var o={};rows.forEach(function(r){var v=ctWS(r[col]);if(v)o[v]=(o[v]||0)+nw(r);});return o;}
 function top1(o){var t=Object.entries(o).sort(function(a,b){return b[1]-a[1];})[0];return t?t[0]:'—';}
+var MON3=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// Saturday-anchored week: returns the date (YYYY-MM-DD) of the Saturday that starts the week containing ds.
+function weekStartSat(ds){if(!ds)return '';var d=new Date(ds+'T00:00:00');var off=(d.getDay()+1)%7;/* Sat=0..Fri=6 */ d.setDate(d.getDate()-off);var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),da=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+da;}
+function weekLabel(sat){if(!sat)return '—';var d=new Date(sat+'T00:00:00');return d.getDate()+' '+MON3[d.getMonth()];}
+function weekLabelFull(sat){if(!sat)return '—';var d=new Date(sat+'T00:00:00');return 'Wk '+d.getDate()+' '+MON3[d.getMonth()]+" '"+String(d.getFullYear()).slice(2);}
+// Weekly net-weight series, grouped by Saturday week, ordered chronologically.
+function weeklySeries(rows){var by={};rows.forEach(function(r){var s=weekStartSat(r.loading_date);if(!s)return;by[s]=(by[s]||0)+nw(r);});return Object.keys(by).sort().map(function(s){return {start:s,label:weekLabel(s),val:by[s]};});}
 
 /* ---- chrome (topbar / tabs / filter bar / content / drill) ---- */
 function buildChrome(){
@@ -130,7 +137,7 @@ function contentSkeleton(){
   if(CFG.type==='dimension') return ''
     +'<div class="kgrid k4" id="kpi-grid"></div>'
     +'<div class="panel"><div class="p-title">'+esc(CFG.label)+' ranking</div><div class="p-sub">Net weight by '+esc(CFG.label.toLowerCase())+' · click a row for the full deep-dive</div><div id="dim-leader"></div></div>'
-    +'<div class="panel"><div class="p-title">Weekly net weight (tonnes)</div><div class="p-sub" id="dim-weeksub">Top '+esc(CFG.label.toLowerCase())+' groups by shipping week</div><div id="dim-weekly"></div><div class="chart-legend" id="dim-weekly-legend"></div></div>'
+    +'<div class="panel"><div class="p-title">Weekly net weight (tonnes)</div><div class="p-sub" id="dim-weeksub">Net weight by week (Saturday start)</div><div id="dim-weekly"></div><div class="chart-legend" id="dim-weekly-legend"></div></div>'
     +'<div class="panel"><div class="p-title">'+esc(CFG.label)+' comparison</div><div class="p-sub">All metrics side by side · click a row to drill</div><div class="dtbl-wrap"><table class="dtbl"><thead><tr><th>'+esc(CFG.label)+'</th><th class="num">Net (T)</th><th class="num">Cartons</th><th class="num">Share</th><th class="num">Containers</th><th class="num">Class 1</th><th>Top category</th><th>Top market</th></tr></thead><tbody id="dim-tbody"></tbody></table></div></div>'
     +insightsHTML()+aiHTML();
   if(CFG.type==='extract') return ''
@@ -191,26 +198,26 @@ function load(){
 
 /* ---- filters ---- */
 function inSel(a,v){return !a||a.length===0||a.indexOf(v)>-1;}
-function passField(r,f){if(f==='week')return inSel(F.week,String(parseInt(r.shipping_week)||0));return inSel(F[f],ctWS(r[FIELD_COL[f]]));}
+function passField(r,f){if(f==='week')return inSel(F.week,weekStartSat(r.loading_date));return inSel(F[f],ctWS(r[FIELD_COL[f]]));}
 function filteredRows(){return ROWS.filter(function(r){var d=r.loading_date||'';if(d<F.from||d>F.to)return false;for(var i=0;i<FIELDS.length;i++){if(F[FIELDS[i]].length&&!passField(r,FIELDS[i]))return false;}return true;});}
 function rowsExcept(skip){return ROWS.filter(function(r){var d=r.loading_date||'';if(d<F.from||d>F.to)return false;for(var i=0;i<FIELDS.length;i++){var f=FIELDS[i];if(f!==skip&&F[f].length&&!passField(r,f))return false;}return true;});}
-function msVal(r,f){if(f==='week')return String(parseInt(r.shipping_week)||0);return ctWS(r[FIELD_COL[f]]);}
+function msVal(r,f){if(f==='week')return weekStartSat(r.loading_date);return ctWS(r[FIELD_COL[f]]);}
 
 function buildMS(){
   document.querySelectorAll('.ms[data-f]').forEach(function(el){
     var fld=el.dataset.f,col=el.dataset.col,special=el.dataset.special,accent=el.dataset.accent;
     var vals=special==='wk'
-      ?Array.from(new Set(ROWS.map(function(r){return String(parseInt(r.shipping_week)||0);}).filter(function(v){return v!=='0';}))).sort(function(a,b){return +a-+b;})
+      ?Array.from(new Set(ROWS.map(function(r){return weekStartSat(r.loading_date);}).filter(Boolean))).sort()
       :Array.from(new Set(ROWS.map(function(r){return ctWS(r[col]);}).filter(function(x){return x!=null&&String(x).trim()!=='';}))).map(function(x){return String(x).trim();}).sort();
     el.innerHTML='<button class="ms-btn'+(accent==='cat'?' ms-cat':'')+'" onclick="CIT.toggleDD(event,this)"><span class="ms-lbl">'+(el.dataset.label||'All')+'</span><span class="cnt" style="display:none"></span><i class="ti ti-chevron-down" style="font-size:10px"></i></button>'
       +'<div class="ms-dd"><div style="padding:4px 6px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:2"><input type="text" placeholder="Search\u2026" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;outline:none;font-family:inherit;box-sizing:border-box" oninput="CIT.filterMS(this,\''+fld+'\')" onclick="event.stopPropagation()"></div>'
       +'<label class="ms-opt ms-all"><input type="checkbox" checked onchange="CIT.msAll(\''+fld+'\',this)"> All</label>'
-      +vals.map(function(v){return '<label class="ms-opt" data-val="'+esc(v).toLowerCase()+'"><input type="checkbox" data-v="'+esc(v)+'" onchange="CIT.msPick(\''+fld+'\')"> '+esc(special==='wk'?('Week '+v):v)+'</label>';}).join('')
+      +vals.map(function(v){return '<label class="ms-opt" data-val="'+esc((special==='wk'?weekLabelFull(v):v)).toLowerCase()+'"><input type="checkbox" data-v="'+esc(v)+'" onchange="CIT.msPick(\''+fld+'\')"> '+esc(special==='wk'?weekLabelFull(v):v)+'</label>';}).join('')
       +'</div>';
   });
   document.addEventListener('click',function(e){if(!e.target.closest('.ms'))document.querySelectorAll('.ms-dd').forEach(function(d){d.classList.remove('open');});});
 }
-function syncMS(el,fld){var n=F[fld].length,lbl=el.querySelector('.ms-lbl'),cnt=el.querySelector('.cnt'),special=el.dataset.special,label=el.dataset.label||'All';if(n===0){lbl.textContent=label;cnt.style.display='none';}else if(n===1){lbl.textContent=special==='wk'?('Week '+F[fld][0]):F[fld][0];cnt.style.display='none';}else{lbl.textContent=label;cnt.style.display='';cnt.textContent=n;}}
+function syncMS(el,fld){var n=F[fld].length,lbl=el.querySelector('.ms-lbl'),cnt=el.querySelector('.cnt'),special=el.dataset.special,label=el.dataset.label||'All';if(n===0){lbl.textContent=label;cnt.style.display='none';}else if(n===1){lbl.textContent=special==='wk'?weekLabelFull(F[fld][0]):F[fld][0];cnt.style.display='none';}else{lbl.textContent=label;cnt.style.display='';cnt.textContent=n;}}
 function refreshFilterOptions(){
   document.querySelectorAll('.ms[data-f]').forEach(function(el){
     var fld=el.dataset.f;var avail=new Set(rowsExcept(fld).map(function(r){return msVal(r,fld);}).filter(Boolean));
@@ -232,7 +239,7 @@ function renderContext(rows){
   var fmt=function(d){return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});};
   var labels={category:'Category',week:'Week',status:'Status',source:'Source',farm:'Farm',market:'Market',variety:'Variety',clientclass:'Client Class'};
   var out=[];if(F.from!==DEF_FROM||F.to!==DEF_TO)out.push({label:fmt(F.from)+' – '+fmt(F.to),key:'date',val:''});
-  FIELDS.forEach(function(k){(F[k]||[]).forEach(function(v){out.push({label:labels[k]+': '+(k==='week'?('Week '+v):v),key:k,val:v});});});
+  FIELDS.forEach(function(k){(F[k]||[]).forEach(function(v){out.push({label:(k==='week'?weekLabelFull(v):labels[k]+': '+v),key:k,val:v});});});
   var totNw=rows.reduce(function(a,r){return a+nw(r);},0), ct=ctCount(rows);
   if(!out.length){el.classList.remove('show');el.innerHTML='';return;}
   el.classList.add('show');
@@ -248,15 +255,15 @@ function barList(elId,entries,accent,dim){
   if(!sorted.length){el.innerHTML='<div class="d-empty">No data</div>';return;}
   el.innerHTML=sorted.map(function(e){var k=e[0],v=e[1];return '<div class="bar-item'+(dim?' clickable':'')+'"'+(dim?' data-dim="'+dim+'" data-val="'+esc(k)+'" title="Click for analysis"':'')+'><div class="bar-row"><span class="bar-name">'+esc(k)+'</span><span class="bar-vals">'+fmtT(v)+'T<span class="bar-contrib">'+(tot>0?'('+(v/tot*100).toFixed(1)+'%)':'')+'</span></span></div><div class="bar-track"><div class="bar-fill" style="width:'+(v/maxV*100)+'%;background:'+accent+'"></div></div></div>';}).join('');
 }
-function weeklyBars(host,byWeek,color){
-  var weeks=Object.keys(byWeek).map(Number).filter(function(w){return w;}).sort(function(a,b){return a-b;});
-  if(!weeks.length){host.innerHTML='<div class="d-empty">No data in range</div>';return;}
-  var maxV=Math.max.apply(null,weeks.map(function(w){return byWeek[w];}).concat([1]));
-  var H=140,bW=weeks.length>26?15:26,gap=weeks.length>26?6:12,left=40,top=18,totalW=left+weeks.length*(bW+gap)+18;
+function weeklyBars(host,series,color){
+  if(!series||!series.length){host.innerHTML='<div class="d-empty">No data in range</div>';return;}
+  var maxV=Math.max.apply(null,series.map(function(s){return s.val;}).concat([1]));
+  var n=series.length,bW=n>26?15:26,gap=n>26?7:12,left=40,top=18,H=140,botPad=40,totalW=left+n*(bW+gap)+18;
   var svg='';
   [0,.5,1].forEach(function(f){var y=top+(1-f)*(H-top);svg+='<line x1="'+left+'" y1="'+y+'" x2="'+totalW+'" y2="'+y+'" stroke="var(--border)" stroke-width="1"'+(f===0?'':' stroke-dasharray="4,3"')+'/><text x="'+(left-6)+'" y="'+(y+4)+'" font-size="9" fill="var(--text3)" text-anchor="end" font-family="var(--mono)">'+Math.round(maxV*f)+'</text>';});
-  weeks.forEach(function(w,i){var v=byWeek[w],x=left+i*(bW+gap),bH=Math.max(3,v/maxV*(H-top)),y=H-bH;svg+='<rect x="'+x+'" y="'+y+'" width="'+bW+'" height="'+bH+'" rx="3" fill="'+color+'"><title>Week '+w+': '+fmtT(v)+'T</title></rect>';if(weeks.length<=30)svg+='<text x="'+(x+bW/2)+'" y="'+(y>14?y-4:y+11)+'" font-size="8" fill="'+(y>14?'var(--navy)':'#fff')+'" text-anchor="middle" font-weight="600" font-family="var(--mono)">'+Math.round(v)+'</text>';if(weeks.length<=40)svg+='<text x="'+(x+bW/2)+'" y="'+(H+14)+'" font-size="9" fill="var(--text3)" text-anchor="middle">'+w+'</text>';});
-  host.innerHTML='<svg width="'+totalW+'" height="'+(H+20)+'" viewBox="0 0 '+totalW+' '+(H+20)+'" preserveAspectRatio="xMinYMid meet" style="overflow:visible;max-width:100%">'+svg+'</svg>';
+  var showEvery=n>18?2:1;
+  series.forEach(function(s,i){var v=s.val,x=left+i*(bW+gap),bH=Math.max(3,v/maxV*(H-top)),y=H-bH;svg+='<rect x="'+x+'" y="'+y+'" width="'+bW+'" height="'+bH+'" rx="3" fill="'+color+'"><title>Wk '+esc(s.label)+': '+fmtT(v)+'T</title></rect>';if(n<=26)svg+='<text x="'+(x+bW/2)+'" y="'+(y>14?y-4:y+11)+'" font-size="8" fill="'+(y>14?'var(--navy)':'#fff')+'" text-anchor="middle" font-weight="600" font-family="var(--mono)">'+Math.round(v)+'</text>';if(i%showEvery===0){var lx=x+bW/2,ly=H+9;svg+='<text x="'+lx+'" y="'+ly+'" font-size="8.5" fill="var(--text3)" text-anchor="end" transform="rotate(-45 '+lx+' '+ly+')">'+esc(s.label)+'</text>';}});
+  host.innerHTML='<svg width="'+totalW+'" height="'+(H+botPad)+'" viewBox="0 0 '+totalW+' '+(H+botPad)+'" preserveAspectRatio="xMinYMid meet" style="overflow:visible;max-width:100%">'+svg+'</svg>';
 }
 function donut(host,entries,colorFn,centerTop,centerBot,dim){
   var data=entries.filter(function(e){return e[1]>0;}).sort(function(a,b){return b[1]-a[1];});
@@ -273,7 +280,7 @@ function donut(host,entries,colorFn,centerTop,centerBot,dim){
 
 /* ---- OVERVIEW ---- */
 function renderOverview(rows){
-  var byWeek={};rows.forEach(function(r){var w=parseInt(r.shipping_week)||0;if(w)byWeek[w]=(byWeek[w]||0)+nw(r);});
+  var wkSeries=weeklySeries(rows);
   var totNw=rows.reduce(function(a,r){return a+nw(r);},0), cartons=rows.reduce(function(a,r){return a+ctn(r);},0), ct=ctCount(rows);
   var cats=aggNW(rows,'citrus_type'), mkts=aggNW(rows,'receiving_country'), farms=aggNW(rows,'farm_source'), vars_=aggNW(rows,'variety'), srcs=aggNW(rows,'source_type'), stats=aggNW(rows,'shipping_status'), grades=aggNW(rows,'daltex_class');
   var c1=grades['1']||0, juic=grades['Juicing']||0;
@@ -295,18 +302,18 @@ function renderOverview(rows){
   ].join('');
   // wide stats
   var byDate={};rows.forEach(function(r){if(r.loading_date)byDate[r.loading_date]=(byDate[r.loading_date]||0)+nw(r);});
-  var wks=Object.keys(byWeek),days=Object.keys(byDate);
+  var days=Object.keys(byDate);
   var peakDay=Object.entries(byDate).sort(function(a,b){return b[1]-a[1];})[0]||['—',0];
-  var peakWk=Object.entries(byWeek).sort(function(a,b){return b[1]-a[1];})[0]||['—',0];
+  var peakWk=wkSeries.slice().sort(function(a,b){return b.val-a.val;})[0]||{label:'—',val:0};
   document.getElementById('wide-stats').innerHTML=[
     ws('Avg daily volume',fmtT(days.length?totNw/days.length:0),'T/day',days.length+' active loading days'),
-    ws('Avg weekly volume',fmtT(wks.length?totNw/wks.length:0),'T/wk',wks.length+' active weeks'),
+    ws('Avg weekly volume',fmtT(wkSeries.length?totNw/wkSeries.length:0),'T/wk',wkSeries.length+' active weeks'),
     ws('Peak loading day',fmtT(peakDay[1]),'T',peakDay[0]!=='—'?new Date(peakDay[0]).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—',true),
-    ws('Peak week',fmtT(peakWk[1]),'T','Week '+peakWk[0]+' · '+(totNw>0?(peakWk[1]/totNw*100).toFixed(1):0)+'% of volume',true)
+    ws('Peak week',fmtT(peakWk.val),'T','Wk '+peakWk.label+' · '+(totNw>0?(peakWk.val/totNw*100).toFixed(1):0)+'% of volume',true)
   ].join('');
-  weeklyBars(document.getElementById('weekly-chart'),byWeek,'var(--navy)');
+  weeklyBars(document.getElementById('weekly-chart'),wkSeries,'var(--navy)');
   var fmt=function(d){return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});};
-  document.getElementById('chart-period').textContent=fmt(F.from)+' – '+fmt(F.to)+' · net weight by shipping week';
+  document.getElementById('chart-period').textContent=fmt(F.from)+' – '+fmt(F.to)+' · net weight by week (Sat–Fri)';
   donut(document.getElementById('category-donut'),Object.entries(cats),palColor,fmtCartons(cartons),'cartons','category');
   renderSrc(srcs); renderStatus(stats);
   barList('chart-markets',Object.entries(mkts),'var(--navy)','market');
@@ -400,8 +407,7 @@ function renderDimension(rows){
   document.getElementById('dim-leader').innerHTML=items.slice(0,25).map(function(it,i){return '<div class="lead-row" data-dim="'+dim+'" data-val="'+esc(it.k)+'" title="Click for analysis"><div class="lead-rank">'+(i+1)+'</div><div class="lead-name"><span class="sw" style="background:'+palColor(it.k,i)+'"></span>'+esc(it.k)+'</div><div class="lead-track"><div class="lead-fill" style="width:'+(it.nw/max*100)+'%;background:'+accent+'"></div></div><div class="lead-val">'+fmtT(it.nw)+'T <span>· '+(totNw>0?(it.nw/totNw*100).toFixed(1):0)+'%</span></div></div>';}).join('')||'<div class="d-empty">No data in range</div>'
     +(items.length>25?'<div class="d-empty" style="text-align:center">+ '+(items.length-25)+' more '+esc(CFG.label.toLowerCase())+' — narrow with filters</div>':'');
   // weekly stacked (top 5 items) — simple grouped totals
-  var byWeek={};rows.forEach(function(r){var w=parseInt(r.shipping_week)||0;if(w)byWeek[w]=(byWeek[w]||0)+nw(r);});
-  weeklyBars(document.getElementById('dim-weekly'),byWeek,accent);
+  weeklyBars(document.getElementById('dim-weekly'),weeklySeries(rows),accent);
   document.getElementById('dim-weekly-legend').innerHTML='<div class="cl-item"><div class="cl-rect" style="background:'+accent+'"></div>All '+esc(CFG.label.toLowerCase())+' · net weight per week</div>';
   document.getElementById('dim-tbody').innerHTML=items.slice(0,60).map(function(it,i){
     var cc=ctCount(it.rows),c1=it.rows.reduce(function(a,r){return a+(ctWS(r.daltex_class)==='1'?nw(r):0);},0);
@@ -415,7 +421,7 @@ function renderDimension(rows){
 
 /* ---- EXTRACT page ---- */
 var EX_COLS=[
-  {k:'loading_date',l:'Loading date'},{k:'shipping_week',l:'Week',num:true},{k:'container_number',l:'Container'},
+  {k:'loading_date',l:'Loading date'},{k:'week_sat',l:'Week (Sat start)',get:function(r){return weekStartSat(r.loading_date);}},{k:'container_number',l:'Container'},
   {k:'citrus_type',l:'Category'},{k:'variety',l:'Variety'},{k:'daltex_class',l:'Grade'},
   {k:'client',l:'Client'},{k:'subclient',l:'Sub client'},{k:'client_class',l:'Client class'},
   {k:'receiving_country',l:'Market'},{k:'receiving_port',l:'Port'},{k:'farm_source',l:'Farm'},{k:'pack_house',l:'Pack house'},
@@ -429,19 +435,19 @@ var EX_DEFAULT=['loading_date','container_number','citrus_type','variety','dalte
 var exSort={k:'loading_date',dir:-1}, exQuery='', exVisible=null, exPage=1, exPer=100;
 function exColMeta(k){return EX_COLS.filter(function(c){return c.k===k;})[0];}
 function exVisibleCols(){if(!exVisible)exVisible=new Set(EX_DEFAULT);return EX_COLS.filter(function(c){return exVisible.has(c.k);});}
+function exRaw(r,c){return c.get?c.get(r):r[c.k];}
 function exRows(){
   var rows=filteredRows();
-  if(exQuery){var q=exQuery.toLowerCase();rows=rows.filter(function(r){return EX_COLS.some(function(c){return String(r[c.k]==null?'':r[c.k]).toLowerCase().indexOf(q)>-1;});});}
+  if(exQuery){var q=exQuery.toLowerCase();rows=rows.filter(function(r){return EX_COLS.some(function(c){var v=exRaw(r,c);return String(v==null?'':v).toLowerCase().indexOf(q)>-1;});});}
   var meta=exColMeta(exSort.k)||{};
-  rows=rows.slice().sort(function(a,b){var A=a[exSort.k],B=b[exSort.k];if(meta.num){A=num(A);B=num(B);}else{A=String(A==null?'':A).toLowerCase();B=String(B==null?'':B).toLowerCase();}return A<B?-1*exSort.dir:A>B?1*exSort.dir:0;});
+  rows=rows.slice().sort(function(a,b){var A=exRaw(a,meta),B=exRaw(b,meta);if(meta.num){A=num(A);B=num(B);}else{A=String(A==null?'':A).toLowerCase();B=String(B==null?'':B).toLowerCase();}return A<B?-1*exSort.dir:A>B?1*exSort.dir:0;});
   return rows;
 }
-function exVal(r,c){if(c.num){if(c.k==='net_weight'||c.k==='gross_weight'||c.k==='carton_net_weight')return Math.round(num(r[c.k])*1000)/1000;return parseInt(r[c.k])||0;}return r[c.k]==null?'':String(r[c.k]);}
+function exVal(r,c){if(c.num){if(c.k==='net_weight'||c.k==='gross_weight'||c.k==='carton_net_weight')return Math.round(num(r[c.k])*1000)/1000;return parseInt(r[c.k])||0;}var v=exRaw(r,c);return v==null?'':String(v);}
 function exCell(r,c){
   if(c.k==='net_weight'||c.k==='gross_weight'||c.k==='carton_net_weight')return '<td class="num">'+fmtT(num(r[c.k]))+'</td>';
   if(c.k==='carton_count'||c.k==='pallet_count')return '<td class="num">'+fmtN(num(r[c.k]))+'</td>';
-  if(c.k==='shipping_week')return '<td class="num">'+(parseInt(r[c.k])||'—')+'</td>';
-  var v=r[c.k];return '<td class="'+(c.num?'num':'')+'">'+(v==null||v===''?'—':esc(String(v)))+'</td>';
+  var v=exRaw(r,c);return '<td class="'+(c.num?'num':'')+'">'+(v==null||v===''?'—':esc(String(v)))+'</td>';
 }
 function dl(content,type,name){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1500);}
 function renderExtract(){
@@ -493,7 +499,7 @@ function openDrill(dim,val){
     ['Class 1 share',(totNw>0?c1/totNw*100:0).toFixed(1)+'%',fmtT(c1)+'T Class 1']
   ];
   // weekly
-  var byWeek={};rows.forEach(function(r){var w=parseInt(r.shipping_week)||0;if(w)byWeek[w]=(byWeek[w]||0)+nw(r);});
+  var drillSeries=weeklySeries(rows);
   // breakdown panels: all dims except drilled
   var panelDims=[['category','Category','ti-category-2'],['market','Market','ti-map-pin'],['variety','Variety','ti-palette'],['farm','Farm','ti-building'],['subclient','Sub Client','ti-users'],['grade','Grade','ti-award'],['source','Source','ti-plant-2']].filter(function(p){return p[0]!==dim;});
   var panelsHTML=panelDims.map(function(p){
@@ -508,7 +514,7 @@ function openDrill(dim,val){
     +'<div class="d-weekly"><div class="d-sec-title"><i class="ti ti-chart-bar"></i>Weekly net weight (tonnes)</div><div id="drill-weekly"></div></div>'
     +'<div class="d-sec-title"><i class="ti ti-layout-grid"></i>Breakdowns within '+esc(val)+'</div><div class="d-cols">'+(panelsHTML||'<div class="d-empty">No sub-breakdowns.</div>')+'</div>';
   document.getElementById('drill-body').innerHTML=body;
-  weeklyBars(document.getElementById('drill-weekly'),byWeek,dim==='grade'?'#16a34a':'var(--navy)');
+  weeklyBars(document.getElementById('drill-weekly'),drillSeries,dim==='grade'?'#16a34a':'var(--navy)');
   document.getElementById('drill-ov').classList.add('show');
 }
 function closeDrill(){document.getElementById('drill-ov').classList.remove('show');}
