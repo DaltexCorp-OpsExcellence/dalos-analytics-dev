@@ -134,8 +134,16 @@ function contentSkeleton(){
     +'<div class="panel"><div class="p-title">'+esc(CFG.label)+' comparison</div><div class="p-sub">All metrics side by side · click a row to drill</div><div class="dtbl-wrap"><table class="dtbl"><thead><tr><th>'+esc(CFG.label)+'</th><th class="num">Net (T)</th><th class="num">Cartons</th><th class="num">Share</th><th class="num">Containers</th><th class="num">Class 1</th><th>Top category</th><th>Top market</th></tr></thead><tbody id="dim-tbody"></tbody></table></div></div>'
     +insightsHTML()+aiHTML();
   if(CFG.type==='extract') return ''
-    +'<div class="panel"><div class="ex-toolbar"><input class="ex-search" id="ex-search" placeholder="Search across all columns…" oninput="CIT.exFilter(this.value)"><span class="ex-count" id="ex-count"></span><button class="fbtn fbtn-nv" onclick="CIT.exCopy(event)"><i class="ti ti-copy" style="font-size:12px"></i> Copy (TSV)</button></div>'
-    +'<div class="dtbl-wrap" style="max-height:70vh;overflow:auto"><table class="dtbl" id="ex-tbl"><thead id="ex-thead"></thead><tbody id="ex-tbody"></tbody></table></div>'
+    +'<div class="panel"><div class="ex-toolbar">'
+    +'<input class="ex-search" id="ex-search" placeholder="Search across all columns…" oninput="CIT.exFilter(this.value)">'
+    +'<span class="ex-count" id="ex-count"></span>'
+    +'<button class="fbtn btn-ghost" onclick="CIT.exToggleCols()"><i class="ti ti-columns-3" style="font-size:12px"></i> Columns</button>'
+    +'<button class="fbtn btn-ghost" onclick="CIT.exCopy(event)"><i class="ti ti-copy" style="font-size:12px"></i> Copy</button>'
+    +'<button class="fbtn fbtn-nv" onclick="CIT.exCSV()"><i class="ti ti-download" style="font-size:12px"></i> CSV</button>'
+    +'<button class="fbtn fbtn-nv" onclick="CIT.exXLSX()"><i class="ti ti-file-spreadsheet" style="font-size:12px"></i> Excel</button>'
+    +'</div>'
+    +'<div class="ex-cols" id="ex-cols" hidden></div>'
+    +'<div class="dtbl-wrap" style="max-height:68vh;overflow:auto"><table class="dtbl" id="ex-tbl"><thead id="ex-thead"></thead><tbody id="ex-tbody"></tbody></table></div>'
     +'<div class="drill-note" id="ex-note"></div></div>';
   return '';
 }
@@ -216,7 +224,7 @@ function renderAll(){
   if(CFG.type==='overview') renderOverview(rows);
   else if(CFG.type==='category') renderCategory(rows);
   else if(CFG.type==='dimension') renderDimension(rows);
-  else if(CFG.type==='extract') renderExtract(rows);
+  else if(CFG.type==='extract') renderExtract();
 }
 function renderContext(rows){
   var el=document.getElementById('fctx');if(!el)return;
@@ -406,26 +414,44 @@ function renderDimension(rows){
 
 /* ---- EXTRACT page ---- */
 var EX_COLS=[
-  {k:'loading_date',l:'Loading date'},{k:'container_number',l:'Container'},{k:'citrus_type',l:'Category'},{k:'variety',l:'Variety'},
-  {k:'receiving_country',l:'Market'},{k:'receiving_port',l:'Port'},{k:'farm_source',l:'Farm'},{k:'source_type',l:'Source'},
-  {k:'daltex_class',l:'Grade'},{k:'client',l:'Client'},{k:'client_class',l:'Client class'},{k:'carton_type',l:'Carton type'},
-  {k:'carton_count',l:'Cartons',num:true},{k:'net_weight',l:'Net (T)',num:true},{k:'shipping_status',l:'Status'},{k:'shipping_week',l:'Week',num:true}
+  {k:'loading_date',l:'Loading date'},{k:'shipping_week',l:'Week',num:true},{k:'container_number',l:'Container'},
+  {k:'citrus_type',l:'Category'},{k:'variety',l:'Variety'},{k:'daltex_class',l:'Grade'},
+  {k:'client',l:'Client'},{k:'subclient',l:'Sub client'},{k:'client_class',l:'Client class'},
+  {k:'receiving_country',l:'Market'},{k:'receiving_port',l:'Port'},{k:'farm_source',l:'Farm'},{k:'pack_house',l:'Pack house'},
+  {k:'source_type',l:'Source'},{k:'carton_type',l:'Carton type'},{k:'carton_count',l:'Cartons',num:true},
+  {k:'carton_net_weight',l:'Carton net (T)',num:true},{k:'net_weight',l:'Net (T)',num:true},{k:'gross_weight',l:'Gross (T)',num:true},
+  {k:'pallet_count',l:'Pallets',num:true},{k:'shipping_line',l:'Shipping line'},{k:'agent',l:'Agent'},
+  {k:'departure_port',l:'Departure port'},{k:'etd',l:'ETD'},{k:'eta',l:'ETA'},{k:'shipping_status',l:'Status'},
+  {k:'brand',l:'Brand'},{k:'size',l:'Size'},{k:'carta',l:'Carta'},{k:'season_year',l:'Season'}
 ];
-var exSort={k:'loading_date',dir:-1}, exQuery='';
+var EX_DEFAULT=['loading_date','container_number','citrus_type','variety','daltex_class','client','subclient','receiving_country','farm_source','source_type','carton_count','net_weight','shipping_status'];
+var exSort={k:'loading_date',dir:-1}, exQuery='', exVisible=null;
+function exColMeta(k){return EX_COLS.filter(function(c){return c.k===k;})[0];}
+function exVisibleCols(){if(!exVisible)exVisible=new Set(EX_DEFAULT);return EX_COLS.filter(function(c){return exVisible.has(c.k);});}
 function exRows(){
   var rows=filteredRows();
   if(exQuery){var q=exQuery.toLowerCase();rows=rows.filter(function(r){return EX_COLS.some(function(c){return String(r[c.k]==null?'':r[c.k]).toLowerCase().indexOf(q)>-1;});});}
-  rows=rows.slice().sort(function(a,b){var A=a[exSort.k],B=b[exSort.k];if(EX_COLS.find(function(c){return c.k===exSort.k;}).num){A=num(A);B=num(B);}else{A=String(A==null?'':A).toLowerCase();B=String(B==null?'':B).toLowerCase();}return A<B?-1*exSort.dir:A>B?1*exSort.dir:0;});
+  var meta=exColMeta(exSort.k)||{};
+  rows=rows.slice().sort(function(a,b){var A=a[exSort.k],B=b[exSort.k];if(meta.num){A=num(A);B=num(B);}else{A=String(A==null?'':A).toLowerCase();B=String(B==null?'':B).toLowerCase();}return A<B?-1*exSort.dir:A>B?1*exSort.dir:0;});
   return rows;
 }
-function renderExtract(rows){
-  var sub=document.getElementById('page-sub');if(sub)sub.textContent='Season '+SEASON+' · raw shipment lines · search, sort and copy';
-  document.getElementById('ex-thead').innerHTML='<tr>'+EX_COLS.map(function(c){return '<th class="'+(c.num?'num':'')+'" onclick="CIT.sortExtract(\''+c.k+'\')">'+c.l+(exSort.k===c.k?(exSort.dir<0?' ▾':' ▴'):'')+'</th>';}).join('')+'</tr>';
+function exVal(r,c){if(c.num){if(c.k==='net_weight'||c.k==='gross_weight'||c.k==='carton_net_weight')return Math.round(num(r[c.k])*1000)/1000;return parseInt(r[c.k])||0;}return r[c.k]==null?'':String(r[c.k]);}
+function exCell(r,c){
+  if(c.k==='net_weight'||c.k==='gross_weight'||c.k==='carton_net_weight')return '<td class="num">'+fmtT(num(r[c.k]))+'</td>';
+  if(c.k==='carton_count'||c.k==='pallet_count')return '<td class="num">'+fmtN(num(r[c.k]))+'</td>';
+  if(c.k==='shipping_week')return '<td class="num">'+(parseInt(r[c.k])||'—')+'</td>';
+  var v=r[c.k];return '<td class="'+(c.num?'num':'')+'">'+(v==null||v===''?'—':esc(String(v)))+'</td>';
+}
+function dl(content,type,name){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1500);}
+function renderExtract(){
+  var sub=document.getElementById('page-sub');if(sub)sub.textContent='Season '+SEASON+' · raw shipment lines · pick columns, search, sort, download';
+  var cols=exVisibleCols();
+  document.getElementById('ex-cols').innerHTML='<span class="hint">Show / hide columns</span>'+EX_COLS.map(function(c){return '<span class="col-chip'+(exVisible.has(c.k)?' on':'')+'" onclick="CIT.exToggleCol(\''+c.k+'\')">'+c.l+'</span>';}).join('');
+  document.getElementById('ex-thead').innerHTML='<tr>'+cols.map(function(c){return '<th class="'+(c.num?'num':'')+'" onclick="CIT.sortExtract(\''+c.k+'\')">'+c.l+(exSort.k===c.k?(exSort.dir<0?' ▾':' ▴'):'')+'</th>';}).join('')+'</tr>';
   var data=exRows(), cap=500, shown=data.slice(0,cap);
-  var td=function(v){return v==null||v===''?'—':esc(String(v));};
-  document.getElementById('ex-tbody').innerHTML=shown.map(function(r){return '<tr>'+EX_COLS.map(function(c){if(c.k==='net_weight')return '<td class="num">'+fmtT(num(r[c.k]))+'</td>';if(c.k==='carton_count')return '<td class="num">'+fmtN(num(r[c.k]))+'</td>';if(c.k==='shipping_week')return '<td class="num">'+(parseInt(r[c.k])||'—')+'</td>';return '<td class="'+(c.num?'num':'')+'">'+td(r[c.k])+'</td>';}).join('')+'</tr>';}).join('');
-  document.getElementById('ex-count').textContent=fmtN(data.length)+' rows'+(data.length>cap?' (showing first '+cap+')':'');
-  document.getElementById('ex-note').textContent=data.length>cap?'Showing first '+cap+' of '+fmtN(data.length)+' rows. Narrow with filters or search, or Copy (TSV) to export all matching rows.':fmtN(data.length)+' rows.';
+  document.getElementById('ex-tbody').innerHTML=shown.map(function(r){return '<tr>'+cols.map(function(c){return exCell(r,c);}).join('')+'</tr>';}).join('')||'<tr><td class="d-empty" colspan="'+cols.length+'">No rows match the filters.</td></tr>';
+  document.getElementById('ex-count').textContent=fmtN(data.length)+' rows'+(data.length>cap?' (showing '+cap+')':'');
+  document.getElementById('ex-note').textContent=data.length>cap?'Showing first '+cap+' of '+fmtN(data.length)+' rows in the table. CSV / Excel export ALL '+fmtN(data.length)+' matching rows with the columns shown above.':fmtN(data.length)+' rows. CSV / Excel export these '+fmtN(data.length)+' rows.';
 }
 
 /* ---- ANALYSIS DRILL (no raw table) ---- */
@@ -502,9 +528,13 @@ window.CIT={
   removeChip:function(key,val){if(key==='date'){F.from=DEF_FROM;F.to=DEF_TO;document.getElementById('f-from').value=DEF_FROM;document.getElementById('f-to').value=DEF_TO;refreshFilterOptions();renderAll();return;}F[key]=(F[key]||[]).filter(function(v){return v!==val;});var el=document.querySelector('.ms[data-f="'+key+'"]');if(el){var inp=Array.prototype.slice.call(el.querySelectorAll('input[data-v]')).find(function(i){return i.dataset.v===val;});if(inp)inp.checked=false;if(F[key].length===0){var all=el.querySelector('.ms-all input');if(all)all.checked=true;}syncMS(el,key);}refreshFilterOptions();renderAll();},
   openDrill:openDrill, closeDrill:closeDrill, runAI:runAI,
   aiQ:function(q){document.getElementById('ai-in').value=q;runAI();},
-  sortExtract:function(k){if(exSort.k===k)exSort.dir*=-1;else{exSort.k=k;exSort.dir=(k==='net_weight'||k==='carton_count'||k==='shipping_week')?-1:1;}renderExtract();},
+  sortExtract:function(k){var m=exColMeta(k)||{};if(exSort.k===k)exSort.dir*=-1;else{exSort.k=k;exSort.dir=m.num?-1:1;}renderExtract();},
   exFilter:function(v){exQuery=v;renderExtract();},
-  exCopy:function(ev){var data=exRows();var head=EX_COLS.map(function(c){return c.l;}).join('\t');var body=data.map(function(r){return EX_COLS.map(function(c){var v=r[c.k];if(c.k==='net_weight')return num(v);if(c.k==='carton_count')return parseInt(v)||0;return v==null?'':String(v);}).join('\t');}).join('\n');var txt=head+'\n'+body;var b=ev&&ev.target&&ev.target.closest?ev.target.closest('button'):null;function done(){if(b){var o=b.innerHTML;b.innerHTML='<i class="ti ti-check" style="font-size:12px"></i> Copied '+fmtN(data.length)+' rows';setTimeout(function(){b.innerHTML=o;},1800);}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done).catch(function(){});}else{done();}}
+  exToggleCols:function(){var el=document.getElementById('ex-cols');if(el)el.hidden=!el.hidden;},
+  exToggleCol:function(k){if(!exVisible)exVisible=new Set(EX_DEFAULT);if(exVisible.has(k)){if(exVisible.size>1)exVisible.delete(k);}else{exVisible.add(k);}renderExtract();},
+  exCopy:function(ev){var cols=exVisibleCols(),data=exRows();var head=cols.map(function(c){return c.l;}).join('\t');var body=data.map(function(r){return cols.map(function(c){return exVal(r,c);}).join('\t');}).join('\n');var txt=head+'\n'+body;var b=ev&&ev.target&&ev.target.closest?ev.target.closest('button'):null;function done(){if(b){var o=b.innerHTML;b.innerHTML='<i class="ti ti-check" style="font-size:12px"></i> Copied '+fmtN(data.length);setTimeout(function(){b.innerHTML=o;},1800);}}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done).catch(function(){});}else{done();}},
+  exCSV:function(){var cols=exVisibleCols(),data=exRows();var q=function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};var head=cols.map(function(c){return q(c.l);}).join(',');var body=data.map(function(r){return cols.map(function(c){return q(exVal(r,c));}).join(',');}).join('\n');dl('﻿'+head+'\n'+body,'text/csv;charset=utf-8','citrus_shipments_'+(SEASON||'').replace('/','-')+'.csv');},
+  exXLSX:function(){if(!window.XLSX){alert('The Excel export library is still loading — please try again in a moment.');return;}var cols=exVisibleCols(),data=exRows();var aoa=[cols.map(function(c){return c.l;})].concat(data.map(function(r){return cols.map(function(c){return exVal(r,c);});}));var ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=cols.map(function(c){return {wch:Math.max(c.l.length+2,12)};});var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Citrus Shipments');XLSX.writeFile(wb,'citrus_shipments_'+(SEASON||'').replace('/','-')+'.xlsx');}
 };
 
 /* ---- avatar + init ---- */
