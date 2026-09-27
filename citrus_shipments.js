@@ -107,7 +107,8 @@ function buildChrome(){
   +'</div></div>'
   +'</div>'
   +drillModalHTML();
-  document.getElementById('content').innerHTML='<div id="load-msg" style="padding:48px 20px;text-align:center;color:var(--text3);font-size:13px"><span class="ai-spinner" style="display:inline-block;vertical-align:middle;margin-right:8px"></span>Loading citrus shipments…</div>'+contentSkeleton();
+  document.getElementById('content').innerHTML=contentSkeleton();
+  showSkeletons();
 }
 function drillModalHTML(){
   return '<div class="drill-ov" id="drill-ov" onclick="if(event.target===this)CIT.closeDrill()">'
@@ -170,6 +171,36 @@ function aiHTML(){
     +'<div class="ai-result" id="ai-res"><div class="ai-res-label"><i class="ti ti-sparkles"></i><span id="ai-q-label"></span></div><div id="ai-res-text"></div></div></div>';
 }
 
+/* ---- skeleton loaders ---- */
+function skRep(h,n){var o='';for(var i=0;i<n;i++)o+=h;return o;}
+function skKcard(){return '<div class="sk-kcard"><div class="sk" style="width:55%;height:11px;margin-bottom:14px"></div><div class="sk" style="width:72%;height:26px;margin-bottom:10px"></div><div class="sk" style="width:90%;height:9px"></div></div>';}
+function skBarList(n){var o='';for(var i=0;i<n;i++){o+='<div style="margin-bottom:11px"><div class="sk" style="width:'+(40+Math.floor(Math.random()*40))+'%;height:10px;margin-bottom:6px"></div><div class="sk" style="width:100%;height:8px"></div></div>';}return o;}
+function skChart(){var b='';for(var i=0;i<12;i++)b+='<div class="sk" style="height:'+(30+Math.floor(Math.random()*60))+'%"></div>';return '<div class="sk-chart">'+b+'</div>';}
+function skTable(rows,cols){var o='';for(var i=0;i<rows;i++)o+='<tr><td colspan="'+cols+'" style="padding:9px 10px;border-bottom:1px solid #f1f4f9"><div class="sk" style="width:'+(70+Math.floor(Math.random()*25))+'%;height:12px"></div></td></tr>';return o;}
+function skStrip(){return skRep('<div class="sk" style="height:54px;margin:12px 16px"></div>',4);}
+function fillSk(id,html){var el=document.getElementById(id);if(el)el.innerHTML=html;}
+function showSkeletons(){
+  if(CFG.type==='overview'){
+    fillSk('kpi-grid',skRep(skKcard(),6));
+    fillSk('wide-stats',skStrip());
+    fillSk('weekly-chart',skChart());
+    fillSk('category-donut','<div style="display:flex;justify-content:center;padding:12px"><div class="sk" style="width:120px;height:120px;border-radius:50%"></div></div>');
+    fillSk('chart-markets',skBarList(5));fillSk('chart-farms',skBarList(5));fillSk('chart-varieties',skBarList(5));
+  } else if(CFG.type==='category'){
+    fillSk('cat-stats',skStrip());
+    fillSk('cat-leader',skBarList(6));
+    fillSk('cat-cards',skRep('<div class="sk" style="height:150px"></div>',6));
+    fillSk('cat-tbody',skTable(6,8));
+  } else if(CFG.type==='dimension'){
+    fillSk('kpi-grid',skRep(skKcard(),4));
+    fillSk('dim-leader',skBarList(8));
+    fillSk('dim-weekly',skChart());
+    fillSk('dim-tbody',skTable(8,8));
+  } else if(CFG.type==='extract'){
+    fillSk('ex-tbody',skTable(12,20));
+  }
+}
+
 /* ---- data load ---- */
 function fetchAllRows(){
   // Supabase REST caps each response at 1000 rows, so page through with
@@ -202,7 +233,7 @@ function load(){
     document.querySelectorAll('.tbadge-live').forEach(function(b){b.innerHTML='<span class="live-dot"></span> Live · '+ROWS.length+' shipments';b.style.background='rgba(22,163,74,.2)';b.style.color='#6ee7a0';b.style.border='1px solid rgba(22,163,74,.3)';});
     buildMS(); refreshFilterOptions(); renderAll();
   })
-  .catch(function(e){console.warn('Citrus engine: data unavailable:',e.message);var s=document.getElementById('page-sub');if(s)s.textContent='Could not load season data — sign in and retry.';var lm=document.getElementById('load-msg');if(lm){lm.style.display='';lm.innerHTML='<div style="color:var(--red);font-weight:600;margin-bottom:6px">Could not load shipment data</div><div style="font-size:12px;color:var(--text3)">'+esc(e&&e.message||'Unknown error')+' — make sure you are signed in, then reload.</div>';}document.querySelectorAll('.tbadge-live').forEach(function(b){b.innerHTML='⚠ Offline';b.style.background='rgba(220,100,40,.2)';b.style.color='#ffb380';});});
+  .catch(function(e){console.warn('Citrus engine: data unavailable:',e.message);var s=document.getElementById('page-sub');if(s)s.textContent='Could not load season data — sign in and retry.';var c=document.getElementById('content');if(c)c.innerHTML='<div style="padding:48px 20px;text-align:center"><div style="color:var(--red);font-weight:700;font-size:14px;margin-bottom:6px">Could not load shipment data</div><div style="font-size:12px;color:var(--text3)">'+esc(e&&e.message||'Unknown error')+' — make sure you are signed in, then reload.</div></div>';document.querySelectorAll('.tbadge-live').forEach(function(b){b.innerHTML='⚠ Offline';b.style.background='rgba(220,100,40,.2)';b.style.color='#ffb380';});});
 }
 
 /* ---- filters ---- */
@@ -236,7 +267,6 @@ function refreshFilterOptions(){
 
 /* ---- render dispatch ---- */
 function renderAll(){
-  var lm=document.getElementById('load-msg'); if(lm)lm.style.display='none';
   var rows=filteredRows();
   renderContext(rows);
   if(CFG.type==='overview') renderOverview(rows);
