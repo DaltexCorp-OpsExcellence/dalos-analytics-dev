@@ -220,6 +220,9 @@
       {n:'Harvest Funnel',href:'daltex_harvest_funnel.html',dk:'harvest'},
       {n:'Labor Budget',href:'labor_budget.html?product=Grapes',dk:'budget'}
     ]},
+    {group:'Citrus',emo:'🍊',pk:'citrus',items:[
+      {n:'Shipments',href:'citrus_overview.html',dk:'shipments'}
+    ]},
     {group:'Mango',emo:'🥭',pk:'mango',items:[
       {n:'Shipments',href:'mango_overview.html',dk:'shipments'},
       {n:'Labor Budget',href:'labor_budget.html?product=Mango',dk:'budget'}
