@@ -203,24 +203,23 @@ function showSkeletons(){
 
 /* ---- data load ---- */
 function fetchAllRows(){
-  // Supabase REST caps each response at 1000 rows, so page through with
-  // limit/offset (ordered by id). Robust against a non-paging backend:
-  // rows are de-duped by id and the loop stops as soon as a page adds
-  // nothing new, so it can never hang or explode.
-  var PAGE=1000, all=[], seen=Object.create(null);
-  function next(offset,guard){
-    var url=SB_URL+'/rest/v1/grapes_shipments_view?product_id=eq.'+PRODUCT+'&select=*&order=id.asc&limit='+PAGE+'&offset='+offset;
-    return fetch(url,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}})
-      .then(function(r){if(!r.ok)throw new Error('SB '+r.status);return r.json();})
-      .then(function(chunk){
-        if(!chunk||!chunk.length) return all;
-        var added=0;
-        chunk.forEach(function(row){var k=row.id!=null?('#'+row.id):('@'+offset+':'+(added));if(!seen[k]){seen[k]=1;all.push(row);added++;}});
-        if(added===0||chunk.length<PAGE||guard>=40) return all;
-        return next(offset+PAGE,guard+1);
+  // Supabase REST caps each response at 1000 rows. To stay fast we grab the
+  // exact row count with the first page, then fetch every remaining page IN
+  // PARALLEL (≈2 round-trips instead of one-at-a-time). Rows are de-duped by
+  // id so an offset-ignoring backend can never explode.
+  var PAGE=1000, base=SB_URL+'/rest/v1/grapes_shipments_view?product_id=eq.'+PRODUCT+'&select=*&order=id.asc';
+  var H={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY};
+  function page(offset){return fetch(base+'&limit='+PAGE+'&offset='+offset,{headers:H}).then(function(r){if(!r.ok)throw new Error('SB '+r.status);return r.json();});}
+  function dedupe(list){var seen=Object.create(null),out=[];list.forEach(function(r){var k=r.id!=null?('#'+r.id):JSON.stringify(r);if(!seen[k]){seen[k]=1;out.push(r);}});return out;}
+  return fetch(base+'&limit='+PAGE+'&offset=0',{headers:Object.assign({},H,{'Prefer':'count=exact','Range-Unit':'items','Range':'0-'+(PAGE-1)})})
+    .then(function(r){if(!r.ok)throw new Error('SB '+r.status);
+      var total=0,cr=r.headers.get('content-range');if(cr){var p=cr.split('/');total=parseInt(p[1])||0;}
+      return r.json().then(function(first){
+        if(!total||total<=first.length||first.length<PAGE) return dedupe(first);
+        var reqs=[];for(var off=PAGE; off<total && off<500000; off+=PAGE) reqs.push(page(off));
+        return Promise.all(reqs).then(function(rest){var all=first.slice();rest.forEach(function(c){all=all.concat(c);});return dedupe(all);});
       });
-  }
-  return next(0,0);
+    });
 }
 function load(){
   fetchAllRows()
