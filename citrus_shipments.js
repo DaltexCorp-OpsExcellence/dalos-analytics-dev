@@ -107,7 +107,7 @@ function buildChrome(){
   +'</div></div>'
   +'</div>'
   +drillModalHTML();
-  document.getElementById('content').innerHTML=contentSkeleton();
+  document.getElementById('content').innerHTML='<div id="load-msg" style="padding:48px 20px;text-align:center;color:var(--text3);font-size:13px"><span class="ai-spinner" style="display:inline-block;vertical-align:middle;margin-right:8px"></span>Loading citrus shipments…</div>'+contentSkeleton();
 }
 function drillModalHTML(){
   return '<div class="drill-ov" id="drill-ov" onclick="if(event.target===this)CIT.closeDrill()">'
@@ -172,15 +172,24 @@ function aiHTML(){
 
 /* ---- data load ---- */
 function fetchAllRows(){
-  // Supabase REST caps each response at 1000 rows, so page through with the
-  // Range header (ordered by id for a stable, non-overlapping sequence).
-  var PAGE=1000, all=[];
-  function next(from){
-    return fetch(SB_URL+'/rest/v1/grapes_shipments_view?product_id=eq.'+PRODUCT+'&select=*&order=id.asc',{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Range-Unit':'items','Range':from+'-'+(from+PAGE-1)}})
+  // Supabase REST caps each response at 1000 rows, so page through with
+  // limit/offset (ordered by id). Robust against a non-paging backend:
+  // rows are de-duped by id and the loop stops as soon as a page adds
+  // nothing new, so it can never hang or explode.
+  var PAGE=1000, all=[], seen=Object.create(null);
+  function next(offset,guard){
+    var url=SB_URL+'/rest/v1/grapes_shipments_view?product_id=eq.'+PRODUCT+'&select=*&order=id.asc&limit='+PAGE+'&offset='+offset;
+    return fetch(url,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}})
       .then(function(r){if(!r.ok)throw new Error('SB '+r.status);return r.json();})
-      .then(function(chunk){all=all.concat(chunk);if(chunk.length===PAGE&&from<500000)return next(from+PAGE);return all;});
+      .then(function(chunk){
+        if(!chunk||!chunk.length) return all;
+        var added=0;
+        chunk.forEach(function(row){var k=row.id!=null?('#'+row.id):('@'+offset+':'+(added));if(!seen[k]){seen[k]=1;all.push(row);added++;}});
+        if(added===0||chunk.length<PAGE||guard>=40) return all;
+        return next(offset+PAGE,guard+1);
+      });
   }
-  return next(0);
+  return next(0,0);
 }
 function load(){
   fetchAllRows()
@@ -193,7 +202,7 @@ function load(){
     document.querySelectorAll('.tbadge-live').forEach(function(b){b.innerHTML='<span class="live-dot"></span> Live · '+ROWS.length+' shipments';b.style.background='rgba(22,163,74,.2)';b.style.color='#6ee7a0';b.style.border='1px solid rgba(22,163,74,.3)';});
     buildMS(); refreshFilterOptions(); renderAll();
   })
-  .catch(function(e){console.warn('Citrus engine: data unavailable:',e.message);var s=document.getElementById('page-sub');if(s)s.textContent='Could not load season data — sign in and retry.';document.querySelectorAll('.tbadge-live').forEach(function(b){b.innerHTML='⚠ Offline';b.style.background='rgba(220,100,40,.2)';b.style.color='#ffb380';});});
+  .catch(function(e){console.warn('Citrus engine: data unavailable:',e.message);var s=document.getElementById('page-sub');if(s)s.textContent='Could not load season data — sign in and retry.';var lm=document.getElementById('load-msg');if(lm){lm.style.display='';lm.innerHTML='<div style="color:var(--red);font-weight:600;margin-bottom:6px">Could not load shipment data</div><div style="font-size:12px;color:var(--text3)">'+esc(e&&e.message||'Unknown error')+' — make sure you are signed in, then reload.</div>';}document.querySelectorAll('.tbadge-live').forEach(function(b){b.innerHTML='⚠ Offline';b.style.background='rgba(220,100,40,.2)';b.style.color='#ffb380';});});
 }
 
 /* ---- filters ---- */
@@ -227,6 +236,7 @@ function refreshFilterOptions(){
 
 /* ---- render dispatch ---- */
 function renderAll(){
+  var lm=document.getElementById('load-msg'); if(lm)lm.style.display='none';
   var rows=filteredRows();
   renderContext(rows);
   if(CFG.type==='overview') renderOverview(rows);
