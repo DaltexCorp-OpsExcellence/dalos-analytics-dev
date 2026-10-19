@@ -940,7 +940,18 @@ async function requestAccess(prod, prodName, userId, btn){
     var s=JSON.parse(raw);
     var sess=(s&&s.access_token)?s:((s&&s.currentSession)?s.currentSession:null);
     var userEmail=(sess&&sess.user&&sess.user.email)||'';
-    var userName=(sess&&sess.user&&sess.user.user_metadata&&sess.user.user_metadata.full_name)||userEmail;
+    var userName=(sess&&sess.user&&sess.user.user_metadata&&sess.user.user_metadata.full_name)||'';
+    // Authoritative identity lives in public.users (auth metadata usually has no full_name for
+    // admin-provisioned accounts) — resolve from the profile so requests are never saved as "Unknown".
+    try{
+      var _pr=await fetch(SB_URL+'/rest/v1/users?id=eq.'+encodeURIComponent(userId)+'&select=full_name,email&limit=1',{headers:sbH()});
+      var _pd=await _pr.json();
+      if(Array.isArray(_pd)&&_pd[0]){
+        userName = _pd[0].full_name || userName || _pd[0].email || '';
+        userEmail = userEmail || _pd[0].email || '';
+      }
+    }catch(e){}
+    if(!userName) userName = userEmail || 'Unknown';
 
     // Save request to Supabase. Delete any prior row for this user+product first so a
     // re-request after a decline becomes a fresh PENDING row (upsert/merge left the old
