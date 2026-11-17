@@ -848,10 +848,12 @@ async function loadAll(){
 
   ROWS=[];
   /* Sourcing follows Tableau: harvest and budget are Daltex farms; packhouse by supplier; exports by source type */
+  /* Own-farm packhouse suppliers: 'Daltex' (2025/26 sheet) and 'Daltex Farms' (2026/27 sheet). 'Daltex Outsource' stays Outsource. */
+  const INSOURCE_SUPPLIERS=['daltex','daltex farms'];
   H.forEach(r=>{const f=cf(r.farm);const vc=cv(r.variety);
     ROWS.push({ss:SKEY[r.season_id],st:'h',farm:f.canon,src:'Insource',variety:vc,cat:catOf(vc,r.color),d:norm(r.harvest_date),v:gH(r),waste:num(r.waste),vrm:num(r.vrm)});});
   P.forEach(r=>{const f=cf(r.farm);const vc=cv(r.variety);
-    ROWS.push({ss:SKEY[r.season_id],st:'p',farm:f.canon,src:norm(r.supplier).toLowerCase()==='daltex'?'Insource':'Outsource',variety:vc,cat:catOf(vc,r.category),d:norm(r.operation_date),vin:gPin(r),vout:gPout(r),farza:num(r.farza),loss:num(r.losses)});});
+    ROWS.push({ss:SKEY[r.season_id],st:'p',farm:f.canon,src:INSOURCE_SUPPLIERS.includes(norm(r.supplier).toLowerCase())?'Insource':'Outsource',variety:vc,cat:catOf(vc,r.category),d:norm(r.operation_date),vin:gPin(r),vout:gPout(r),farza:num(r.farza),loss:num(r.losses)});});
   SH.forEach(r=>{const f=cf(r.farm_source);const vc=cv(r.variety);
     ROWS.push({ss:SKEY[r.season_id],st:'s',farm:f.canon,src:/daltex/i.test(norm(r.source_type))?'Insource':'Outsource',variety:vc,cat:catOf(vc,r.citrus_type),d:norm(r.loading_date),v:gS(r)});});
   B.forEach(r=>{const f=cf(r.farm);const vc=cv(r.variety);
