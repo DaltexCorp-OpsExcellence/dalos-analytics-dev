@@ -156,6 +156,43 @@ input,select,button{font-family:var(--font)}
 .cmp-note{display:none;align-items:center;gap:6px;font-size:11px;color:#4a5778;background:var(--blue-bg);border:1px solid var(--blue-br);border-radius:var(--r);padding:6px 10px;margin:-6px 0 12px}
 .cmp-note.vis{display:flex}
 .cmp-note i{color:var(--blue)}
+/* Compare mode: season scorecard (Design A) */
+.cmp-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.cmp-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.cmp-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);display:flex;align-items:center;gap:5px}
+.cmp-lbl i{font-size:12px;color:var(--navy)}
+.cmp-big{display:flex;align-items:baseline;gap:6px}
+.cmp-big b{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--navy);letter-spacing:-.5px;line-height:1}
+.cmp-big span{font-size:12px;color:var(--text2)}
+.cmp-prev{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text2)}
+.cmp-prev b{font-family:var(--mono);font-weight:600;color:var(--text)}
+.cmp-chip{align-self:flex-start;font-family:var(--mono);font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;border:1px solid}
+.cmp-chip.up{color:var(--green);background:var(--green-bg);border-color:var(--green-br)}
+.cmp-chip.dn{color:var(--red);background:var(--red-bg);border-color:var(--red-br)}
+.cmp-chip.nt{color:var(--text2);background:var(--bg);border-color:var(--border)}
+.cmp-bud{display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:1px solid var(--border);margin-top:auto}
+.cmp-bud-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text2)}
+.cmp-bud-row span:last-child{font-family:var(--mono)}
+.cmp-track{position:relative;height:8px;background:var(--bg2);border-radius:4px;overflow:hidden}
+.cmp-track div{position:absolute;left:0;top:0;height:8px;border-radius:4px}
+.cmp-conv{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(2,minmax(0,1fr));gap:6px 8px;font-size:12px;align-items:baseline}
+.cmp-conv .h{font-size:10px;color:var(--text3);text-align:right;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.cmp-conv .n{color:var(--text2)}
+.cmp-conv .v{font-family:var(--mono);font-weight:600;text-align:right}
+.cmp-foot{font-size:11px;color:var(--text3)}
+.cmp-by{display:inline-flex;gap:3px;padding:3px;background:var(--bg2);border:1px solid var(--border);border-radius:999px}
+.cmp-by button{font-size:11px;font-weight:600;padding:5px 12px;border-radius:999px;border:0;background:transparent;color:var(--text2);cursor:pointer}
+.cmp-by button.on{background:var(--navy);color:#fff}
+#tbl-cmp td.r,#tbl-cmp th.r{text-align:right}
+#tbl-cmp td.r{font-family:var(--mono)}
+#tbl-cmp .bl{border-left:1px solid var(--border)}
+#tbl-cmp td.z{color:var(--text3)}
+#tbl-cmp tr.grp td{background:#f8f9fc;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);padding:10px}
+#tbl-cmp .tag{margin-left:6px;font-size:10px;font-weight:500;color:var(--text3)}
+#tbl-cmp .tag.out{font-weight:700;color:var(--orange);background:var(--orange-lt);border:1px solid #f6cdb5;border-radius:999px;padding:1px 7px}
+#tbl-cmp tfoot td{background:#f8f9fc;font-weight:700;border-top:2px solid var(--border2)}
+@media(max-width:1000px){.cmp-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.cmp-cards{grid-template-columns:1fr}}
 .bud-note{display:none;align-items:center;gap:6px;font-size:11px;color:#92400e;background:var(--amber-bg);border:1px solid var(--amber-br);border-radius:var(--r);padding:6px 10px;margin:0 0 12px}
 .bud-note.vis{display:flex}
 .loss-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
@@ -518,7 +555,7 @@ input,select,button{font-family:var(--font)}
   <button class="reset-btn" onclick="resetF()"><i class="ti ti-rotate"></i> Reset</button>
 </div>
 <div class="fchips" id="fchips"></div>
-<div class="cmp-note" id="cmp-note"><i class="ti ti-info-circle"></i><span>Comparing 2026/27 season-to-date with the same days of 2025/26 (one year earlier). Budgets are full-season. Widen the To date to see the rest of 2025/26.</span></div>
+<div class="cmp-note" id="cmp-note"><i class="ti ti-info-circle"></i><span>Comparing 2026/27 season-to-date with the same days of 2025/26 (one year earlier). Budget bars use each season's full-season budget. Widen the To date to see more of 2025/26.</span></div>
 <div class="bud-note" id="bud-note"><i class="ti ti-alert-triangle"></i><span id="bud-note-txt"></span></div>
 
 <div id="drill-modal" style="display:none;position:fixed;inset:0;background:rgba(20,40,80,.45);z-index:998;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeDrill()">
@@ -705,6 +742,27 @@ input,select,button{font-family:var(--font)}
       <div style="overflow-x:auto"><div style="position:relative;height:420px" id="ch-out-wrap"><canvas id="ch-out"></canvas></div></div>
     </div>
     <div class="cc"><div class="tbl-wrap" style="max-height:420px;overflow-y:auto"><table class="mkt-table" id="tbl-out"></table></div></div>
+  </div>
+
+  <!-- ============ COMPARE MODE: SEASON SCORECARD ============ -->
+  <div id="tp-cmp" style="display:none">
+    <div class="cmp-cards" id="cmp-cards"></div>
+    <div class="cc" style="margin-bottom:12px">
+      <div class="cc-header" style="flex-wrap:wrap;gap:10px">
+        <div><div class="cc-title" id="cmp-title">By category · season to date</div><div class="cc-sub" id="cmp-sub">Tons · 2025/26 counted over the same days one year earlier</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;font-weight:600;color:var(--text2)">Compare by</span>
+          <div class="cmp-by" id="cmp-by">
+            <button class="on" data-by="cat" onclick="setCmpBy('cat')">Category</button>
+            <button data-by="variety" onclick="setCmpBy('variety')">Variety</button>
+            <button data-by="farm" onclick="setCmpBy('farm')">Farm</button>
+            <button data-by="src" onclick="setCmpBy('src')">Source</button>
+          </div>
+        </div>
+      </div>
+      <div class="tbl-wrap" style="max-height:560px;overflow-y:auto"><table class="mkt-table" id="tbl-cmp"></table></div>
+      <div class="cmp-foot" id="cmp-foot" style="margin-top:10px"></div>
+    </div>
   </div>
 
 </div>
@@ -1326,7 +1384,13 @@ function hasVolume(rows){const x=agg(rows);return x.h>0||x.pin>0||x.s>0||x.braw>
 function apply(){
   const rows=F();
   renderChips();refreshFilterOptions();
-  if(S.tab==='ov')renderOverview(rows);
+  /* Compare mode shows one season scorecard instead of the tabs */
+  const cmp=isCmp();
+  document.getElementById('hftabs').style.display=cmp?'none':'';
+  document.getElementById('tp-cmp').style.display=cmp?'':'none';
+  document.querySelectorAll('.tabpage').forEach(x=>x.style.display=(!cmp&&x.id==='tp-'+S.tab)?'':'none');
+  if(cmp)renderCompare(rows);
+  else if(S.tab==='ov')renderOverview(rows);
   else if(S.tab==='budget')renderBudget(rows);
   else if(S.tab==='fv')renderFV(rows);
   else if(S.tab==='variety')renderDimTab(rows,'variety','ch-variety','ch-variety-wrap','tbl-variety','Variety',true);
@@ -1845,6 +1909,121 @@ function renderSourceDetail(rows,srcName,suffix){
   });
   html+='</tbody><tfoot><tr style="border-top:2px solid var(--border2);font-weight:700"><td>Total</td>'+cellsFor(filtered.filter(r=>r.farm!==SENTINEL_FARM))+'</tr></tfoot>';
   document.getElementById('tbl-'+suffix).innerHTML=html;
+}
+
+/* ========== COMPARE MODE: SEASON SCORECARD (Design A) ========== */
+let CMP_BY='cat';
+function setCmpBy(k){
+  CMP_BY=k;
+  document.querySelectorAll('#cmp-by button').forEach(b=>b.classList.toggle('on',b.dataset.by===k));
+  apply();
+}
+function cmpChip(cur,prev){
+  if(!(prev>0)&&!(cur>0))return '<span class="cmp-chip nt">no volume yet in either season</span>';
+  const d=cur-prev;
+  const cls=d>0.05?'up':d<-0.05?'dn':'nt';
+  const pc=prev>0?' · '+(d>=0?'+':'−')+fmtP(Math.abs(d/prev*100)):' · new';
+  return '<span class="cmp-chip '+cls+'">'+(d>=0?'+':'−')+fmtT(Math.abs(d))+' T'+pc+'</span>';
+}
+function cmpChange(cur,prev){
+  if(prev>0){const d=(cur-prev)/prev*100;return{t:(d>=0?'+':'−')+fmtP(Math.abs(d)),c:d>0.05?'var(--green)':d<-0.05?'var(--red)':'var(--text2)'};}
+  if(cur>0)return{t:'new',c:'var(--green)'};
+  return{t:'—',c:'var(--text3)'};
+}
+/* 2025/26 rows for the whole season, with the current farm/variety/source/category filters but no date limit */
+function prevFullRows(){
+  return ROWS.filter(r=>{
+    if(r.ss!==PREV||r.st==='b')return false;
+    for(const f of MSF){if(S[f].length&&!S[f].includes(r[f]))return false;}
+    return true;
+  });
+}
+function renderCompare(rows){
+  const P=SLBL[PREV],C=SLBL[CUR];
+  const p=agg(rows.filter(r=>r.ss===PREV)),c=agg(rows.filter(r=>r.ss===CUR));
+  const toLbl=S.to?fmtDateNice(shiftYear(S.to,-1)):'';
+  const stage=(lbl,ic,cur,prev,bc,bp)=>{
+    const pc=pct(cur,bc),pp=pct(prev,bp);
+    const w=v=>v==null?0:Math.max(0,Math.min(100,v));
+    return '<div class="cmp-card"><div class="cmp-lbl"><i class="ti '+ic+'"></i>'+lbl+'</div>'
+      +'<div class="cmp-big"><b>'+fmtT(cur)+'</b><span>T in '+C+'</span></div>'
+      +'<div class="cmp-prev"><span>'+P+(toLbl?' to '+esc(toLbl):' same days')+'</span><b>'+fmtT(prev)+' T</b></div>'
+      +cmpChip(cur,prev)
+      +'<div class="cmp-bud"><div class="cmp-bud-row"><span>Of season budget</span><span>'+fmtP(pc)+' vs '+fmtP(pp)+'</span></div>'
+      +'<div class="cmp-track" title="Grey: '+P+' · Navy: '+C+'"><div style="width:'+w(pp)+'%;background:var(--border2)"></div><div style="width:'+w(pc)+'%;'+(pc>0?'min-width:3px;':'')+'background:var(--navy)"></div></div></div></div>';
+  };
+  /* conversion uses insource rows only, because harvest is recorded for insource farms only */
+  const ip=agg(rows.filter(r=>r.ss===PREV&&r.src==='Insource')),ic=agg(rows.filter(r=>r.ss===CUR&&r.src==='Insource'));
+  const cv=(n,fc,fp)=>'<span class="n">'+n+'</span><span class="v">'+fmtP(fc)+'</span><span class="v">'+fmtP(fp)+'</span>';
+  const conv='<div class="cmp-card"><div class="cmp-lbl"><i class="ti ti-percentage"></i>Conversion · Insource</div>'
+    +'<div class="cmp-conv"><span class="h"></span><span class="h">'+C+'</span><span class="h">'+P+'</span>'
+    +cv('PK ÷ Harvest',pct(ic.pin,ic.h),pct(ip.pin,ip.h))
+    +cv('Export ÷ PK',pct(ic.s,ic.pin),pct(ip.s,ip.pin))
+    +cv('Export ÷ Harvest',pct(ic.s,ic.h),pct(ip.s,ip.h))
+    +'</div><div class="cmp-foot" style="margin-top:auto">— means no harvest or packhouse volume yet. Insource only, since harvest is recorded for insource farms.</div></div>';
+  document.getElementById('cmp-cards').innerHTML=
+    stage('Harvest','ti-plant-2',c.h,p.h,c.braw,p.braw)
+    +stage('Packhouse intake','ti-building-warehouse',c.pin,p.pin,c.bpk,p.bpk)
+    +stage('Export','ti-ship',c.s,p.s,c.bexp,p.bexp)
+    +conv;
+
+  /* ---- Compare by table ---- */
+  const by=CMP_BY;
+  const NM={cat:'Category',variety:'Variety',farm:'Farm',src:'Source'};
+  const showFull=(by==='farm'||by==='src');
+  const actual=rows.filter(r=>r.st!=='b');
+  const full=showFull?prevFullRows():[];
+  const keyOf=r=>r[by]||'(blank)';
+  const g=groupBy(actual,keyOf),gf=groupBy(full,keyOf);
+  /* variety -> category and farm -> source, for the small tags */
+  const catOfVar={},srcOfFarm={};
+  ROWS.forEach(r=>{if(r.st==='b')return;if(r.variety&&r.cat&&!catOfVar[r.variety])catOfVar[r.variety]=r.cat;if(r.farm){const s0=srcOfFarm[r.farm];if(!s0||r.src==='Insource')srcOfFarm[r.farm]=r.src;}});
+  let keys=[...new Set(Object.keys(g).concat(Object.keys(gf)))];
+  if(by==='cat'){ROWS.forEach(r=>{if(r.st!=='b'&&r.cat&&!keys.includes(r.cat)&&(!S.cat.length||S.cat.includes(r.cat)))keys.push(r.cat);});}
+  if(by==='src'){['Insource','Outsource'].forEach(k=>{if(!keys.includes(k))keys.push(k);});if(S.src.length)keys=keys.filter(k=>S.src.includes(k));}
+  const items=keys.map(k=>{const x=agg2(g[k]||[]);const fx=agg(gf[k]||[]);return{name:k,a:x.a,b:x.b,full:fx.pin,src:by==='farm'?(srcOfFarm[k]||'—'):by==='src'?k:''};})
+    .filter(i=>by==='cat'||by==='src'||i.a.h||i.b.h||i.a.pin||i.b.pin||i.a.s||i.b.s||i.full);
+  const vol=i=>Math.max(i.a.h,i.b.h,i.a.pin,i.b.pin,i.a.s,i.b.s);
+  items.sort((x,y)=>(vol(y)-vol(x))||(y.full-x.full)||x.name.localeCompare(y.name));
+  const cell=(v,cls,isOutH)=>isOutH?'<td class="r z'+(cls?' '+cls:'')+'">—</td>':'<td class="r'+(v>0?'':' z')+(cls?' '+cls:'')+'">'+fmtT(v)+'</td>';
+  const ncol=showFull?9:8;
+  const row=i=>{
+    const ch=cmpChange(i.b.pin,i.a.pin);
+    const outH=i.src==='Outsource'&&!i.a.h&&!i.b.h;
+    let tag='';
+    if(by==='variety'&&catOfVar[i.name])tag='<span class="tag">'+esc(catOfVar[i.name])+'</span>';
+    if(by==='farm'&&i.src==='Outsource')tag='<span class="tag out">Outsource</span>';
+    return '<tr><td style="font-weight:600">'+esc(i.name)+tag+'</td>'
+      +cell(i.a.h,'',outH)+cell(i.b.h,'',outH)
+      +cell(i.a.pin,'bl')+'<td class="r'+(i.b.pin>0?'':' z')+'" style="font-weight:700">'+fmtT(i.b.pin)+'</td>'
+      +'<td class="r" style="font-weight:700;color:'+ch.c+'">'+ch.t+'</td>'
+      +cell(i.a.s,'bl')+cell(i.b.s,'')
+      +(showFull?'<td class="r bl" style="color:var(--text2)">'+fmtT(i.full)+'</td>':'')+'</tr>';
+  };
+  let body='';
+  if(by==='farm'){
+    [['Insource','Insource farms'],['Outsource','Outsource farms'],['—','Not mapped to a source']].forEach(([sk,lbl])=>{
+      const its=items.filter(i=>i.src===sk);
+      if(!its.length)return;
+      body+='<tr class="grp"><td colspan="'+ncol+'">'+lbl+' · '+its.length+'</td></tr>'+its.map(row).join('');
+    });
+  }else body=items.map(row).join('');
+  if(!items.length)body='<tr><td colspan="'+ncol+'" style="text-align:center;color:var(--text3);padding:24px">No volume for the current filters.</td></tr>';
+  const T=agg2(actual),tch=cmpChange(T.b.pin,T.a.pin),tf=showFull?agg(full).pin:0;
+  const head='<thead><tr><th>'+NM[by]+'</th><th class="r">Harvest '+P+'</th><th class="r">Harvest '+C+'</th><th class="r bl">PK '+P+'</th><th class="r">PK '+C+'</th><th class="r">PK change</th><th class="r bl">Export '+P+'</th><th class="r">Export '+C+'</th>'+(showFull?'<th class="r bl">PK '+P+' full season</th>':'')+'</tr></thead>';
+  const foot='<tfoot><tr><td>Total</td>'+cell(T.a.h,'')+cell(T.b.h,'')+cell(T.a.pin,'bl')+'<td class="r">'+fmtT(T.b.pin)+'</td><td class="r" style="color:'+tch.c+'">'+tch.t+'</td>'+cell(T.a.s,'bl')+cell(T.b.s,'')+(showFull?'<td class="r bl">'+fmtT(tf)+'</td>':'')+'</tr></tfoot>';
+  document.getElementById('tbl-cmp').innerHTML=head+'<tbody>'+body+'</tbody>'+foot;
+  document.getElementById('cmp-title').textContent=(by==='src'?'Insource vs Outsource':'By '+NM[by].toLowerCase())+' · season to date';
+  document.getElementById('cmp-sub').textContent='Tons · '+P+' counted over the same days one year earlier';
+  const outNow=agg(actual.filter(r=>r.src==='Outsource'));
+  const firstOut=ROWS.filter(r=>r.ss===PREV&&r.src==='Outsource'&&r.st==='p'&&r.d).map(r=>r.d).sort()[0];
+  let note='';
+  if(by==='farm')note='Harvest is recorded for insource farms only, so outsource farms show — there. The last column is each farm\'s full '+P+' packhouse intake, so farms that deliver later in the season still show.';
+  else if(by==='src')note='The last column is the full '+P+' packhouse intake by source.';
+  else if(by==='variety')note='Only varieties with volume in this date range are listed. Widen the To date to see later varieties.';
+  else note='Every citrus category is listed, including those with no volume yet.';
+  if(!(outNow.pin>0)&&!(outNow.s>0)&&firstOut)note+=' No outsource fruit in this date range; last season it started on '+fmtDateNice(firstOut)+'.';
+  document.getElementById('cmp-foot').textContent=note;
 }
 
 /* ---------- boot ---------- */
