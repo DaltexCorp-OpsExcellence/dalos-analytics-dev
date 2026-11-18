@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cooling Room Monitor — DALos Analytics</title>
+<!-- DalOS shared session gate (validates Supabase JWT, runs access check, auto-mounts the left rail). No __DALOS_ACCESS_CHECK set => gates on general has_analytics_access(). -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8"></script>
+<script src="gate.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#142850;--navy2:#1a3668;--orange:#DC6428;
+  --bg:#f4f6fb;--white:#fff;--border:#e2e6f0;
+  --text:#0e1f3d;--text2:#4a5778;--text3:#8a95b0;
+  --font:'Plus Jakarta Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;
+  --shadow:0 1px 4px rgba(20,40,80,.08);--shadow2:0 4px 20px rgba(20,40,80,.12);--r2:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+.topbar{position:sticky;top:0;z-index:30;height:56px;background:var(--navy);display:flex;align-items:center;gap:14px;padding:0 24px;box-shadow:0 2px 12px rgba(20,40,80,.3)}
+.logo{width:36px;height:36px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--mono);font-size:16px}
+.brand{display:flex;flex-direction:column;line-height:1.15}
+.brand b{color:#fff;font-size:18px;font-weight:700;letter-spacing:-.3px}
+.brand span{color:rgba(255,255,255,.5);font-size:11px}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.tb-date{font-family:var(--mono);color:rgba(255,255,255,.7);font-size:12px}
+.pill{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#fff}
+.pill.preview{background:rgba(220,100,40,.16);border-color:rgba(220,100,40,.45);color:#ffd9c2}
+.hero{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--navy) 0%,#1e3a6e 60%,#1a3668 100%);padding:40px 32px}
+.hero::before{content:"";position:absolute;top:-80px;right:-40px;width:320px;height:320px;border-radius:50%;background:rgba(220,100,40,.12);filter:blur(10px)}
+.hero::after{content:"";position:absolute;bottom:-120px;left:20%;width:260px;height:260px;border-radius:50%;background:rgba(37,99,235,.14);filter:blur(8px)}
+.hero-in{position:relative;max-width:1400px;margin:0 auto;z-index:1}
+.crumb{color:rgba(255,255,255,.4);font-size:12px;font-weight:600;margin-bottom:10px}
+.hero h1{color:#fff;font-size:34px;font-weight:800;letter-spacing:-.5px}
+.hero h1 em{color:var(--orange);font-style:normal}
+.hero p{color:rgba(255,255,255,.58);font-size:14px;margin-top:8px;max-width:640px}
+.hstats{display:flex;gap:46px;margin-top:26px;flex-wrap:wrap}
+.hstat .v{font-family:var(--mono);font-size:26px;font-weight:500;color:#fff}
+.hstat .v.alert{color:#ff9d6b}
+.hstat .l{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.4);margin-top:4px;font-weight:700}
+.wrap{max-width:1400px;margin:0 auto;padding:30px 32px}
+.sec-h{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin:4px 0 14px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);padding:18px}
+.p-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.p-head .t{font-size:14px;font-weight:700;color:var(--navy)}
+.p-head .s{font-size:12px;color:var(--text3)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
+.gmain{display:grid;grid-template-columns:1fr 300px;gap:20px;margin-bottom:20px}
+.grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:20px;margin-bottom:20px}
+/* 3D scene */
+.scene{position:relative;background:linear-gradient(180deg,#aeb7c6 0%,#8f99ab 100%);border-radius:10px;overflow:hidden;height:470px;perspective:900px;cursor:grab;user-select:none;touch-action:none}
+.scene:active{cursor:grabbing}
+.world{position:absolute;left:50%;top:60%;width:0;height:0;transform-style:preserve-3d}
+.face{position:absolute;left:0;top:0;transform-style:preserve-3d;backface-visibility:visible}
+.stack{position:absolute;left:0;top:0;transform-style:preserve-3d}
+.lab{position:absolute;left:0;top:0;font-family:var(--mono);font-weight:600;font-size:12px;padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.96);box-shadow:0 2px 6px rgba(0,0,0,.3);white-space:nowrap}
+.flab{position:absolute;left:0;top:0;font-family:var(--font);font-weight:800;font-size:14px;letter-spacing:2px;color:rgba(20,30,50,.28);white-space:nowrap}
+.legend{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.94);border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:11px;box-shadow:var(--shadow);z-index:5}
+.legend b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:6px}
+.lg{display:flex;align-items:center;gap:7px;margin:4px 0;color:var(--text2);font-weight:600}
+.sw{width:13px;height:13px;border-radius:3px;display:inline-block}
+.ctrls{position:absolute;right:12px;top:12px;display:flex;gap:6px;z-index:5}
+.btn{font-size:11px;font-weight:700;padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.94);color:var(--navy);cursor:pointer;box-shadow:var(--shadow)}
+.btn.on{background:var(--orange);color:#fff;border-color:var(--orange)}
+.hint{position:absolute;right:12px;bottom:10px;font-size:11px;color:#fff;background:rgba(20,30,50,.45);padding:5px 9px;border-radius:7px;z-index:5}
+/* side */
+.side{display:flex;flex-direction:column;gap:16px}
+.sum{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sumc{background:var(--bg);border-radius:9px;padding:10px}
+.sumc .n{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--navy)}
+.sumc .n.red{color:#dc2626}.sumc .n.amber{color:#c2410c}
+.sumc .l{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.kv{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.3px;font-size:10px}
+.kv .v{font-family:var(--mono);font-weight:600;color:var(--navy);font-size:13px}
+#detail .empty{color:var(--text3);font-size:12px;line-height:1.5}
+/* tables + chart */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;padding:9px 10px;border-bottom:1px solid var(--border)}
+td{padding:11px 10px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text2)}
+tr:last-child td{border-bottom:none}
+.mono{font-family:var(--mono);font-weight:500;color:var(--navy)}
+.num{text-align:right;font-family:var(--mono);font-weight:600;color:var(--navy)}
+.badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:4px 9px;border-radius:999px}
+.b-over{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.b-warn{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.b-ok{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+tr.row-over td{background:#fef5f5}
+.bars{display:flex;align-items:flex-end;gap:16px;height:200px;padding-top:6px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:8px}
+.bar-v{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--navy)}
+.bar{width:100%;max-width:46px;border-radius:6px 6px 0 0}
+.bar-l{font-size:11px;color:var(--text2);font-weight:600}
+.scrollx{overflow-x:auto}
+.foot{color:var(--text3);font-size:12px;text-align:center;padding:12px 0 2px}
+@media(max-width:900px){.gmain,.grid2{grid-template-columns:1fr}.hero{padding:26px 16px}.hero h1{font-size:26px}.wrap{padding:18px 14px}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">C</div>
+  <div class="brand"><b>Cooling Room Monitor</b><span>DALos Analytics · Packhouse</span></div>
+  <div class="tb-right"><span class="tb-date">Wed 18 Nov 2026</span><span class="pill">❄ −0.5 °C</span><span class="pill preview">Preview</span></div>
+</div>
+
+<div class="hero"><div class="hero-in">
+  <div class="crumb">DALos Analytics / Packhouse / Cooling Room</div>
+  <h1>Cooling Room <em>Monitor</em></h1>
+  <p>Live state of every bin lot in the chilling rooms — days since first entry, partial in/out, and the lots past the 10-day limit. Reporting view and 3D storage view in one place.</p>
+  <div class="hstats">
+    <div class="hstat"><div class="v" id="k-lots">–</div><div class="l">Lots in room</div></div>
+    <div class="hstat"><div class="v" id="k-bins">–</div><div class="l">Bins in room</div></div>
+    <div class="hstat"><div class="v alert" id="k-over">–</div><div class="l">Over 10 days</div></div>
+    <div class="hstat"><div class="v" id="k-avg">–</div><div class="l">Avg days in room</div></div>
+  </div>
+</div></div>
+
+<div class="wrap">
+
+  <div class="sec-h">3D storage view — Cold Room A1</div>
+  <div class="gmain">
+    <div class="panel" style="padding:0;overflow:hidden">
+      <div class="scene" id="scene">
+        <div class="world" id="world"></div>
+        <div class="legend"><b>Days in room</b>
+          <div class="lg"><span class="sw" style="background:#16a34a"></span>Under 7 (OK)</div>
+          <div class="lg"><span class="sw" style="background:#e0a000"></span>7–9 (watch)</div>
+          <div class="lg"><span class="sw" style="background:#e02424"></span>10+ (over limit)</div>
+        </div>
+        <div class="ctrls"><button class="btn" id="top">Top view</button><button class="btn" id="spin">▸ Spin</button><button class="btn" id="reset">3D view</button></div>
+        <div class="hint">Drag to orbit · scroll to zoom</div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel"><div class="p-head"><div class="t">Room summary</div></div>
+        <div class="sum">
+          <div class="sumc"><div class="n" id="s-lots">–</div><div class="l">Lots stored</div></div>
+          <div class="sumc"><div class="n" id="s-bins">–</div><div class="l">Bins in room</div></div>
+          <div class="sumc"><div class="n red" id="s-over">–</div><div class="l">Over 10 days</div></div>
+          <div class="sumc"><div class="n amber" id="s-warn">–</div><div class="l">At 7–9 days</div></div>
+        </div>
+      </div>
+      <div class="panel" id="detail"><div class="p-head"><div class="t">Lot details</div></div>
+        <div class="empty">Hover a crate stack to see its lot ID, crop, variety, farm, bins and days.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-h">Reporting</div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="p-head"><div class="t"><span class="dot" style="background:#dc2626"></span>Alerts — 10+ days in room</div><div class="s" id="alert-count"></div></div>
+      <div class="scrollx"><table><thead><tr><th>Lot ID</th><th>Crop / Variety</th><th>Farm</th><th class="num">Bins</th><th class="num">Days</th></tr></thead><tbody id="alert-body"></tbody></table></div>
+    </div>
+    <div class="panel">
+      <div class="p-head"><div class="t">Bins in room by crop</div><div class="s" id="chart-total"></div></div>
+      <div class="bars" id="chart"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="p-head"><div class="t">Lot status — all lots in room</div><div class="s">days counted from first entry</div></div>
+    <div class="scrollx"><table><thead><tr>
+      <th>Lot ID</th><th>Lot No</th><th>Crop</th><th>Variety</th><th>Farm</th>
+      <th class="num">Bins</th><th class="num">First entry</th><th class="num">Days</th><th>Status</th>
+    </tr></thead><tbody id="lot-body"></tbody></table></div>
+  </div>
+
+  <div class="foot">Combined preview · sample data · DALos Analytics design language</div>
+</div>
+
+<script>
+const LOTS=[
+ {id:"POT-MATKO-022",no:"A14,A15",crop:"Potatoes",variety:"Spunta",farm:"Matko",bins:40,days:14,first:"04 Nov"},
+ {id:"GRP-FARMY-001",no:"12,13",crop:"Grapes",variety:"Flame",farm:"Farm Y",bins:20,days:12,first:"06 Nov"},
+ {id:"CIT-SALMA-020",no:"07",crop:"Citrus",variety:"Murcott",farm:"Salma",bins:10,days:12,first:"06 Nov"},
+ {id:"MNG-EGY-003",no:"31",crop:"Mango",variety:"Keitt",farm:"Egyco",bins:15,days:11,first:"07 Nov"},
+ {id:"POM-DINA-004",no:"22",crop:"Pomegranate",variety:"Acco",farm:"Dina Farms",bins:16,days:10,first:"08 Nov"},
+ {id:"CIT-LAYLA-009",no:"40",crop:"Citrus",variety:"Nour",farm:"Layla",bins:18,days:9,first:"09 Nov"},
+ {id:"GRP-BADR-014",no:"55,56",crop:"Grapes",variety:"Sweet Globe",farm:"Badr",bins:35,days:8,first:"10 Nov"},
+ {id:"MNG-MENIA-011",no:"18",crop:"Mango",variety:"Kent",farm:"Menia",bins:8,days:7,first:"11 Nov"},
+ {id:"POM-HANA-007",no:"09",crop:"Pomegranate",variety:"Wonderful",farm:"Hana",bins:12,days:5,first:"13 Nov"},
+ {id:"GRP-MARIAM-005",no:"61",crop:"Grapes",variety:"Crimson",farm:"Mariam",bins:22,days:3,first:"15 Nov"},
+ {id:"POT-ELKHAIR-018",no:"03",crop:"Potatoes",variety:"Lady Rosetta",farm:"El Khair",bins:25,days:2,first:"16 Nov"},
+ {id:"CIT-NOUR-001",no:"01",crop:"Citrus",variety:"Valencia G",farm:"Nour",bins:20,days:1,first:"17 Nov"}
+];
+const stat=d=>d>=10?"over":d>=7?"warn":"ok";
+const LABT={over:"Over 10 days",warn:"7–9 days",ok:"OK"};
+const BADGE={over:"b-over",warn:"b-warn",ok:"b-ok"};
+
+// ===== KPIs =====
+const inRoom=LOTS.filter(l=>l.bins>0);
+const totBins=inRoom.reduce((a,l)=>a+l.bins,0);
+const over=inRoom.filter(l=>l.days>=10), warn=inRoom.filter(l=>l.days>=7&&l.days<10);
+const avg=(inRoom.reduce((a,l)=>a+l.days,0)/inRoom.length).toFixed(1);
+const $=id=>document.getElementById(id);
+$('k-lots').textContent=inRoom.length;$('k-bins').textContent=totBins;$('k-over').textContent=over.length;$('k-avg').textContent=avg;
+$('s-lots').textContent=inRoom.length;$('s-bins').textContent=totBins;$('s-over').textContent=over.length;$('s-warn').textContent=warn.length;
+
+// ===== alerts table =====
+document.getElementById('alert-count').textContent=over.length+' lots · act now';
+document.getElementById('alert-body').innerHTML=over.slice().sort((a,b)=>b.days-a.days).map(l=>
+ '<tr class="row-over"><td class="mono">'+l.id+'</td><td>'+l.crop+' · '+l.variety+'</td><td>'+l.farm+'</td><td class="num">'+l.bins+'</td><td class="num">'+l.days+'</td></tr>').join('');
+
+// ===== chart: bins by crop =====
+const crops=["Grapes","Citrus","Mango","Pomegranate","Potatoes"];
+const bars=crops.map(c=>({c,v:inRoom.filter(l=>l.crop===c).reduce((a,l)=>a+l.bins,0)}));
+const cc={Grapes:"#6d28d9",Citrus:"#DC6428",Mango:"#d97706",Pomegranate:"#2563EB",Potatoes:"#16a34a"};
+const mx=Math.max(...bars.map(b=>b.v));
+document.getElementById('chart-total').textContent=totBins+' total';
+document.getElementById('chart').innerHTML=bars.map(b=>
+ '<div class="bar-col"><div class="bar-v">'+b.v+'</div><div class="bar" style="height:'+(b.v/mx*100)+'%;background:'+cc[b.c]+'"></div><div class="bar-l">'+b.c+'</div></div>').join('');
+
+// ===== full table =====
+document.getElementById('lot-body').innerHTML=LOTS.slice().sort((a,b)=>b.days-a.days).map(l=>{
+ const s=stat(l.days);
+ return '<tr'+(s==='over'?' class="row-over"':'')+'><td class="mono">'+l.id+'</td><td class="mono">'+l.no+'</td><td>'+l.crop+'</td><td>'+l.variety+'</td><td>'+l.farm+'</td><td class="num">'+l.bins+'</td><td class="num">'+l.first+'</td><td class="num">'+l.days+'</td><td><span class="badge '+BADGE[s]+'">'+LABT[s]+'</span></td></tr>';
+}).join('');
+
+// ================= 3D ROOM =================
+const C={over:{t:"#f06a6a",a:"#e02424",b:"#b81b1b",x:"#7f1d1d"},
+         warn:{t:"#f3c04e",a:"#e0a000",b:"#b87f00",x:"#7c2d12"},
+         ok:{t:"#3fbf86",a:"#16a34a",b:"#107a38",x:"#064e3b"}};
+const world=document.getElementById('world');
+const ROOMW=700,ROOMD=540,WALLH=250;
+const BW=74,BH=48,GAP=3,PH=16;
+const COLS=6, LANES=[-150,120];
+const GX=(ROOMW-140)/COLS;
+function mk(w,h,bg,tf){const d=document.createElement('div');d.className='face';
+  d.style.width=w+'px';d.style.height=h+'px';d.style.marginLeft=(-w/2)+'px';d.style.marginTop=(-h/2)+'px';
+  d.style.background=bg;d.style.transform=tf;return d;}
+const concrete='repeating-linear-gradient(0deg,rgba(90,100,120,.10) 0 1px,transparent 1px 44px),repeating-linear-gradient(90deg,rgba(90,100,120,.10) 0 1px,transparent 1px 44px),linear-gradient(145deg,#c9ced7,#b6bcc7)';
+world.appendChild(mk(ROOMW,ROOMD,concrete,'rotateX(90deg)'));
+world.appendChild(mk(ROOMW-120,7,'#f1c21b','translate3d(0,0,-60px) rotateX(90deg)'));
+world.appendChild(mk(ROOMW-120,7,'#f1c21b','translate3d(0,0,55px) rotateX(90deg)'));
+const panelV='repeating-linear-gradient(90deg,rgba(120,140,170,.22) 0 1px,transparent 1px 54px),linear-gradient(180deg,#f3f6fb,#e4eaf3)';
+const panelH='repeating-linear-gradient(0deg,rgba(120,140,170,.22) 0 1px,transparent 1px 54px),linear-gradient(180deg,#eef3fb,#dde6f2)';
+world.appendChild(mk(ROOMW,WALLH,panelV,'translate3d(0,'+(-WALLH/2)+'px,'+(-ROOMD/2)+'px)'));
+world.appendChild(mk(ROOMD,WALLH,panelH,'translate3d('+(-ROOMW/2)+'px,'+(-WALLH/2)+'px,0) rotateY(90deg)'));
+world.appendChild(mk(ROOMW,16,'linear-gradient(#9aa6b8,#7e8ba1)','translate3d(0,-8px,'+(-ROOMD/2+1)+'px)'));
+world.appendChild(mk(150,215,'linear-gradient(100deg,#aeb9cc,#cdd6e6)','translate3d('+(-ROOMW/2+2)+'px,-107px,'+(ROOMD/2-120)+'px) rotateY(90deg)'));
+world.appendChild(mk(120,185,'linear-gradient(100deg,#dfe6f1,#eef3fb)','translate3d('+(-ROOMW/2+4)+'px,-102px,'+(ROOMD/2-120)+'px) rotateY(90deg)'));
+world.appendChild(mk(210,86,'linear-gradient(#aebbd1,#8f9fbb)','translate3d('+(ROOMW/2-180)+'px,'+(-WALLH+64)+'px,'+(-ROOMD/2+3)+'px)'));
+for(let i=0;i<7;i++)world.appendChild(mk(6,66,'#6c7d9b','translate3d('+(ROOMW/2-268+i*26)+'px,'+(-WALLH+64)+'px,'+(-ROOMD/2+5)+'px)'));
+function cube(p,x,y,z,w,h,d,f){const b='translate3d('+x+'px,'+y+'px,'+z+'px) ';
+  p.appendChild(mk(w,h,f.f,b+'translateZ('+(d/2)+'px)'));
+  p.appendChild(mk(w,h,f.f,b+'rotateY(180deg) translateZ('+(d/2)+'px)'));
+  p.appendChild(mk(d,h,f.s,b+'rotateY(90deg) translateZ('+(w/2)+'px)'));
+  p.appendChild(mk(d,h,f.s,b+'rotateY(-90deg) translateZ('+(w/2)+'px)'));
+  p.appendChild(mk(w,d,f.t,b+'rotateX(90deg) translateZ('+(h/2)+'px)'));
+  p.appendChild(mk(w,d,'#0a1324',b+'rotateX(-90deg) translateZ('+(h/2)+'px)'));}
+function crateFaces(c){const v='repeating-linear-gradient(90deg,rgba(0,0,0,.16) 0 3px,transparent 3px 13px),repeating-linear-gradient(0deg,rgba(0,0,0,.10) 0 2px,transparent 2px 20px)';
+  return {f:v+',linear-gradient(180deg,'+c.t+' 0%,'+c.a+' 22%,'+c.b+' 100%)',s:v+',linear-gradient(180deg,'+c.a+','+c.b+')',
+          t:'repeating-linear-gradient(90deg,rgba(0,0,0,.12) 0 3px,transparent 3px 13px),repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 3px,transparent 3px 13px),'+c.t};}
+const woodF='repeating-linear-gradient(90deg,#8a5a2b 0 10px,#7a4e24 10px 12px),linear-gradient(#8a5a2b,#6f4620)';
+const palletFaces={f:woodF,s:woodF,t:'repeating-linear-gradient(90deg,#9a6733 0 14px,#7e5126 14px 18px),#8a5a2b'};
+const labels=[];
+LOTS.forEach((lot,i)=>{
+  const cx=i%COLS, lane=Math.floor(i/COLS);
+  const x=-ROOMW/2+80+cx*GX+(lane===0?GX/2:0);
+  const z=LANES[lane];
+  const n=Math.min(Math.max(Math.round(lot.bins/8),1),5);
+  const c=C[stat(lot.days)];
+  const st=document.createElement('div');st.className='stack';
+  cube(st,x,-(PH/2),z,BW+10,PH,BW+10,palletFaces);
+  const cf=crateFaces(c);
+  for(let k=0;k<n;k++){cube(st,x,-(PH+BH/2+k*(BH+GAP)),z,BW,BH,BW,cf);}
+  world.appendChild(st);
+  const lab=document.createElement('div');lab.className='lab';lab.textContent=lot.days+'d';lab.style.color=c.x;
+  lab.dataset.x=x;lab.dataset.y=-(PH+n*(BH+GAP))-16;lab.dataset.z=z;world.appendChild(lab);labels.push(lab);
+  const show=()=>showDetail(lot);st.addEventListener('mouseover',show);st.addEventListener('click',show);
+});
+[['LANE A',LANES[0]],['LANE B',LANES[1]]].forEach(([t,z])=>{
+  const f=document.createElement('div');f.className='flab';f.textContent=t;f.dataset.x=-ROOMW/2+30;f.dataset.y=-2;f.dataset.z=z;world.appendChild(f);labels.push(f);
+});
+let rx=-38, ry=-34, s=1, spin=false;
+function render(){
+  world.style.transform='scale('+s+') rotateX('+rx+'deg) rotateY('+ry+'deg)';
+  const bb='rotateY('+(-ry)+'deg) rotateX('+(-rx)+'deg)';
+  labels.forEach(l=>{l.style.transform=l.className==='flab'
+    ?'translate3d('+l.dataset.x+'px,'+l.dataset.y+'px,'+l.dataset.z+'px) rotateX(90deg)'
+    :'translate3d('+l.dataset.x+'px,'+l.dataset.y+'px,'+l.dataset.z+'px) '+bb+' translate(-50%,-50%)';});
+}
+const scene=document.getElementById('scene');let drag=false,px=0,py=0;
+scene.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;py=e.clientY;scene.setPointerCapture(e.pointerId);});
+scene.addEventListener('pointerup',()=>drag=false);
+scene.addEventListener('pointermove',e=>{if(!drag)return;ry+=(e.clientX-px)*0.4;rx-=(e.clientY-py)*0.3;rx=Math.max(-90,Math.min(-8,rx));px=e.clientX;py=e.clientY;render();});
+scene.addEventListener('wheel',e=>{e.preventDefault();s*=(1-Math.sign(e.deltaY)*0.08);s=Math.max(0.45,Math.min(2.4,s));render();},{passive:false});
+document.getElementById('reset').onclick=()=>{rx=-38;ry=-34;s=1;render();};
+document.getElementById('top').onclick=()=>{rx=-90;ry=0;render();};
+const sb=document.getElementById('spin');sb.onclick=()=>{spin=!spin;sb.classList.toggle('on',spin);sb.textContent=spin?'◼ Stop':'▸ Spin';};
+(function tick(){if(spin&&!drag){ry+=0.35;render();}requestAnimationFrame(tick);})();
+function showDetail(lot){const s=stat(lot.days);
+  document.getElementById("detail").innerHTML=
+    '<div class="p-head"><div class="t">'+lot.id+'</div></div>'+
+    '<div class="kv"><span class="k">Status</span><span class="v"><span class="badge '+BADGE[s]+'">'+LABT[s]+'</span></span></div>'+
+    '<div class="kv"><span class="k">Crop</span><span class="v">'+lot.crop+'</span></div>'+
+    '<div class="kv"><span class="k">Variety</span><span class="v">'+lot.variety+'</span></div>'+
+    '<div class="kv"><span class="k">Farm</span><span class="v">'+lot.farm+'</span></div>'+
+    '<div class="kv"><span class="k">Bin No</span><span class="v">'+lot.no+'</span></div>'+
+    '<div class="kv"><span class="k">Bins</span><span class="v">'+lot.bins+'</span></div>'+
+    '<div class="kv"><span class="k">First entry</span><span class="v">'+lot.first+'</span></div>'+
+    '<div class="kv"><span class="k">Days in room</span><span class="v">'+lot.days+'</span></div>';}
+render();
+</script>
+<script src="switcher.js" defer></script>
+</body>
+</html>
