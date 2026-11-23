@@ -255,6 +255,7 @@ table.mx{border-collapse:collapse;font-size:11px}
   <!-- FILTER RAIL -->
   <div class="rail" id="rail">
     <div class="gsearch"><i class="ti ti-search" style="color:var(--text3);font-size:15px"></i><input id="g-search" placeholder="Search bucket, operation, farm, product, variety…" oninput="onSearch()"></div>
+    <div class="fl" id="season-fl" style="display:none"><label>Season</label><div class="seg season-seg" id="season-tg2"></div></div>
     <div class="fl"><label>Season</label><div class="ms" data-f="budget_season"></div></div>
     <div class="fl"><label>Product</label><div class="ms" data-f="product"></div></div>
     <div class="fl"><label>Farm</label><div class="ms" data-f="farm"></div></div>
@@ -2126,11 +2127,14 @@ function resyncFilterUI(){
   });
 }
 function renderSeasonToggle(){
-  const el=document.getElementById('season-tg'); if(!el) return;
-  if(SEASONS.length<2){el.style.display='none';return;}
+  const hero=document.getElementById('season-tg'), rail=document.getElementById('season-tg2'), railFl=document.getElementById('season-fl');
+  const show=SEASONS.length>1;
+  [hero,railFl].forEach(e=>{ if(e) e.style.display=show?'':'none'; });
+  if(!show) return;
   const cur=SEASONS[SEASONS.length-1], prev=SEASONS[SEASONS.length-2];
-  el.style.display='';
-  el.innerHTML=SEASONS.map(s=>`<button class="${s===SEASON?'on':''}" onclick="setSeason('${s}')">${s}<small>${s===cur?'This season':s===prev?'Last season':'Earlier'}</small></button>`).join('');
+  const tag=s=>s===cur?'This season':s===prev?'Last season':'Earlier';
+  if(hero) hero.innerHTML=SEASONS.map(s=>`<button class="${s===SEASON?'on':''}" onclick="setSeason('${s}')">${s}<small>${tag(s)}</small></button>`).join('');
+  if(rail) rail.innerHTML=SEASONS.map(s=>`<button class="${s===SEASON?'on':''}" onclick="setSeason('${s}')">${s} · ${tag(s)}</button>`).join('');
 }
 function renderSeasonNote(){
   const el=document.getElementById('season-note'); if(!el) return;
