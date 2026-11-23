@@ -34,6 +34,8 @@
         if(dsa){dsa.classList.remove('locked');dsa.setAttribute('href','citrus_overview.html');}
         var dha=document.getElementById('dc-harvest');
         if(dha){dha.classList.remove('locked');dha.setAttribute('href','citrus_harvest_funnel.html');}
+        var dba=document.getElementById('dc-budget');
+        if(dba){dba.classList.remove('locked');dba.setAttribute('href','labor_budget.html?product=Citrus');}
         return;
       }
 
@@ -56,8 +58,9 @@
         }
       }
 
-      // Shipments and Harvest Funnel are built. QC remains Coming Soon
-      var LIVE={shipments:{id:'dc-shipments',href:'citrus_overview.html',name:'Shipments'},harvest:{id:'dc-harvest',href:'citrus_harvest_funnel.html',name:'Harvest Funnel'}};
+      // Shipments, Harvest Funnel and Labor Budget are built. QC remains Coming Soon
+      var LIVE={shipments:{id:'dc-shipments',href:'citrus_overview.html',name:'Shipments'},harvest:{id:'dc-harvest',href:'citrus_harvest_funnel.html',name:'Harvest Funnel'},
+                budget:{id:'dc-budget',href:'labor_budget.html?product=Citrus',name:'Labor Budget'}};
 
       Object.keys(LIVE).forEach(function(db){
         var meta=LIVE[db];var card=document.getElementById(meta.id);
@@ -291,6 +294,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       </div>
       <div class="dc-footer">
         <div class="dc-footer-left"><span class="dc-tag">Budget vs Actual</span><span class="dc-tag">Categories</span><span class="dc-tag">Farms</span></div>
+        <span class="dc-open">Open <i class="ti ti-arrow-right"></i></span>
+      </div>
+    </a>
+
+    <!-- LABOR BUDGET — LIVE -->
+    <a class="dash-card" id="dc-budget" href="labor_budget.html?product=Citrus">
+      <div class="dc-stripe" style="background:linear-gradient(90deg,#142850,#DC6428)"></div>
+      <div class="dc-body">
+        <div class="dc-header">
+          <div class="dc-icon" style="background:#fef2f2">💰</div>
+          <span class="dc-badge badge-live"><i class="ti ti-circle-dot" style="font-size:9px"></i> Live</span>
+        </div>
+        <div class="dc-name">Labor Budget</div>
+        <div class="dc-desc">Labor budget vs actual for Citrus — cost per feddan, buckets, operations, and monthly tracking.</div>
+      </div>
+      <div class="dc-footer">
+        <div class="dc-footer-left"><span class="dc-tag">Buckets</span><span class="dc-tag">Farms</span><span class="dc-tag">Operations</span></div>
         <span class="dc-open">Open <i class="ti ti-arrow-right"></i></span>
       </div>
     </a>
