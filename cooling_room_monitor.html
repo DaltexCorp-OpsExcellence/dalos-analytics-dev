@@ -97,7 +97,36 @@ tr.row-over td{background:#fef5f5}
 .bar-l{font-size:11px;color:var(--text2);font-weight:600}
 .scrollx{overflow-x:auto}
 .foot{color:var(--text3);font-size:12px;text-align:center;padding:12px 0 2px}
-@media(max-width:900px){.gmain,.grid2{grid-template-columns:1fr}.hero{padding:26px 16px}.hero h1{font-size:26px}.wrap{padding:18px 14px}}
+.hstat .v.cls{color:#9ec1ff}
+/* drill-through modal */
+.ov{position:fixed;inset:0;background:rgba(14,31,61,.55);z-index:400;display:none;align-items:flex-start;justify-content:center;padding:6vh 16px 16px}
+.ov.on{display:flex}
+.modal{width:640px;max-width:100%;max-height:88vh;overflow:auto;background:var(--white);border-radius:16px;box-shadow:0 24px 70px rgba(20,40,80,.4)}
+.modal-h{position:sticky;top:0;background:var(--navy);color:#fff;padding:18px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;z-index:1}
+.modal-h .mid{font-family:var(--mono);font-size:18px;font-weight:600;letter-spacing:-.3px}
+.modal-h .msub{font-size:12px;color:rgba(255,255,255,.62);margin-top:3px}
+.modal-x{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px;flex-shrink:0;line-height:1}
+.modal-x:hover{background:rgba(255,255,255,.2)}
+.modal-b{padding:18px 22px}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.mcell{background:var(--bg);border-radius:9px;padding:10px 12px}
+.mcell .n{font-family:var(--mono);font-size:19px;font-weight:600;color:var(--navy)}
+.mcell .l{font-size:9.5px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-top:3px}
+.msec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)}
+.tx-in{color:#15803d;font-weight:700}
+.tx-out{color:#dc2626;font-weight:700}
+.clschip{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:#f4f6fb;color:#64748b;border:1px solid #e2e8f0}
+.clschip.c1{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.clschip.c2{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:#eef3ff}
+/* 3D selection */
+/* dim the faces, not the stack: opacity on a preserve-3d group flattens it and hides it */
+.scene .stack .face{transition:opacity .18s}
+.world.has-sel .stack:not(.sel) .face{opacity:.32}
+.stack.sel .face{outline:2px solid #3b82f6;outline-offset:-1px;filter:brightness(1.12) saturate(1.08)}
+.selmark{position:absolute;left:0;top:0;pointer-events:none}
+@media(max-width:900px){.gmain,.grid2{grid-template-columns:1fr}.hero{padding:26px 16px}.hero h1{font-size:26px}.wrap{padding:18px 14px}.mgrid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -116,6 +145,7 @@ tr.row-over td{background:#fef5f5}
     <div class="hstat"><div class="v" id="k-bins">–</div><div class="l">Bins in room</div></div>
     <div class="hstat"><div class="v alert" id="k-over">–</div><div class="l">Over 10 days</div></div>
     <div class="hstat"><div class="v" id="k-avg">–</div><div class="l">Avg days in room</div></div>
+    <div class="hstat"><div class="v cls" id="k-c1">–</div><div class="l">Class 1 shipped (bins)</div></div>
   </div>
 </div></div>
 
@@ -144,8 +174,15 @@ tr.row-over td{background:#fef5f5}
           <div class="sumc"><div class="n amber" id="s-warn">–</div><div class="l">At 7–9 days</div></div>
         </div>
       </div>
+      <div class="panel"><div class="p-head"><div class="t">Class — bins in room</div><div class="s">class 1+2 per bin</div></div>
+        <div class="sum">
+          <div class="sumc"><div class="n" id="c-unsorted">–</div><div class="l">Unsorted / mixed</div></div>
+          <div class="sumc"><div class="n" style="color:#15803d" id="c-c2">–</div><div class="l">Class 2 in room</div></div>
+        </div>
+        <div class="kv" style="margin-top:4px"><span class="k">Class 1 shipped out</span><span class="v" id="c-c1out" style="color:#1d4ed8">–</span></div>
+      </div>
       <div class="panel" id="detail"><div class="p-head"><div class="t">Lot details</div></div>
-        <div class="empty">Hover a crate stack to see its lot ID, crop, variety, farm, bins and days.</div>
+        <div class="empty">Hover a crate stack for a quick summary, or click it (or any table row) for full transaction history.</div>
       </div>
     </div>
   </div>
@@ -163,15 +200,18 @@ tr.row-over td{background:#fef5f5}
   </div>
 
   <div class="panel">
-    <div class="p-head"><div class="t">Lot status — all lots in room</div><div class="s">days counted from first entry</div></div>
+    <div class="p-head"><div class="t">Lot status — all lots in room</div><div class="s">days from first entry · click a row for transactions</div></div>
     <div class="scrollx"><table><thead><tr>
       <th>Lot ID</th><th>Lot No</th><th>Crop</th><th>Variety</th><th>Farm</th>
-      <th class="num">Bins</th><th class="num">First entry</th><th class="num">Days</th><th>Status</th>
+      <th class="num">Bins</th><th class="num">First entry</th><th class="num">Days</th>
+      <th class="num">Cls 2 in</th><th class="num">Cls 1 out</th><th>Status</th>
     </tr></thead><tbody id="lot-body"></tbody></table></div>
   </div>
 
   <div class="foot">Combined preview · sample data · DALos Analytics design language</div>
 </div>
+
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
 
 <script>
 const LOTS=[
@@ -191,35 +231,62 @@ const LOTS=[
 const stat=d=>d>=10?"over":d>=7?"warn":"ok";
 const LABT={over:"Over 10 days",warn:"7–9 days",ok:"OK"};
 const BADGE={over:"b-over",warn:"b-warn",ok:"b-ok"};
+const CLS={0:['','Mixed'],1:['c1','Class 1'],2:['c2','Class 2']};
+const $=id=>document.getElementById(id);
+
+// ===== derive class split + transaction history (sample) =====
+// A bin (benz) holds class 1 + class 2. It enters mixed; sorting ships class 1
+// out and returns class 2 to the room. The days clock runs from first entry and
+// does NOT reset on class-2 return. Here we reconstruct a plausible movement log
+// so the ending balance equals each lot's current bins in room.
+function dstr(n){return (n<10?'0'+n:n)+' Nov';} // sample data is all November
+LOTS.forEach(l=>{
+  const sf=Math.min(0.8,l.days/14);              // older lots have sorted more
+  const c1Out=Math.round(l.bins*sf*0.5);          // class 1 shipped (has left room)
+  const c2In=Math.round(c1Out*0.8);               // class 2 returned (still in room)
+  const entry=l.bins+c1Out-c2In;                  // first-entry mixed bins -> balance reconciles
+  l.c1Out=c1Out; l.c2In=c2In; l.unsorted=Math.max(0,l.bins-c2In); l.entry=entry;
+  const fd=parseInt(l.first,10)||4;
+  const moves=[{d:l.first,t:'IN',cls:0,bins:entry,note:'First entry — mixed class 1 + 2'}];
+  if(c1Out>0) moves.push({d:dstr(Math.min(18,fd+Math.max(1,Math.round(l.days*0.5)))),t:'OUT',cls:1,bins:c1Out,note:'Class 1 sorted & shipped'});
+  if(c2In>0)  moves.push({d:dstr(Math.min(18,fd+Math.max(2,Math.round(l.days*0.72)))),t:'IN',cls:2,bins:c2In,note:'Class 2 returned to room'});
+  l.moves=moves;
+});
 
 // ===== KPIs =====
 const inRoom=LOTS.filter(l=>l.bins>0);
 const totBins=inRoom.reduce((a,l)=>a+l.bins,0);
 const over=inRoom.filter(l=>l.days>=10), warn=inRoom.filter(l=>l.days>=7&&l.days<10);
 const avg=(inRoom.reduce((a,l)=>a+l.days,0)/inRoom.length).toFixed(1);
-const $=id=>document.getElementById(id);
-$('k-lots').textContent=inRoom.length;$('k-bins').textContent=totBins;$('k-over').textContent=over.length;$('k-avg').textContent=avg;
+const totC1=inRoom.reduce((a,l)=>a+l.c1Out,0), totC2=inRoom.reduce((a,l)=>a+l.c2In,0), totUns=inRoom.reduce((a,l)=>a+l.unsorted,0);
+$('k-lots').textContent=inRoom.length;$('k-bins').textContent=totBins;$('k-over').textContent=over.length;$('k-avg').textContent=avg;$('k-c1').textContent=totC1;
 $('s-lots').textContent=inRoom.length;$('s-bins').textContent=totBins;$('s-over').textContent=over.length;$('s-warn').textContent=warn.length;
+$('c-unsorted').textContent=totUns;$('c-c2').textContent=totC2;$('c-c1out').textContent=totC1;
+
+const IDX={}; LOTS.forEach((l,i)=>IDX[l.id]=i);
 
 // ===== alerts table =====
-document.getElementById('alert-count').textContent=over.length+' lots · act now';
-document.getElementById('alert-body').innerHTML=over.slice().sort((a,b)=>b.days-a.days).map(l=>
- '<tr class="row-over"><td class="mono">'+l.id+'</td><td>'+l.crop+' · '+l.variety+'</td><td>'+l.farm+'</td><td class="num">'+l.bins+'</td><td class="num">'+l.days+'</td></tr>').join('');
+$('alert-count').textContent=over.length+' lots · act now';
+$('alert-body').innerHTML=over.slice().sort((a,b)=>b.days-a.days).map(l=>
+ '<tr class="row-over clickable" data-i="'+IDX[l.id]+'"><td class="mono">'+l.id+'</td><td>'+l.crop+' · '+l.variety+'</td><td>'+l.farm+'</td><td class="num">'+l.bins+'</td><td class="num">'+l.days+'</td></tr>').join('');
 
 // ===== chart: bins by crop =====
 const crops=["Grapes","Citrus","Mango","Pomegranate","Potatoes"];
 const bars=crops.map(c=>({c,v:inRoom.filter(l=>l.crop===c).reduce((a,l)=>a+l.bins,0)}));
 const cc={Grapes:"#6d28d9",Citrus:"#DC6428",Mango:"#d97706",Pomegranate:"#2563EB",Potatoes:"#16a34a"};
 const mx=Math.max(...bars.map(b=>b.v));
-document.getElementById('chart-total').textContent=totBins+' total';
-document.getElementById('chart').innerHTML=bars.map(b=>
+$('chart-total').textContent=totBins+' total';
+$('chart').innerHTML=bars.map(b=>
  '<div class="bar-col"><div class="bar-v">'+b.v+'</div><div class="bar" style="height:'+(b.v/mx*100)+'%;background:'+cc[b.c]+'"></div><div class="bar-l">'+b.c+'</div></div>').join('');
 
 // ===== full table =====
-document.getElementById('lot-body').innerHTML=LOTS.slice().sort((a,b)=>b.days-a.days).map(l=>{
+$('lot-body').innerHTML=LOTS.slice().sort((a,b)=>b.days-a.days).map(l=>{
  const s=stat(l.days);
- return '<tr'+(s==='over'?' class="row-over"':'')+'><td class="mono">'+l.id+'</td><td class="mono">'+l.no+'</td><td>'+l.crop+'</td><td>'+l.variety+'</td><td>'+l.farm+'</td><td class="num">'+l.bins+'</td><td class="num">'+l.first+'</td><td class="num">'+l.days+'</td><td><span class="badge '+BADGE[s]+'">'+LABT[s]+'</span></td></tr>';
+ return '<tr class="clickable'+(s==='over'?' row-over':'')+'" data-i="'+IDX[l.id]+'"><td class="mono">'+l.id+'</td><td class="mono">'+l.no+'</td><td>'+l.crop+'</td><td>'+l.variety+'</td><td>'+l.farm+'</td><td class="num">'+l.bins+'</td><td class="num">'+l.first+'</td><td class="num">'+l.days+'</td><td class="num" style="color:#15803d">'+l.c2In+'</td><td class="num" style="color:#1d4ed8">'+l.c1Out+'</td><td><span class="badge '+BADGE[s]+'">'+LABT[s]+'</span></td></tr>';
 }).join('');
+
+// any clickable row -> select the bin + open its transactions
+document.querySelectorAll('tr.clickable').forEach(tr=>tr.addEventListener('click',()=>selectLot(+tr.dataset.i,true)));
 
 // ================= 3D ROOM =================
 const C={over:{t:"#f06a6a",a:"#e02424",b:"#b81b1b",x:"#7f1d1d"},
@@ -258,22 +325,38 @@ function crateFaces(c){const v='repeating-linear-gradient(90deg,rgba(0,0,0,.16) 
           t:'repeating-linear-gradient(90deg,rgba(0,0,0,.12) 0 3px,transparent 3px 13px),repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0 3px,transparent 3px 13px),'+c.t};}
 const woodF='repeating-linear-gradient(90deg,#8a5a2b 0 10px,#7a4e24 10px 12px),linear-gradient(#8a5a2b,#6f4620)';
 const palletFaces={f:woodF,s:woodF,t:'repeating-linear-gradient(90deg,#9a6733 0 14px,#7e5126 14px 18px),#8a5a2b'};
-const labels=[];
+const labels=[]; const stacks=[];
 LOTS.forEach((lot,i)=>{
   const cx=i%COLS, lane=Math.floor(i/COLS);
   const x=-ROOMW/2+80+cx*GX+(lane===0?GX/2:0);
   const z=LANES[lane];
   const n=Math.min(Math.max(Math.round(lot.bins/8),1),5);
   const c=C[stat(lot.days)];
-  const st=document.createElement('div');st.className='stack';
+  const st=document.createElement('div');st.className='stack';st.dataset.i=i;st._x=x;st._z=z;
   cube(st,x,-(PH/2),z,BW+10,PH,BW+10,palletFaces);
   const cf=crateFaces(c);
   for(let k=0;k<n;k++){cube(st,x,-(PH+BH/2+k*(BH+GAP)),z,BW,BH,BW,cf);}
-  world.appendChild(st);
+  world.appendChild(st);stacks[i]=st;
   const lab=document.createElement('div');lab.className='lab';lab.textContent=lot.days+'d';lab.style.color=c.x;
   lab.dataset.x=x;lab.dataset.y=-(PH+n*(BH+GAP))-16;lab.dataset.z=z;world.appendChild(lab);labels.push(lab);
-  const show=()=>showDetail(lot);st.addEventListener('mouseover',show);st.addEventListener('click',show);
+  st.addEventListener('mouseover',()=>{if(selIndex<0)showDetail(lot);});   // hover = preview (unless a bin is pinned)
+  st.addEventListener('click',e=>{if(moved)return;e.stopPropagation();selectLot(i,true);});
 });
+// selection floor marker (glowing disc under the picked stack)
+const selMark=document.createElement('div');selMark.className='face selmark';
+selMark.style.width=(BW+34)+'px';selMark.style.height=(BW+34)+'px';
+selMark.style.marginLeft=(-(BW+34)/2)+'px';selMark.style.marginTop=(-(BW+34)/2)+'px';
+selMark.style.borderRadius='50%';
+selMark.style.background='radial-gradient(circle,rgba(59,130,246,.55),rgba(59,130,246,.12) 66%,transparent 72%)';
+selMark.style.display='none';world.appendChild(selMark);
+let selIndex=-1;
+function selectLot(i,open){
+  selIndex=i; world.classList.add('has-sel');
+  stacks.forEach((st,k)=>st&&st.classList.toggle('sel',k===i));
+  selMark.style.display='block'; render(); showDetail(LOTS[i]);
+  if(open) openTx(i);
+}
+function clearSel(){selIndex=-1;world.classList.remove('has-sel');stacks.forEach(st=>st&&st.classList.remove('sel'));selMark.style.display='none';render();}
 [['LANE A',LANES[0]],['LANE B',LANES[1]]].forEach(([t,z])=>{
   const f=document.createElement('div');f.className='flab';f.textContent=t;f.dataset.x=-ROOMW/2+30;f.dataset.y=-2;f.dataset.z=z;world.appendChild(f);labels.push(f);
 });
@@ -284,27 +367,59 @@ function render(){
   labels.forEach(l=>{l.style.transform=l.className==='flab'
     ?'translate3d('+l.dataset.x+'px,'+l.dataset.y+'px,'+l.dataset.z+'px) rotateX(90deg)'
     :'translate3d('+l.dataset.x+'px,'+l.dataset.y+'px,'+l.dataset.z+'px) '+bb+' translate(-50%,-50%)';});
+  if(selIndex>=0){const st=stacks[selIndex];selMark.style.transform='translate3d('+st._x+'px,-2px,'+st._z+'px) rotateX(90deg)';}
 }
-const scene=document.getElementById('scene');let drag=false,px=0,py=0;
-scene.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;py=e.clientY;scene.setPointerCapture(e.pointerId);});
-scene.addEventListener('pointerup',()=>drag=false);
-scene.addEventListener('pointermove',e=>{if(!drag)return;ry+=(e.clientX-px)*0.4;rx-=(e.clientY-py)*0.3;rx=Math.max(-90,Math.min(-8,rx));px=e.clientX;py=e.clientY;render();});
+const scene=document.getElementById('scene');let drag=false,moved=false,sx=0,sy=0,px=0,py=0;
+// capture the pointer only once the user actually drags, so plain clicks still reach the crate stacks
+scene.addEventListener('pointerdown',e=>{drag=true;moved=false;sx=px=e.clientX;sy=py=e.clientY;});
+scene.addEventListener('pointerup',()=>{drag=false;});
+scene.addEventListener('pointermove',e=>{if(!drag)return;
+  if(!moved){if(Math.abs(e.clientX-sx)+Math.abs(e.clientY-sy)<5)return;moved=true;try{scene.setPointerCapture(e.pointerId);}catch(_){}}
+  ry+=(e.clientX-px)*0.4;rx-=(e.clientY-py)*0.3;rx=Math.max(-90,Math.min(-8,rx));px=e.clientX;py=e.clientY;render();});
 scene.addEventListener('wheel',e=>{e.preventDefault();s*=(1-Math.sign(e.deltaY)*0.08);s=Math.max(0.45,Math.min(2.4,s));render();},{passive:false});
 document.getElementById('reset').onclick=()=>{rx=-38;ry=-34;s=1;render();};
 document.getElementById('top').onclick=()=>{rx=-90;ry=0;render();};
 const sb=document.getElementById('spin');sb.onclick=()=>{spin=!spin;sb.classList.toggle('on',spin);sb.textContent=spin?'◼ Stop':'▸ Spin';};
 (function tick(){if(spin&&!drag){ry+=0.35;render();}requestAnimationFrame(tick);})();
-function showDetail(lot){const s=stat(lot.days);
-  document.getElementById("detail").innerHTML=
-    '<div class="p-head"><div class="t">'+lot.id+'</div></div>'+
-    '<div class="kv"><span class="k">Status</span><span class="v"><span class="badge '+BADGE[s]+'">'+LABT[s]+'</span></span></div>'+
-    '<div class="kv"><span class="k">Crop</span><span class="v">'+lot.crop+'</span></div>'+
-    '<div class="kv"><span class="k">Variety</span><span class="v">'+lot.variety+'</span></div>'+
-    '<div class="kv"><span class="k">Farm</span><span class="v">'+lot.farm+'</span></div>'+
-    '<div class="kv"><span class="k">Bin No</span><span class="v">'+lot.no+'</span></div>'+
-    '<div class="kv"><span class="k">Bins</span><span class="v">'+lot.bins+'</span></div>'+
-    '<div class="kv"><span class="k">First entry</span><span class="v">'+lot.first+'</span></div>'+
-    '<div class="kv"><span class="k">Days in room</span><span class="v">'+lot.days+'</span></div>';}
+function kv(k,v){return '<div class="kv"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>';}
+function showDetail(lot){const s=stat(lot.days),i=IDX[lot.id];
+  $("detail").innerHTML=
+    '<div class="p-head"><div class="t">'+lot.id+'</div><div class="s">'+lot.crop+'</div></div>'+
+    kv('Status','<span class="badge '+BADGE[s]+'">'+LABT[s]+'</span>')+
+    kv('Variety',lot.variety)+kv('Farm',lot.farm)+kv('Bin No',lot.no)+
+    kv('Bins in room',lot.bins)+
+    kv('Class 2 in room','<span style="color:#15803d">'+lot.c2In+'</span>')+
+    kv('Class 1 shipped','<span style="color:#1d4ed8">'+lot.c1Out+'</span>')+
+    kv('First entry',lot.first)+kv('Days in room',lot.days)+
+    '<button class="btn" style="width:100%;margin-top:12px;background:var(--navy);color:#fff;border-color:var(--navy)" onclick="selectLot('+i+',true)">View transactions ▸</button>';}
+
+// ===== drill-through: transaction history =====
+function openTx(i){
+  const l=LOTS[i], s=stat(l.days); let bal=0;
+  const rows=l.moves.map(m=>{bal+=(m.t==='IN'?m.bins:-m.bins);const cl=CLS[m.cls];
+    return '<tr><td class="mono">'+m.d+'</td><td><span class="'+(m.t==='IN'?'tx-in':'tx-out')+'">'+(m.t==='IN'?'▲ In':'▼ Out')+'</span></td><td><span class="clschip '+cl[0]+'">'+cl[1]+'</span></td><td class="num">'+m.bins+'</td><td class="num">'+bal+'</td><td style="color:var(--text3)">'+m.note+'</td></tr>';}).join('');
+  const sc=s==='over'?'#dc2626':s==='warn'?'#c2410c':'#15803d';
+  $('modal').innerHTML=
+    '<div class="modal-h"><div><div class="mid">'+l.id+'</div><div class="msub">'+l.crop+' · '+l.variety+' · '+l.farm+' · Bin '+l.no+'</div></div><button class="modal-x" onclick="closeTx()">✕</button></div>'+
+    '<div class="modal-b">'+
+      '<div class="mgrid">'+
+        '<div class="mcell"><div class="n">'+l.bins+'</div><div class="l">Bins in room</div></div>'+
+        '<div class="mcell"><div class="n" style="color:'+sc+'">'+l.days+'</div><div class="l">Days in room</div></div>'+
+        '<div class="mcell"><div class="n">'+l.first+'</div><div class="l">First entry</div></div>'+
+        '<div class="mcell"><div class="n" style="color:#1d4ed8">'+l.c1Out+'</div><div class="l">Class 1 shipped</div></div>'+
+        '<div class="mcell"><div class="n" style="color:#15803d">'+l.c2In+'</div><div class="l">Class 2 in room</div></div>'+
+        '<div class="mcell"><div class="n">'+l.unsorted+'</div><div class="l">Unsorted / mixed</div></div>'+
+      '</div>'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px"><span class="msec">Transaction history</span><span class="badge '+BADGE[s]+'">'+LABT[s]+'</span></div>'+
+      '<div class="scrollx"><table><thead><tr><th>Date</th><th>Movement</th><th>Class</th><th class="num">Bins</th><th class="num">Balance</th><th>Note</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+      '<div style="font-size:11px;color:var(--text3);margin-top:12px;line-height:1.55">Days in room count from the <b>first entry</b> and do <b>not</b> reset when class 2 returns after sorting. Sample data — the live view will read from the cooling-room bin-movements table.</div>'+
+    '</div>';
+  $('ov').classList.add('on');
+}
+function closeTx(){$('ov').classList.remove('on');}
+$('ov').addEventListener('click',e=>{if(e.target===$('ov'))closeTx();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTx();});
+scene.addEventListener('click',e=>{if(moved||e.target.closest('.stack,.ctrls,.legend'))return;if(selIndex>=0)clearSel();}); // click anywhere off a stack (floor, walls, background) to deselect
 render();
 </script>
 <script src="switcher.js" defer></script>
