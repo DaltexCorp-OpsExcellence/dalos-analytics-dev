@@ -55,6 +55,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .hero-metricsel button.on{background:#fff;color:var(--navy)}
 .hero-metricsel button.on small{opacity:.7}
 .hero-metricsel button:disabled{opacity:.4;cursor:not-allowed}
+.season-note{display:flex;align-items:flex-start;gap:8px;background:var(--warnbg);border:1px solid #fde68a;color:var(--warn);border-radius:var(--r);padding:10px 14px;font-size:12px;line-height:1.5;margin-bottom:14px}
+.season-note .ti{font-size:15px;margin-top:1px}
 .wrap{max-width:1440px;margin:0 auto;padding:18px 22px 70px}
 /* FILTER RAIL */
 .rail{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:11px 13px;box-shadow:var(--shadow);margin-bottom:14px}
@@ -228,9 +230,9 @@ table.mx{border-collapse:collapse;font-size:11px}
   <div class="hero-in">
     <div>
       <div class="hero-t"><i class="ti ti-cash-banknote"></i> Orchards Labor Budget</div>
-      <div class="hero-sub">Budget vs Actual labor cost — by bucket, product, farm, variety, plot and operation, across the fiscal year. Over-budget shows red, under-budget shows green.</div>
+      <div class="hero-sub">Budget vs Actual labor cost — by bucket, product, farm, variety, plot and operation, across the fiscal year (Oct → Sep). Over-budget shows red, under-budget shows green.</div>
     </div>
-
+    <div class="hero-metricsel" id="season-tg" style="display:none" title="Fiscal season (Oct → Sep)"></div>
   </div>
 </div>
 
@@ -275,6 +277,7 @@ table.mx{border-collapse:collapse;font-size:11px}
   <div id="loading" class="loading"><div class="spin"></div><span>Loading labor budget data…</span></div>
 
   <div id="content" style="display:none">
+    <div class="season-note" id="season-note" style="display:none"></div>
     <div class="kgrid" id="kpi-grid"></div>
 
     <div class="pane" id="pane-performance"></div>
@@ -324,6 +327,7 @@ const COLS='budget_season,product,category,farm,variety_en,year,plot,operational
 const ORDER='order=product,farm,variety_en,year,plot,operational_bucket,operation_norm,month,unit,budget_amount,actual_amount';
 
 let RAW=[], METRIC='value', TAB='overview', OVM='amount', OVVAL='money'; // OVVAL: money | cpf (Overview monthly chart value mode)
+let RAW_ALL=[], SEASONS=[], SEASON=null;   // RAW = RAW_ALL rows of the season picked in the season toggle
 let BKVAL='money', PRVAL='money'; // per-block value mode for Overview Buckets / Products charts (independent of the monthly chart)
 let BKLBL='ba', PRLBL='ba';     // per-block data-label mode (Variance | B&A) for those same two charts — default B&A
 let F={q:''};
@@ -354,8 +358,19 @@ const STATUS_LBL={matched:'Budgeted · spent',budget_only:'Budgeted · not spent
 // plot-level (the whole plot)
 const PSTATUS_LBL={planned_plot:'Planned plot (has budget)',unplanned_plot:'Unplanned plot (no budget at all)'};
 
-const MONTHS=["Oct'25","Nov'25","Dec'25","Jan'26","Feb'26","Mar'26","Apr'26","May'26","Jun'26","Jul'26","Aug'26","Sep'26"];
-const MO={};MONTHS.forEach((m,i)=>MO[m]=i+1);
+// Fiscal year runs Oct -> Sep. MONTHS/MO follow the season picked in the season toggle.
+let MONTHS=[];
+const MO={};
+function monthsOfSeason(season){   // '2025/26' -> Oct'25 .. Sep'26
+  const y=parseInt(String(season).slice(2,4),10), p=n=>String(n%100).padStart(2,'0');
+  return ['Oct','Nov','Dec'].map(m=>m+"'"+p(y)).concat(['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'].map(m=>m+"'"+p(y+1)));
+}
+function setSeasonMonths(season){
+  MONTHS=monthsOfSeason(season);
+  for(const k in MO) delete MO[k];
+  MONTHS.forEach((m,i)=>MO[m]=i+1);
+}
+setSeasonMonths('2025/26');
 const mOrd=m=>MO[m]||99;
 const mCmp=(a,b)=>mOrd(a)-mOrd(b);
 
@@ -550,7 +565,9 @@ function buildFilters(){
       +vals.map(v=>'<label class="ms-opt" data-val="'+esc(String(v)).toLowerCase()+'"><input type="checkbox" data-v="'+esc(String(v))+'" onchange="msPick(\''+f+'\')"> <span dir="auto">'+esc(lbl(v))+'</span></label>').join('')
       +'</div></div>';
   });
-  document.addEventListener('click',e=>{if(!e.target.closest('.ms'))document.querySelectorAll('.ms-dd').forEach(d=>d.classList.remove('open'));});
+  if(!window.__msDocClick){ window.__msDocClick=true;   // buildFilters re-runs on season switch — add this once
+    document.addEventListener('click',e=>{if(!e.target.closest('.ms'))document.querySelectorAll('.ms-dd').forEach(d=>d.classList.remove('open'));});
+  }
 }
 function toggleDD(e,btn){e.stopPropagation();const dd=btn.parentElement.querySelector('.ms-dd');const was=dd.classList.contains('open');document.querySelectorAll('.ms-dd').forEach(d=>d.classList.remove('open'));if(!was)dd.classList.add('open');}
 function filterMS(input){
@@ -2092,10 +2109,56 @@ function renderAll(){
   else if(TAB==='matrix')renderMatrix();
   else if(TAB==='data')renderData();
 }
+/* ---- SEASON TOGGLE (fiscal year Oct -> Sep), same idea as the citrus harvest funnel ---- */
+function applySeason(season){
+  SEASON=season;
+  RAW=RAW_ALL.filter(r=>r.budget_season===season);
+  setSeasonMonths(season);
+  buildPlotBudget();
+  OPB=null;
+}
+function resyncFilterUI(){
+  document.querySelectorAll('.ms[data-f]').forEach(el=>{
+    const f=el.dataset.f;
+    el.querySelectorAll('input[data-v]').forEach(i=>i.checked=S[f].includes(i.dataset.v));
+    const all=el.querySelector('.ms-all input'); if(all) all.checked=S[f].length===0;
+    syncMS(el,f);
+  });
+}
+function renderSeasonToggle(){
+  const el=document.getElementById('season-tg'); if(!el) return;
+  if(SEASONS.length<2){el.style.display='none';return;}
+  const cur=SEASONS[SEASONS.length-1], prev=SEASONS[SEASONS.length-2];
+  el.style.display='';
+  el.innerHTML=SEASONS.map(s=>`<button class="${s===SEASON?'on':''}" onclick="setSeason('${s}')">${s}<small>${s===cur?'This season':s===prev?'Last season':'Earlier'}</small></button>`).join('');
+}
+function renderSeasonNote(){
+  const el=document.getElementById('season-note'); if(!el) return;
+  const hasBudget=RAW.some(r=>(r.budget_amount||0)!==0);
+  if(hasBudget){el.style.display='none';return;}
+  const firstM=MONTHS.find(m=>RAW.some(r=>r.month===m))||MONTHS[0];
+  el.innerHTML=`<i class="ti ti-info-circle"></i><span>The <b>${esc(SEASON)}</b> budget hasn't been loaded yet, so this season shows <b>actuals only</b> (from ${esc(firstM)}). Variance, Spend % and Cost/Feddan vs plan will fill in once the ${esc(SEASON)} budget is loaded — until then every line counts as unplanned.</span>`;
+  el.style.display='flex';
+}
+function setSeason(season){
+  if(season===SEASON) return;
+  closeDrill();
+  applySeason(season);
+  // drop filter picks that don't exist in this season (keep the product lock)
+  for(const f of MSF){
+    if(f==='product' && window.__PRODUCT_LOCK) continue;
+    const have=new Set(RAW.map(r=>fval(r,f)));
+    S[f]=S[f].filter(v=>have.has(v));
+  }
+  buildFilters(); resyncFilterUI(); refreshUnmappedBadge(); refreshFilterOptions();
+  renderSeasonToggle(); renderSeasonNote(); renderAll();
+}
 (async function boot(){
   try{
-    RAW=await fetchAll();
-    if(!RAW.length){
+    RAW_ALL=await fetchAll();
+    SEASONS=[...new Set(RAW_ALL.map(r=>r.budget_season).filter(Boolean))].sort();
+    applySeason(SEASONS[SEASONS.length-1]||'2025/26');   // default to the current season, like the citrus harvest funnel
+    if(!RAW_ALL.length){
       document.getElementById('loading').innerHTML='<i class="ti ti-lock" style="font-size:26px;color:var(--text3)"></i><span>No data returned — your account may not have <b>Finance · Budget</b> access yet.<br>Ask an admin to grant it from the Home page access panel.</span>';
       return;
     }
@@ -2108,7 +2171,7 @@ function renderAll(){
         let want=(qp.get('product')||'').trim();
         if(!want) return;
         // crosswalk / case-insensitive match against actual product values present
-        const prods=[...new Set(RAW.map(r=>r.product).filter(Boolean))];
+        const prods=[...new Set(RAW_ALL.map(r=>r.product).filter(Boolean))];
         const XW={'olives':'olive'};
         const norm=s=>String(s||'').trim().toLowerCase();
         const wn=XW[norm(want)]||norm(want);
@@ -2137,6 +2200,9 @@ function renderAll(){
     await detectMapPermission();
     refreshUnmappedBadge();
     refreshFilterOptions();   // scope every dropdown (esp. Variety) to what exists under the current lock/filters from the start
+    // the season toggle replaces the Season filter
+    const sf=document.querySelector('.ms[data-f="budget_season"]'); if(sf){const w=sf.closest('.fl')||sf; w.style.display='none';}
+    renderSeasonToggle(); renderSeasonNote();
     document.getElementById('loading').style.display='none';
     document.getElementById('content').style.display='block';
     setAvatarInitials();
