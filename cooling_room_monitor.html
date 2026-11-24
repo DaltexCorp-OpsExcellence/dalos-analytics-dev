@@ -191,7 +191,7 @@ tr.clickable:hover td{background:#eef3ff}
   <div class="grid2">
     <div class="panel">
       <div class="p-head"><div class="t"><span class="dot" style="background:#dc2626"></span>Alerts — 10+ days in room</div><div class="s" id="alert-count"></div></div>
-      <div class="scrollx"><table><thead><tr><th>Lot ID</th><th>Crop / Variety</th><th>Farm</th><th class="num">Bins</th><th class="num">Days</th></tr></thead><tbody id="alert-body"></tbody></table></div>
+      <div class="scrollx"><table><thead><tr><th>Lot ID</th><th>Crop / Variety</th><th>Farm</th><th>Size</th><th class="num">Bins</th><th class="num">Days</th></tr></thead><tbody id="alert-body"></tbody></table></div>
     </div>
     <div class="panel">
       <div class="p-head"><div class="t">Bins in room by crop</div><div class="s" id="chart-total"></div></div>
@@ -202,7 +202,7 @@ tr.clickable:hover td{background:#eef3ff}
   <div class="panel">
     <div class="p-head"><div class="t">Lot status — all lots in room</div><div class="s">days from first entry · click a row for transactions</div></div>
     <div class="scrollx"><table><thead><tr>
-      <th>Lot ID</th><th>Lot No</th><th>Crop</th><th>Variety</th><th>Farm</th>
+      <th>Lot ID</th><th>Lot No</th><th>Crop</th><th>Variety</th><th>Farm</th><th>Size</th>
       <th class="num">Bins</th><th class="num">First entry</th><th class="num">Days</th>
       <th class="num">Cls 2 in</th><th class="num">Cls 1 out</th><th>Status</th>
     </tr></thead><tbody id="lot-body"></tbody></table></div>
@@ -228,6 +228,11 @@ const LOTS=[
  {id:"POT-ELKHAIR-018",no:"03",crop:"Potatoes",variety:"Lady Rosetta",farm:"El Khair",bins:25,days:2,first:"16 Nov"},
  {id:"CIT-NOUR-001",no:"01",crop:"Citrus",variety:"Valencia G",farm:"Nour",bins:20,days:1,first:"17 Nov"}
 ];
+// sample sizes (live view reads the Size column from the Movements sheet)
+const SIZE={"POT-MATKO-022":"55–75 mm","GRP-FARMY-001":"XL","CIT-SALMA-020":"64","MNG-EGY-003":"Count 10","POM-DINA-004":"Count 12",
+ "CIT-LAYLA-009":"72","GRP-BADR-014":"L","MNG-MENIA-011":"Count 12","POM-HANA-007":"Count 14","GRP-MARIAM-005":"XL",
+ "POT-ELKHAIR-018":"45–65 mm","CIT-NOUR-001":"56"};
+LOTS.forEach(l=>l.size=SIZE[l.id]||'–');
 const stat=d=>d>=10?"over":d>=7?"warn":"ok";
 const LABT={over:"Over 10 days",warn:"7–9 days",ok:"OK"};
 const BADGE={over:"b-over",warn:"b-warn",ok:"b-ok"};
@@ -268,7 +273,7 @@ const IDX={}; LOTS.forEach((l,i)=>IDX[l.id]=i);
 // ===== alerts table =====
 $('alert-count').textContent=over.length+' lots · act now';
 $('alert-body').innerHTML=over.slice().sort((a,b)=>b.days-a.days).map(l=>
- '<tr class="row-over clickable" data-i="'+IDX[l.id]+'"><td class="mono">'+l.id+'</td><td>'+l.crop+' · '+l.variety+'</td><td>'+l.farm+'</td><td class="num">'+l.bins+'</td><td class="num">'+l.days+'</td></tr>').join('');
+ '<tr class="row-over clickable" data-i="'+IDX[l.id]+'"><td class="mono">'+l.id+'</td><td>'+l.crop+' · '+l.variety+'</td><td>'+l.farm+'</td><td>'+l.size+'</td><td class="num">'+l.bins+'</td><td class="num">'+l.days+'</td></tr>').join('');
 
 // ===== chart: bins by crop =====
 const crops=["Grapes","Citrus","Mango","Pomegranate","Potatoes"];
@@ -282,7 +287,7 @@ $('chart').innerHTML=bars.map(b=>
 // ===== full table =====
 $('lot-body').innerHTML=LOTS.slice().sort((a,b)=>b.days-a.days).map(l=>{
  const s=stat(l.days);
- return '<tr class="clickable'+(s==='over'?' row-over':'')+'" data-i="'+IDX[l.id]+'"><td class="mono">'+l.id+'</td><td class="mono">'+l.no+'</td><td>'+l.crop+'</td><td>'+l.variety+'</td><td>'+l.farm+'</td><td class="num">'+l.bins+'</td><td class="num">'+l.first+'</td><td class="num">'+l.days+'</td><td class="num" style="color:#15803d">'+l.c2In+'</td><td class="num" style="color:#1d4ed8">'+l.c1Out+'</td><td><span class="badge '+BADGE[s]+'">'+LABT[s]+'</span></td></tr>';
+ return '<tr class="clickable'+(s==='over'?' row-over':'')+'" data-i="'+IDX[l.id]+'"><td class="mono">'+l.id+'</td><td class="mono">'+l.no+'</td><td>'+l.crop+'</td><td>'+l.variety+'</td><td>'+l.farm+'</td><td>'+l.size+'</td><td class="num">'+l.bins+'</td><td class="num">'+l.first+'</td><td class="num">'+l.days+'</td><td class="num" style="color:#15803d">'+l.c2In+'</td><td class="num" style="color:#1d4ed8">'+l.c1Out+'</td><td><span class="badge '+BADGE[s]+'">'+LABT[s]+'</span></td></tr>';
 }).join('');
 
 // any clickable row -> select the bin + open its transactions
@@ -386,7 +391,7 @@ function showDetail(lot){const s=stat(lot.days),i=IDX[lot.id];
   $("detail").innerHTML=
     '<div class="p-head"><div class="t">'+lot.id+'</div><div class="s">'+lot.crop+'</div></div>'+
     kv('Status','<span class="badge '+BADGE[s]+'">'+LABT[s]+'</span>')+
-    kv('Variety',lot.variety)+kv('Farm',lot.farm)+kv('Bin No',lot.no)+
+    kv('Variety',lot.variety)+kv('Farm',lot.farm)+kv('Size',lot.size)+kv('Bin No',lot.no)+
     kv('Bins in room',lot.bins)+
     kv('Class 2 in room','<span style="color:#15803d">'+lot.c2In+'</span>')+
     kv('Class 1 shipped','<span style="color:#1d4ed8">'+lot.c1Out+'</span>')+
@@ -400,7 +405,7 @@ function openTx(i){
     return '<tr><td class="mono">'+m.d+'</td><td><span class="'+(m.t==='IN'?'tx-in':'tx-out')+'">'+(m.t==='IN'?'▲ In':'▼ Out')+'</span></td><td><span class="clschip '+cl[0]+'">'+cl[1]+'</span></td><td class="num">'+m.bins+'</td><td class="num">'+bal+'</td><td style="color:var(--text3)">'+m.note+'</td></tr>';}).join('');
   const sc=s==='over'?'#dc2626':s==='warn'?'#c2410c':'#15803d';
   $('modal').innerHTML=
-    '<div class="modal-h"><div><div class="mid">'+l.id+'</div><div class="msub">'+l.crop+' · '+l.variety+' · '+l.farm+' · Bin '+l.no+'</div></div><button class="modal-x" onclick="closeTx()">✕</button></div>'+
+    '<div class="modal-h"><div><div class="mid">'+l.id+'</div><div class="msub">'+l.crop+' · '+l.variety+' · '+l.farm+' · Size '+l.size+' · Bin '+l.no+'</div></div><button class="modal-x" onclick="closeTx()">✕</button></div>'+
     '<div class="modal-b">'+
       '<div class="mgrid">'+
         '<div class="mcell"><div class="n">'+l.bins+'</div><div class="l">Bins in room</div></div>'+
