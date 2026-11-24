@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cooling Room Monitor — DALos Analytics</title>
+<title>Cooling Room Monitor — DalOS Analytics</title>
 <!-- DalOS shared session gate (validates Supabase JWT, runs access check, auto-mounts the left rail). No __DALOS_ACCESS_CHECK set => gates on general has_analytics_access(). -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8"></script>
 <script src="gate.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -127,17 +127,34 @@ tr.clickable:hover td{background:#eef3ff}
 .stack.sel .face{outline:2px solid #3b82f6;outline-offset:-1px;filter:brightness(1.12) saturate(1.08)}
 .selmark{position:absolute;left:0;top:0;pointer-events:none}
 @media(max-width:900px){.gmain,.grid2{grid-template-columns:1fr}.hero{padding:26px 16px}.hero h1{font-size:26px}.wrap{padding:18px 14px}.mgrid{grid-template-columns:repeat(2,1fr)}}
+.cr-logo-icon{width:32px;height:32px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.cr-divider{width:1px;height:18px;background:rgba(255,255,255,.2);margin:0 12px}
+.cr-back{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:rgba(255,255,255,.75);text-decoration:none;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);transition:all .15s}
+.cr-back:hover{background:rgba(255,255,255,.18);color:#fff}
+.cr-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.14);white-space:nowrap}
+.cr-badge-warn{background:rgba(220,100,40,.2);color:#ffb380;border-color:rgba(220,100,40,.3)}
+@media(max-width:640px){.cr-divider,.cr-back+span,.cr-back+span+span{display:none}.topbar{padding:0 12px}}
 </style>
 </head>
 <body>
 <div class="topbar">
-  <div class="logo">C</div>
-  <div class="brand"><b>Cooling Room Monitor</b><span>DALos Analytics · Packhouse</span></div>
-  <div class="tb-right"><span class="tb-date">Wed 18 Nov 2026</span><span class="pill">❄ −0.5 °C</span><span class="pill preview">Preview</span></div>
+  <div style="display:flex;align-items:center;gap:0;min-width:0">
+    <a href="index.html" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+      <div class="cr-logo-icon">❄</div><span style="font-size:16px;font-weight:700;letter-spacing:-.3px;margin-left:8px;white-space:nowrap;color:#fff">Dal<span style="color:#DC6428">OS</span> <span style="color:#fff">Analytics</span></span>
+    </a>
+    <div class="cr-divider"></div>
+    <a href="index.html" class="cr-back"><i class="ti ti-arrow-left" style="font-size:12px"></i>Home</a>
+    <span style="color:rgba(255,255,255,.2);margin:0 8px;font-size:14px">/</span>
+    <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,.9);white-space:nowrap">Cooling Room Monitor</span>
+  </div>
+  <div class="tb-right">
+    <span class="cr-badge cr-badge-warn" title="Rooms, lots and dates are sample data — not live yet"><i class="ti ti-flask" style="font-size:11px"></i> Preview · sample data</span>
+    <span class="cr-badge" title="Sample reading">❄ −0.5 °C</span>
+  </div>
 </div>
 
 <div class="hero"><div class="hero-in">
-  <div class="crumb">DALos Analytics / Packhouse / Cooling Room</div>
+  <div class="crumb">DalOS Analytics / Packhouse / Cooling Room</div>
   <h1>Cooling Room <em>Monitor</em></h1>
   <p>Live state of every bin lot in the chilling rooms — days since first entry, partial in/out, and the lots past the 10-day limit. Reporting view and 3D storage view in one place.</p>
   <div class="hstats">
@@ -208,7 +225,7 @@ tr.clickable:hover td{background:#eef3ff}
     </tr></thead><tbody id="lot-body"></tbody></table></div>
   </div>
 
-  <div class="foot">Combined preview · sample data · DALos Analytics design language</div>
+  <div class="foot">Combined preview · sample data · DalOS Analytics design language</div>
 </div>
 
 <div class="ov" id="ov"><div class="modal" id="modal"></div></div>
